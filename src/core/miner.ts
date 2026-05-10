@@ -1,6 +1,7 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import { z } from 'zod';
 import { Config, RepoBenchConfig } from './config';
+import { isChangeSignificant } from '../utils/git-utils';
 
 export const CommitCandidateSchema = z.object({
   hash: z.string(),
@@ -47,7 +48,6 @@ export class Miner {
       const files = await this.git.show(['--name-only', '--pretty=format:', log.hash]);
       const allFiles = files.split('\n').filter((f: string) => f.trim());
       
-      // Filter out excluded paths
       const filteredFiles = allFiles.filter(file => {
         return !this.config.mining.exclude_paths.some(pattern => file.startsWith(pattern));
       });
@@ -56,6 +56,18 @@ export class Miner {
       const hasTest = filteredFiles.some(this.isTestFile);
 
       if (hasSource && hasTest) {
+        const sourceFile = filteredFiles.find(this.isSourceFile);
+        const testFile = filteredFiles.find(this.isTestFile);
+
+        if (sourceFile && testFile) {
+          const sourceDiff = await this.git.show([`--unified=0`, log.hash, `--`, sourceFile]);
+          const testDiff = await this.git.show([`--unified=0`, log.hash, `--`, testFile]);
+          
+          if (!isChangeSignificant(sourceDiff) || !isChangeSignificant(testDiff)) {
+            continue;
+          }
+        }
+
         candidates.push({
           hash: log.hash,
           message: log.message,
@@ -67,4 +79,3 @@ export class Miner {
     return candidates;
   }
 }
-
