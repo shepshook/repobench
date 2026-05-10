@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { Miner } from '../core/miner.js';
+import { Config } from '../core/config.js';
 
 const program = new Command();
 
@@ -14,7 +15,8 @@ program
   .argument('<path>', 'Path to the git repository')
   .action(async (path) => {
     try {
-      const miner = new Miner(path);
+      const config = Config.load();
+      const miner = new Miner(path, config);
       const candidates = await miner.mineCommits();
       console.log(`\\nFound ${candidates.length} high-value candidates:`);
       console.table(candidates);
@@ -25,3 +27,4 @@ program
   });
 
 program.parse();
+
