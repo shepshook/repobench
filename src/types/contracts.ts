@@ -4,6 +4,8 @@
  */
 
 // --- Epic 1: The Miner ---
+export type SandboxState = 'pre-fix' | 'post-fix' | 'unknown';
+
 export interface CommitCandidate {
   hash: string;
   message: string;

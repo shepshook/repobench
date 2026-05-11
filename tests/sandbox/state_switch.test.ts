@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { LocalSandbox, DockerSandbox } from '../../src/sandbox';
 import { SandboxOptions } from '../../src/types/contracts';
 import { RepoBenchConfig } from '../../src/core/config';
+import { SandboxStateManager } from '../../src/core/sandbox/state-manager';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -72,6 +73,29 @@ describe('Sandbox State Switching', () => {
       await sandbox.init();
 
       await expect(sandbox.switchToState('invalid-hash')).rejects.toThrow();
+
+      await sandbox.destroy();
+    });
+  });
+
+  describe('SandboxStateManager', () => {
+    it('should track state correctly during switching', async () => {
+      const sandbox = new LocalSandbox(getOptions('local'));
+      await sandbox.init();
+      const stateManager = new SandboxStateManager(sandbox);
+
+      expect(stateManager.getCurrentState()).toBe('unknown');
+
+      // Switch to pre-fix state (using hash1)
+      await stateManager.setPreFixState(hash1);
+      expect(stateManager.getCurrentState()).toBe('pre-fix');
+      const readCmd = process.platform === 'win32' ? 'type file.txt' : 'cat file.txt';
+      expect(await sandbox.execute(readCmd)).toBe('content 1');
+
+      // Switch to post-fix state (using hash2)
+      await stateManager.setPostFixState(hash2);
+      expect(stateManager.getCurrentState()).toBe('post-fix');
+      expect(await sandbox.execute(readCmd)).toBe('content 2');
 
       await sandbox.destroy();
     });
