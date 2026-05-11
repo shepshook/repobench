@@ -6,6 +6,7 @@ import { z } from 'zod';
 export const MiningConfigSchema = z.object({
   keywords: z.array(z.string()).default(['fix', 'bug', 'issue']),
   exclude_paths: z.array(z.string()).default([]),
+  source_extensions: z.array(z.string()).default(['ts', 'js', 'py', 'cpp', 'c', 'go', 'rs', 'java']),
 });
 
 export const SandboxConfigSchema = z.object({
@@ -18,8 +19,18 @@ export const RepoBenchConfigSchema = z.object({
   mining: MiningConfigSchema.default({
     keywords: ['fix', 'bug', 'issue'],
     exclude_paths: [],
+    source_extensions: ['ts', 'js', 'py', 'cpp', 'c', 'go', 'rs', 'java'],
   }),
   sandbox: SandboxConfigSchema.default({}),
+  llm: z.object({
+    model: z.string().default('gpt-4o-mini'),
+    api_key: z.string().optional(),
+    endpoint: z.string().optional(),
+    temperature: z.number().min(0).max(2).default(0),
+  }).default({
+    model: 'gpt-4o-mini',
+    temperature: 0,
+  }),
 });
 
 export type RepoBenchConfig = z.infer<typeof RepoBenchConfigSchema>;
