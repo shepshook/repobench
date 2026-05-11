@@ -105,6 +105,14 @@ export class LocalSandbox implements ISandbox {
     return true;
   }
 
+  async switchToState(commitHash: string): Promise<void> {
+    try {
+      await runCommand('git', ['checkout', commitHash], this.tempDir);
+    } catch (e: any) {
+      throw new Error(`LocalSandbox switchToState failed: ${e.message}`);
+    }
+  }
+
   async destroy() {
     try {
       for (const proc of this.activeProcesses) {

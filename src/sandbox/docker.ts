@@ -113,6 +113,14 @@ export class DockerSandbox implements ISandbox {
     return true;
   }
 
+  async switchToState(commitHash: string): Promise<void> {
+    try {
+      await this.runDirect(['git', 'checkout', commitHash]);
+    } catch (e: any) {
+      throw new Error(`DockerSandbox switchToState failed: ${e.message}`);
+    }
+  }
+
   async destroy() {
     if (this.container) {
       try {

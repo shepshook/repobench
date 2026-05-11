@@ -51,6 +51,7 @@ export interface ISandbox {
   verify(): Promise<boolean>;
   ping(): Promise<boolean>;
   execute(cmd: string, timeout?: number): Promise<string>;
+  switchToState(commitHash: string): Promise<void>;
   destroy(): Promise<void>;
   getWorkingDir(): string;
 }
