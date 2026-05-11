@@ -49,6 +49,7 @@ export interface ISandbox {
   init(): Promise<void>;
   setup(): Promise<void>;
   verify(): Promise<boolean>;
+  ping(): Promise<boolean>;
   execute(cmd: string, timeout?: number): Promise<string>;
   destroy(): Promise<void>;
   getWorkingDir(): string;

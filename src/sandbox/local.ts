@@ -122,4 +122,13 @@ export class LocalSandbox implements ISandbox {
   getWorkingDir(): string {
     return this.tempDir;
   }
+
+  async ping(): Promise<boolean> {
+    try {
+      const stats = await fs.stat(this.tempDir);
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  }
 }

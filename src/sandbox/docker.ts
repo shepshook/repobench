@@ -136,4 +136,14 @@ export class DockerSandbox implements ISandbox {
   getWorkingDir(): string {
     return this.hostTempDir || '';
   }
+
+  async ping(): Promise<boolean> {
+    if (!this.container) return false;
+    try {
+      const data = await this.container.inspect();
+      return data.State.Running === true;
+    } catch {
+      return false;
+    }
+  }
 }
