@@ -10,8 +10,8 @@ export const MiningConfigSchema = z.object({
 });
 
 export const SandboxConfigSchema = z.object({
-  build_command: z.string().optional(),
-  test_command: z.string().optional(),
+  build_command: z.string().default(''),
+  test_command: z.string().default(''),
   env_vars: z.record(z.string()).default({}),
 });
 
