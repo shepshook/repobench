@@ -47,6 +47,8 @@ export interface SandboxOptions {
 
 export interface ISandbox {
   init(): Promise<void>;
+  setup(): Promise<void>;
+  verify(): Promise<boolean>;
   execute(cmd: string): Promise<string>;
   destroy(): Promise<void>;
   getWorkingDir(): string;
