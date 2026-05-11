@@ -1,13 +1,10 @@
 import { ISandbox } from './types';
 import { SandboxOptions } from '../types/contracts';
-import { exec, spawn } from 'child_process';
-import { promisify } from 'util';
+import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-
-const execAsync = promisify(exec);
 
 async function runCommand(cmd: string, args: string[], cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -26,6 +23,7 @@ async function runCommand(cmd: string, args: string[], cwd: string): Promise<str
 export class LocalSandbox implements ISandbox {
   private tempDir: string;
   private options: SandboxOptions;
+  private activeProcesses: Set<ChildProcess> = new Set();
 
   constructor(options: SandboxOptions) {
     this.options = options;
@@ -44,18 +42,48 @@ export class LocalSandbox implements ISandbox {
     }
   }
 
-  async execute(cmd: string): Promise<string> {
-    try {
-      const { stdout } = await execAsync(cmd, { 
+  async execute(cmd: string, timeout?: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController();
+      const { signal } = controller;
+
+      const child = spawn(cmd, { 
         cwd: this.tempDir, 
-        encoding: 'utf8',
-        env: { ...process.env, ...this.options.envVars }
+        shell: true,
+        env: { ...process.env, ...this.options.envVars },
+        signal 
       });
-      return stdout.trim();
-    } catch (e: any) {
-      const errorOutput = e.stdout ? e.stdout.toString().trim() : e.message;
-      throw new Error(`Command failed (ExitCode ${e.code}): ${errorOutput}`);
-    }
+
+      this.activeProcesses.add(child);
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => { stdout += data; });
+      child.stderr.on('data', (data) => { stderr += data; });
+
+      const timer = timeout ? setTimeout(() => {
+        controller.abort();
+        reject(new Error('TimeoutError: Command exceeded timeout'));
+      }, timeout) : null;
+
+      child.on('close', (code) => {
+        if (timer) clearTimeout(timer);
+        this.activeProcesses.delete(child);
+        if (code === 0) resolve(stdout.trim());
+        else reject(new Error(`Command failed (ExitCode ${code}): ${stderr || stdout}`));
+      });
+
+      child.on('error', (err) => {
+        if (timer) clearTimeout(timer);
+        this.activeProcesses.delete(child);
+        if (err.name === 'AbortError') {
+          reject(new Error('TimeoutError: Command exceeded timeout'));
+        } else {
+          reject(err);
+        }
+      });
+    });
   }
 
 
@@ -79,9 +107,19 @@ export class LocalSandbox implements ISandbox {
 
   async destroy() {
     try {
+      for (const proc of this.activeProcesses) {
+        try {
+          proc.kill('SIGKILL');
+        } catch (e) {}
+      }
+      this.activeProcesses.clear();
       await fs.rm(this.tempDir, { recursive: true, force: true });
     } catch (e) {
       console.error(`Failed to destroy LocalSandbox at ${this.tempDir}:`, e);
     }
+  }
+
+  getWorkingDir(): string {
+    return this.tempDir;
   }
 }

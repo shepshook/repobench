@@ -61,25 +61,38 @@ export class DockerSandbox implements ISandbox {
     return output;
   }
 
-  async execute(cmd: string): Promise<string> {
+  async execute(cmd: string, timeout?: number): Promise<string> {
     const exec = await this.container.exec({
       Cmd: ['bash', '-c', cmd],
       AttachStdout: true,
       AttachStderr: true,
     });
     const stream = await exec.start();
-    const output = await new Promise<string>((resolve, reject) => {
+    
+    return new Promise<string>((resolve, reject) => {
       let data = '';
-      stream.on('data', (chunk: any) => { data += chunk.toString(); });
-      stream.on('end', () => resolve(data.trim()));
-      stream.on('error', reject);
-    });
+      const timer = timeout ? setTimeout(async () => {
+        try {
+          await exec.stop();
+        } catch (e) {}
+        reject(new Error('TimeoutError: Command exceeded timeout'));
+      }, timeout) : null;
 
-    const inspect = await exec.inspect();
-    if (inspect.ExitCode !== 0) {
-      throw new Error(`Command failed (ExitCode ${inspect.ExitCode}): ${output}`);
-    }
-    return output;
+      stream.on('data', (chunk: any) => { data += chunk.toString(); });
+      stream.on('end', async () => {
+        if (timer) clearTimeout(timer);
+        const inspect = await exec.inspect();
+        if (inspect.ExitCode !== 0) {
+          reject(new Error(`Command failed (ExitCode ${inspect.ExitCode}): ${data}`));
+        } else {
+          resolve(data.trim());
+        }
+      });
+      stream.on('error', (err: any) => {
+        if (timer) clearTimeout(timer);
+        reject(err);
+      });
+    });
   }
 
   async setup(): Promise<void> {
@@ -103,11 +116,12 @@ export class DockerSandbox implements ISandbox {
   async destroy() {
     if (this.container) {
       try {
-        await this.container.stop();
-        await this.container.remove();
+        await this.container.stop().catch(() => {});
+        await this.container.remove().catch(() => {});
       } catch (e) {
         console.error(`Failed to remove Docker container:`, e);
       }
+      this.container = null;
     }
     if (this.hostTempDir) {
       try {
@@ -115,6 +129,11 @@ export class DockerSandbox implements ISandbox {
       } catch (e) {
         console.error(`Failed to remove Docker host temp dir:`, e);
       }
+      this.hostTempDir = undefined;
     }
+  }
+
+  getWorkingDir(): string {
+    return this.hostTempDir || '';
   }
 }
