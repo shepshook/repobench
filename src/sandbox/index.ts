@@ -1,4 +1,4 @@
-import { ISandbox } from './types';
+import { ISandbox } from '../types/contracts';
 import { SandboxOptions } from '../types/contracts';
 import { DockerSandbox } from './docker';
 import { LocalSandbox } from './local';
@@ -14,6 +14,7 @@ const SandboxOptionsSchema = z.object({
   buildCommand: z.string().optional(),
   testCommand: z.string().optional(),
   envVars: z.record(z.string()).optional(),
+  cachePaths: z.record(z.string()).optional(),
 });
 
 export class SandboxFactory {
@@ -25,6 +26,7 @@ export class SandboxFactory {
       buildCommand: options.buildCommand ?? config.sandbox.build_command,
       testCommand: options.testCommand ?? config.sandbox.test_command,
       envVars: { ...config.sandbox.env_vars, ...options.envVars },
+      cachePaths: { ...config.sandbox.cache_paths, ...options.cachePaths },
     };
 
     const validatedOptions = SandboxOptionsSchema.parse(merged);

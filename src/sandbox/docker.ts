@@ -24,15 +24,25 @@ export class DockerSandbox implements ISandbox {
       this.hostTempDir = path.join(os.tmpdir(), `repobench-docker-${crypto.randomUUID()}`);
       await fs.mkdir(this.hostTempDir, { recursive: true });
 
+      const binds = [`${this.hostTempDir}:/app`];
+      if (this.options.cachePaths) {
+        for (const [hostPath, containerPath] of Object.entries(this.options.cachePaths)) {
+          const absoluteHostPath = path.resolve(process.cwd(), hostPath);
+          await fs.mkdir(absoluteHostPath, { recursive: true });
+          binds.push(`${absoluteHostPath}:${containerPath}:rw`);
+        }
+      }
+
        this.container = await this.docker.createContainer({
-         Image: this.options.baseImage || this.options.image,
-         Cmd: ['/bin/bash'],
-         Tty: true,
-         WorkingDir: '/app',
-         HostConfig: { Binds: [`${this.hostTempDir}:/app`] },
-         Env: Object.entries(this.options.envVars || {}).map(([k, v]) => `${k}=${v}`),
-       });
-       await this.container.start();
+          Image: this.options.baseImage || this.options.image,
+          Cmd: ['/bin/bash'],
+          Tty: true,
+          WorkingDir: '/app',
+          HostConfig: { Binds: binds },
+          Env: Object.entries(this.options.envVars || {}).map(([k, v]) => `${k}=${v}`),
+        });
+        await this.container.start();
+
        
        await this.runDirect(['git', 'clone', this.options.repoPath, '.']);
       await this.runDirect(['git', 'checkout', this.options.commitHash]);

@@ -45,6 +45,9 @@ export interface SandboxOptions {
   buildCommand?: string;
   testCommand?: string;
   envVars?: Record<string, string>;
+  baseImage?: string;
+  baseImagePath?: string;
+  cachePaths?: Record<string, string>;
 }
 
 export interface ISandbox {
@@ -76,6 +79,8 @@ export interface SessionResult {
     output: number;
   };
   cost: number;
+  filesOpened: number;
+  filesModified: number;
 }
 
 export interface ISession {
@@ -89,9 +94,10 @@ export interface ISession {
 export interface EvalMetrics {
   success: boolean;
   regressions: string[]; // List of tests that failed after the fix
-  searchEfficiency: number; // Files opened / Files modified
-  latency: number;
-  cost: number;
+searchEfficiency: number; // Files modified / Files opened
+latency: number;
+cost: number;
+
   eScore: number;
 }
 
@@ -101,6 +107,11 @@ export interface IJudge {
    */
   verify(preFixCwd: string, postFixCwd: string, testCommand: string): Promise<EvalMetrics>;
   
+  /**
+   * Runs a suite of regression tests against a sandbox.
+   */
+  runRegressionSuite(sandbox: ISandbox): Promise<EvalMetrics>;
+
   /**
    * Calculates the final E-Score based on the metrics.
    */
