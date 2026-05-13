@@ -1,10 +1,11 @@
-import { ISandbox } from './types';
+import { ISandbox } from '../types/contracts';
 import { SandboxOptions } from '../types/contracts';
 import Docker from 'dockerode';
 import path from 'path';
 import os from 'os';
 import fs from 'fs/promises';
 import crypto from 'crypto';
+import { spawn } from 'child_process';
 
 export class DockerSandbox implements ISandbox {
   private docker: Docker;
@@ -19,24 +20,48 @@ export class DockerSandbox implements ISandbox {
 
   async init() {
     try {
+      await this.ensureBaseImage();
       this.hostTempDir = path.join(os.tmpdir(), `repobench-docker-${crypto.randomUUID()}`);
       await fs.mkdir(this.hostTempDir, { recursive: true });
 
-      this.container = await this.docker.createContainer({
-        Image: this.options.image,
-        Cmd: ['/bin/bash'],
-        Tty: true,
-        WorkingDir: '/app',
-        HostConfig: { Binds: [`${this.hostTempDir}:/app`] },
-        Env: Object.entries(this.options.envVars || {}).map(([k, v]) => `${k}=${v}`),
-      });
-      await this.container.start();
-      
-      await this.execute('apt-get update && apt-get install -y git');
-      await this.runDirect(['git', 'clone', this.options.repoPath, '.']);
+       this.container = await this.docker.createContainer({
+         Image: this.options.baseImage || this.options.image,
+         Cmd: ['/bin/bash'],
+         Tty: true,
+         WorkingDir: '/app',
+         HostConfig: { Binds: [`${this.hostTempDir}:/app`] },
+         Env: Object.entries(this.options.envVars || {}).map(([k, v]) => `${k}=${v}`),
+       });
+       await this.container.start();
+       
+       await this.runDirect(['git', 'clone', this.options.repoPath, '.']);
       await this.runDirect(['git', 'checkout', this.options.commitHash]);
     } catch (e: any) {
       throw new Error(`DockerSandbox init failed: ${e.message}`);
+    }
+  }
+
+  private async ensureBaseImage() {
+    const { baseImage, baseImagePath } = this.options;
+    if (!baseImage) return;
+
+    try {
+      await this.docker.getImage(baseImage);
+    } catch (e) {
+      if (baseImagePath) {
+        const absolutePath = path.resolve(process.cwd(), baseImagePath);
+        const context = path.dirname(absolutePath);
+        const dockerfile = path.basename(absolutePath);
+        
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn('docker', ['build', '-t', baseImage, '-f', absolutePath, context]);
+          child.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`docker build failed with exit code ${code}`));
+          });
+          child.on('error', reject);
+        });
+      }
     }
   }
 

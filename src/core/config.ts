@@ -13,6 +13,8 @@ export const SandboxConfigSchema = z.object({
   build_command: z.string().default(''),
   test_command: z.string().default(''),
   env_vars: z.record(z.string()).default({}),
+  base_image: z.string().optional(),
+  base_image_path: z.string().optional(),
 });
 
 export const RepoBenchConfigSchema = z.object({
