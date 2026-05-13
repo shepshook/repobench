@@ -18,7 +18,11 @@ export class Session implements ISession {
   }
 
   async ensureState(state: 'pre' | 'post', candidate: StateCandidate): Promise<void> {
-    await this.stateManager.ensureState(this.sandbox, state, candidate);
+    const { needsRebuild, currentHash } = await this.stateManager.ensureState(this.sandbox, state, candidate);
+    if (needsRebuild) {
+      await this.sandbox.setup();
+      this.stateManager.confirmBuildSuccess(currentHash);
+    }
   }
 
   async start(): Promise<void> {
