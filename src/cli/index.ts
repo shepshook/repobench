@@ -5,6 +5,7 @@ import { Config } from '../core/config.js';
 import { SqliteCandidateRepository } from '../core/repositories/candidate-repo.js';
 import { LLMClient } from '../core/llm/client.js';
 import { CurationService } from '../core/curation/service.js';
+import { warmupCandidates } from './warmup-logic.js';
 import simpleGit from 'simple-git';
 
 const program = new Command();
@@ -91,6 +92,17 @@ program
     }
   });
 
+program
+  .command('warmup')
+  .description('Pre-build base images and cached layers for all candidates')
+  .action(async () => {
+    try {
+      await warmupCandidates();
+    } catch (e) {
+      console.error('Error during warmup:', e);
+      process.exit(1);
+    }
+  });
 
 program.parse();
 
