@@ -50,6 +50,7 @@ export interface SandboxOptions {
   cachePaths?: Record<string, string>;
   preBuildCommands?: string[];
   preBuildHashFile?: string;
+  maxCachedLayers?: number;
 }
 
 export interface ISandbox {

@@ -18,6 +18,7 @@ export const SandboxConfigSchema = z.object({
   cache_paths: z.record(z.string()).default({}),
   pre_build_commands: z.array(z.string()).optional(),
   pre_build_hash_file: z.string().optional(),
+  max_cached_layers: z.number().default(10),
 });
 
 export const RepoBenchConfigSchema = z.object({

@@ -219,6 +219,38 @@ export class DockerSandbox implements ISandbox {
       }
       this.hostTempDir = undefined;
     }
+    await this.pruneCachedImages();
+  }
+
+  private async pruneCachedImages() {
+    try {
+      const images = await this.docker.listImages();
+      const prefix = 'repobench-layer-';
+      
+      const cachedImages = images
+        .filter(img => img.RepoTags && img.RepoTags.some(tag => tag.startsWith(prefix)))
+        .map(img => ({
+          id: img.Id,
+          created: img.Created,
+          tags: img.RepoTags
+        }))
+        .sort((a, b) => b.created - a.created);
+
+      const maxLayers = this.options.maxCachedLayers ?? 10;
+      if (cachedImages.length <= maxLayers) return;
+
+      const toDelete = cachedImages.slice(maxLayers);
+      for (const img of toDelete) {
+        try {
+          const image = this.docker.getImage(img.id);
+          await image.remove({ force: false });
+        } catch (e) {
+          // Ignore errors if image is in use
+        }
+      }
+    } catch (e: any) {
+      console.error(`Failed to prune cached images: ${e.message}`);
+    }
   }
 
   getWorkingDir(): string {
