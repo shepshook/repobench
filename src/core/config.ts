@@ -16,6 +16,8 @@ export const SandboxConfigSchema = z.object({
   base_image: z.string().optional(),
   base_image_path: z.string().optional(),
   cache_paths: z.record(z.string()).default({}),
+  pre_build_commands: z.array(z.string()).optional(),
+  pre_build_hash_file: z.string().optional(),
 });
 
 export const RepoBenchConfigSchema = z.object({

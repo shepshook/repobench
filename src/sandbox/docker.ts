@@ -21,6 +21,7 @@ export class DockerSandbox implements ISandbox {
   async init() {
     try {
       await this.ensureBaseImage();
+      const layeredImage = await this.getLayeredImage();
       this.hostTempDir = path.join(os.tmpdir(), `repobench-docker-${crypto.randomUUID()}`);
       await fs.mkdir(this.hostTempDir, { recursive: true });
 
@@ -34,7 +35,7 @@ export class DockerSandbox implements ISandbox {
       }
 
        this.container = await this.docker.createContainer({
-          Image: this.options.baseImage || this.options.image,
+          Image: layeredImage,
           Cmd: ['/bin/bash'],
           Tty: true,
           WorkingDir: '/app',
@@ -48,6 +49,50 @@ export class DockerSandbox implements ISandbox {
       await this.runDirect(['git', 'checkout', this.options.commitHash]);
     } catch (e: any) {
       throw new Error(`DockerSandbox init failed: ${e.message}`);
+    }
+  }
+
+  private async getLayeredImage(): Promise<string> {
+    const { preBuildHashFile, preBuildCommands, baseImage, image } = this.options;
+    const currentBase = baseImage || image;
+
+    if (!preBuildHashFile || !preBuildCommands || preBuildCommands.length === 0) {
+      return currentBase;
+    }
+
+    const absoluteHashPath = path.resolve(process.cwd(), preBuildHashFile);
+    const content = await fs.readFile(absoluteHashPath);
+    const hash = crypto.createHash('sha256').update(content).digest('hex').substring(0, 16);
+    const layerTag = `repobench-layer-${hash}`;
+
+    try {
+      await this.docker.getImage(layerTag);
+      return layerTag;
+    } catch (e) {
+      const tempDockerfileDir = path.join(os.tmpdir(), `repobench-dockerfile-${crypto.randomUUID()}`);
+      try {
+        await fs.mkdir(tempDockerfileDir, { recursive: true });
+        
+        const dockerfileContent = [
+          `FROM ${currentBase}`,
+          ...preBuildCommands.map(cmd => `RUN ${cmd}`),
+        ].join('\n');
+
+        const dockerfilePath = path.join(tempDockerfileDir, 'Dockerfile');
+        await fs.writeFile(dockerfilePath, dockerfileContent);
+
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn('docker', ['build', '-t', layerTag, tempDockerfileDir]);
+          child.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`Layered build failed with exit code ${code}`));
+          });
+          child.on('error', reject);
+        });
+        return layerTag;
+      } finally {
+        await fs.rm(tempDockerfileDir, { recursive: true, force: true });
+      }
     }
   }
 

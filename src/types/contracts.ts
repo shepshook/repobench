@@ -48,6 +48,8 @@ export interface SandboxOptions {
   baseImage?: string;
   baseImagePath?: string;
   cachePaths?: Record<string, string>;
+  preBuildCommands?: string[];
+  preBuildHashFile?: string;
 }
 
 export interface ISandbox {
