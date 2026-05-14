@@ -1,6 +1,8 @@
 import { ISession, SessionResult, ISandbox } from '../../types/contracts';
 import { SandboxStateManager, StateCandidate } from '../../sandbox/state-manager';
 import { SessionCrashedError } from './errors';
+import { AgentAdapter } from './adapter';
+import { AdapterFactory } from './adapter-factory';
 import path from 'path';
 import fs from 'fs/promises';
 import * as pty from 'node-pty';
@@ -15,20 +17,31 @@ function stripAnsi(str: string) {
 export class Session implements ISession {
   private sandbox: ISandbox;
   private stateManager: SandboxStateManager;
+  private adapter: AgentAdapter | null = null;
+  private spawnOptions: Record<string, string | string[]> = {};
   private filesOpened = new Set<string>();
   private filesModified = new Set<string>();
   private stdout = '';
   private stderr = '';
   private startTime: number = 0;
   private lastReadOffset = 0;
+  private lastAutoResponseOffset = 0;
   private ptyProcess: pty.IPty | null = null;
   private isCrashed = false;
+  private isAutoResponding = false;
   private writeLock: Promise<void> = Promise.resolve();
   private pendingReads: Array<{ regex: RegExp, resolve: (value: string) => void, reject: (reason: any) => void, timeoutId: NodeJS.Timeout, offset: number }> = [];
 
-  constructor(sandbox: ISandbox) {
+  constructor(sandbox: ISandbox, config: { agentName?: string, adapter?: AgentAdapter, spawnOptions?: Record<string, string | string[]> } = {}) {
     this.sandbox = sandbox;
     this.stateManager = new SandboxStateManager();
+    this.spawnOptions = config.spawnOptions || {};
+    
+    if (config.adapter) {
+      this.adapter = config.adapter;
+    } else if (config.agentName) {
+      this.adapter = AdapterFactory.getAdapter(config.agentName);
+    }
   }
 
   async ensureState(state: 'pre' | 'post', candidate: StateCandidate): Promise<void> {
@@ -45,9 +58,20 @@ export class Session implements ISession {
     await this.sandbox.init();
 
     const workingDir = this.sandbox.getWorkingDir();
-    const shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/bash';
-    const shellArgs = process.platform === 'win32' ? ['-NoProfile'] : [];
-    const shellName = process.platform === 'win32' ? 'powershell' : 'bash';
+    let shell: string;
+    let shellArgs: string[] = [];
+    let shellName: string;
+
+    if (this.adapter) {
+      const config = this.adapter.getSpawnConfig(this.spawnOptions);
+      shell = config.shell;
+      shellArgs = config.args;
+      shellName = shell;
+    } else {
+      shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/bash';
+      shellArgs = process.platform === 'win32' ? ['-NoProfile'] : [];
+      shellName = process.platform === 'win32' ? 'powershell' : 'bash';
+    }
 
     this.ptyProcess = pty.spawn(shell, shellArgs, {
       name: shellName,
@@ -58,19 +82,37 @@ export class Session implements ISession {
     this.ptyProcess.onData((data) => {
       this.stdout += data;
       
-      if (this.stdout.length > MAX_BUFFER_SIZE) {
-        const truncateLen = this.stdout.length - MAX_BUFFER_SIZE;
-        this.stdout = this.stdout.substring(truncateLen);
-        for (const read of this.pendingReads) {
-          read.offset = Math.max(0, read.offset - truncateLen);
-        }
-      }
+       if (this.stdout.length > MAX_BUFFER_SIZE) {
+         const truncateLen = this.stdout.length - MAX_BUFFER_SIZE;
+         this.stdout = this.stdout.substring(truncateLen);
+         for (const read of this.pendingReads) {
+           read.offset = Math.max(0, read.offset - truncateLen);
+         }
+         this.lastAutoResponseOffset = Math.max(0, this.lastAutoResponseOffset - truncateLen);
+       }
 
       this.checkPendingReads();
+
+       if (this.adapter && !this.isAutoResponding) {
+         const response = this.adapter.getResponse(stripAnsi(this.stdout.substring(this.lastAutoResponseOffset)));
+         if (response) {
+           this.handleAutoResponse(response);
+           this.lastAutoResponseOffset = this.stdout.length;
+         }
+       }
     });
 
     // Consume initial prompt
     await this.readUntil(/[>#$]\s*$/);
+  }
+
+  private async handleAutoResponse(response: string): Promise<void> {
+    this.isAutoResponding = true;
+    try {
+      await this.write(response);
+    } finally {
+      this.isAutoResponding = false;
+    }
   }
 
   private checkPendingReads() {
