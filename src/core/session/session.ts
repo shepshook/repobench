@@ -1,5 +1,7 @@
 import { ISession, SessionResult, ISandbox } from '../../types/contracts';
 import { SandboxStateManager, StateCandidate } from '../../sandbox/state-manager';
+import { DockerSandbox } from '../../sandbox/docker';
+import * as pty from 'node-pty';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -11,6 +13,7 @@ export class Session implements ISession {
   private stdout = '';
   private stderr = '';
   private startTime: number = 0;
+  private ptyProcess: any = null;
 
   constructor(sandbox: ISandbox) {
     this.sandbox = sandbox;
@@ -28,6 +31,42 @@ export class Session implements ISession {
   async start(): Promise<void> {
     this.startTime = Date.now();
     await this.sandbox.init();
+
+    const workingDir = this.sandbox.getWorkingDir();
+    let shell = '/bin/bash';
+    let args: string[] = [];
+
+    if (this.sandbox instanceof DockerSandbox) {
+      const containerId = this.sandbox.getContainerId();
+      if (!containerId) {
+        throw new Error('DockerSandbox container ID not found');
+      }
+      shell = 'docker';
+      args = ['exec', '-it', containerId, '/bin/bash'];
+    }
+
+    this.ptyProcess = pty.spawn(shell, args, {
+      name: 'xterm-color',
+      cols: 80,
+      rows: 24,
+      cwd: this.sandbox instanceof DockerSandbox ? process.cwd() : workingDir,
+    });
+
+    // Health check
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('PTY health check timed out')), 5000);
+      
+      const onData = (data: string) => {
+        if (data.includes('1')) {
+          this.ptyProcess?.off('data', onData);
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+
+      this.ptyProcess?.on('data', onData);
+      this.ptyProcess?.write('echo 1\r');
+    });
   }
 
   async write(command: string): Promise<void> {
