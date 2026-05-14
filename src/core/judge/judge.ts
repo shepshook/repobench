@@ -63,7 +63,7 @@ export class Judge implements IJudge {
     const filesModified = session.getFilesModified();
     const efficiencyRatio = filesOpened / Math.max(1, filesModified);
 
-    return {
+    const result: EvalMetrics = {
       success: targetBugFixed && regressions.length === 0,
       regressions,
       searchEfficiency: efficiencyRatio,
@@ -71,6 +71,9 @@ export class Judge implements IJudge {
       cost: 0,
       eScore: 0,
     };
+
+    result.eScore = this.calculateScore(result);
+    return result;
   }
 
   private parsePassingTests(stdout: string): Set<string> {
@@ -91,6 +94,13 @@ export class Judge implements IJudge {
   }
 
   calculateScore(metrics: Partial<EvalMetrics>): number {
-    throw new Error('Method not implemented.');
+    if (!metrics.success) return 0;
+
+    const cost = Math.max(metrics.cost || 0, 0.000001);
+    const latency = Math.max(metrics.latency || 0, 2);
+    const efficiencyRatio = Math.max(metrics.searchEfficiency || 1, 1);
+    const efficiencyMultiplier = 1 / efficiencyRatio;
+
+    return (1 / (cost * Math.log(latency))) * efficiencyMultiplier;
   }
 }
