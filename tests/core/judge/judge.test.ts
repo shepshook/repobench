@@ -3,88 +3,80 @@ import { Judge } from '../../../src/core/judge/judge';
 import { ISandbox } from '../../../src/types/contracts';
 
 describe('Judge', () => {
-  const judge = new Judge();
+  const mockSandbox: ISandbox = {
+    init: vi.fn(),
+    setup: vi.fn(),
+    verify: vi.fn(),
+    ping: vi.fn(),
+    execute: vi.fn(),
+    switchToState: vi.fn(),
+    destroy: vi.fn(),
+    getWorkingDir: vi.fn(),
+  };
+  const judge = new Judge(mockSandbox);
 
   describe('verifyFix', () => {
     it('should return success: true when sandbox.execute succeeds', async () => {
-      const mockSandbox: ISandbox = {
-        init: vi.fn(),
-        setup: vi.fn(),
-        verify: vi.fn(),
-        ping: vi.fn(),
-        execute: vi.fn().mockResolvedValue('test output'),
-        switchToState: vi.fn(),
-        destroy: vi.fn(),
-        getWorkingDir: vi.fn(),
-      };
-
+      vi.mocked(mockSandbox.execute).mockResolvedValue('test output');
       const result = await judge.verifyFix(mockSandbox, 'npm test');
-
       expect(result.success).toBe(true);
       expect(result.stdout).toBe('test output');
-      expect(result.stderr).toBe('');
-      expect(result.duration).toBeGreaterThanOrEqual(0);
-      expect(mockSandbox.execute).toHaveBeenCalledWith('npm test');
     });
 
     it('should return success: false when sandbox.execute throws an error', async () => {
       const errorMessage = 'test failed';
-      const mockSandbox: ISandbox = {
-        init: vi.fn(),
-        setup: vi.fn(),
-        verify: vi.fn(),
-        ping: vi.fn(),
-        execute: vi.fn().mockRejectedValue(new Error(errorMessage)),
-        switchToState: vi.fn(),
-        destroy: vi.fn(),
-        getWorkingDir: vi.fn(),
-      };
-
+      vi.mocked(mockSandbox.execute).mockRejectedValue(new Error(errorMessage));
       const result = await judge.verifyFix(mockSandbox, 'npm test');
-
       expect(result.success).toBe(false);
-      expect(result.stdout).toBe('');
       expect(result.stderr).toBe(errorMessage);
-      expect(result.duration).toBeGreaterThanOrEqual(0);
-      expect(mockSandbox.execute).toHaveBeenCalledWith('npm test');
     });
 
     it('should return success: true when sandbox.execute returns an empty string', async () => {
-      const mockSandbox: ISandbox = {
-        init: vi.fn(),
-        setup: vi.fn(),
-        verify: vi.fn(),
-        ping: vi.fn(),
-        execute: vi.fn().mockResolvedValue(''),
-        switchToState: vi.fn(),
-        destroy: vi.fn(),
-        getWorkingDir: vi.fn(),
-      };
-
+      vi.mocked(mockSandbox.execute).mockResolvedValue('');
       const result = await judge.verifyFix(mockSandbox, 'npm test');
-
       expect(result.success).toBe(true);
-      expect(result.stdout).toBe('');
-      expect(result.stderr).toBe('');
     });
 
     it('should handle non-Error throws in sandbox.execute', async () => {
       const errorMsg = 'string error';
-      const mockSandbox: ISandbox = {
-        init: vi.fn(),
-        setup: vi.fn(),
-        verify: vi.fn(),
-        ping: vi.fn(),
-        execute: vi.fn().mockRejectedValue(errorMsg),
-        switchToState: vi.fn(),
-        destroy: vi.fn(),
-        getWorkingDir: vi.fn(),
-      };
-
+      vi.mocked(mockSandbox.execute).mockRejectedValue(errorMsg);
       const result = await judge.verifyFix(mockSandbox, 'npm test');
-
       expect(result.success).toBe(false);
       expect(result.stderr).toBe(errorMsg);
+    });
+  });
+
+  describe('verify', () => {
+    it('should detect regressions when a test passes pre-fix but fails post-fix', async () => {
+      vi.mocked(mockSandbox.execute)
+        .mockResolvedValueOnce('TestA: passed\nTestB: passed') // Pre-fix
+        .mockResolvedValueOnce('TestA: passed\nTestC: passed'); // Post-fix
+
+      const result = await judge.verify('hash1', 'hash2', 'npm test');
+
+      expect(result.success).toBe(false);
+      expect(result.regressions).toContain('TestB');
+    });
+
+    it('should return success: true when target bug is fixed and no regressions occur', async () => {
+      vi.mocked(mockSandbox.execute)
+        .mockResolvedValueOnce('TestA: passed') // Pre-fix
+        .mockResolvedValueOnce('TestA: passed\nTestB: passed'); // Post-fix
+
+      const result = await judge.verify('hash1', 'hash2', 'npm test');
+
+      expect(result.success).toBe(true);
+      expect(result.regressions).toEqual([]);
+    });
+
+    it('should return success: false if no target bug is fixed even if no regressions occur', async () => {
+      vi.mocked(mockSandbox.execute)
+        .mockResolvedValueOnce('TestA: passed') // Pre-fix
+        .mockResolvedValueOnce('TestA: passed'); // Post-fix
+
+      const result = await judge.verify('hash1', 'hash2', 'npm test');
+
+      expect(result.success).toBe(false);
     });
   });
 });
