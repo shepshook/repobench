@@ -1,7 +1,11 @@
 import { AgentAdapter } from '../adapter';
 
 export class ClaudeCodeAdapter extends AgentAdapter {
-  protected spawnCommand = 'claude {{extraArgs}}';
+  protected shell = 'claude';
+
+  protected getArgs(options: Record<string, string | string[]>): string[] {
+    return [...this.expandArgs(options.extraArgs)];
+  }
 
   constructor() {
     super();

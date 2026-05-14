@@ -10,6 +10,12 @@ Use this skill whenever you are tasked with implementing a new feature, fixing a
 
 ## The Agentic Engineering Loop (SOP)
 
+### 🛑 Strict Mandate
+- **No Manual Implementation**: You MUST NEVER write core logic yourself. All implementation must be delegated to a `general` subagent.
+- **Mandatory Audit**: No task is "Done" without a `PASS` verdict from the `critical_reviewer` subagent.
+- **No Task-Hopping**: Complete the full Closure Chain for the current task before starting the next one.
+- **Subagent Failures**: If a subagent returns an empty result, refine the prompt or increase thoroughness. Do NOT take over the implementation.
+
 ### Phase 1: Decomposition (The "Deep Dive")
 Before writing any code, you must decompose the request into a hierarchy of work items and present an **Implementation Roadmap** to the user.
 1. **Analyze**: Read the parent Epic and Feature descriptions from GitHub to understand the full scope. Evaluate the feature against the current codebase and the `contracts.ts` file.
@@ -25,16 +31,17 @@ Before writing any code, you must decompose the request into a hierarchy of work
 ### Phase 2: Delegated TDD Execution
 For every atomic task, follow this strict loop:
 1. **Read**: Consume the "Contextual Map" of the task.
-2. **Implementation (Delegated)**: Launch a **General Subagent** to execute the Red $\rightarrow$ Green $\rightarrow$ Refactor cycle. **Commit the changes immediately after a successful test run.**
+2. **Implementation (Delegated)**: Launch a **General Subagent** to execute the Red $\rightarrow$ Green $\rightarrow$ Refactor cycle.
 3. **Critical Review**: Launch the `critical_reviewer` subagent to audit the code changes and the task completion.
 4. **Root Cause Analysis (RCA)**: If the review returns a `FAIL` verdict, you MUST perform an RCA and present it to the user before attempting a fix.
 5. **Re-Iteration**: If the review returns a `FAIL` verdict (and RCA is completed), return to the implementation step with the reviewer's feedback and RCA results.
 6. **Final Verification**: Once the review is `PASS`, run `npm run typecheck` and the specific test command.
 
 ### Phase 3: Closure
+You MUST complete this chain in order:
 1. **Commit**: Create a descriptive commit (e.g., `feat: implement X`) and push to the remote.
 2. **Close**: Follow the closure chain:
-    - Mark the GitHub **Task** as completed immediately after verification.
+    - Mark the GitHub **Task** as completed.
     - Mark the GitHub **Feature** as completed once all its associated tasks are closed.
     - Mark the GitHub **Epic** as completed once all its associated features are closed.
 3. **Update**: If a new pattern or global configuration was introduced, update `AGENTS.md`.
@@ -43,6 +50,9 @@ For every atomic task, follow this strict loop:
 - **Conciseness**: Do not explain the code after writing it. Only provide the result and the verification output.
 - **Proactiveness**: If a task is trivial, suggest a "Fast-Track" approach to the user, but always provide a test.
 - **Honesty**: If a test fails, do not "ignore" it. Analyze the failure and update the implementation or the test.
-- **Atomic File Modification**: Minimize the scope of file edits to avoid duplication or corruption errors.
+- **Anti-Corruption Protocol**: 
+    - **Read-After-Write**: Always `read` the modified file after an `edit` to ensure no duplicates or fragments were introduced.
+    - **Anchored Edits**: Use large `oldString` blocks to avoid ambiguity and multiple-match errors.
+    - **Atomic Modification**: Minimize the scope of file edits to avoid corruption.
 
 

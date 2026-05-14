@@ -1,7 +1,18 @@
 import { AgentAdapter } from '../adapter';
 
 export class AiderAdapter extends AgentAdapter {
-  protected spawnCommand = 'aider --model {{model}} --no-git {{extraArgs}}';
+  protected shell = 'aider';
+
+  protected getArgs(options: Record<string, string | string[]>): string[] {
+    const args: string[] = [];
+    if (!options.model) {
+      throw new Error('AiderAdapter requires a model option');
+    }
+    args.push('--model', options.model as string);
+    args.push('--no-git');
+    args.push(...this.expandArgs(options.extraArgs));
+    return args;
+  }
 
   constructor() {
     super();

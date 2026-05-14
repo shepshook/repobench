@@ -1,41 +1,32 @@
 import { SessionConfig } from '../../types/contracts';
 
+export interface SpawnConfig {
+  shell: string;
+  args: string[];
+}
+
 export abstract class AgentAdapter {
-  protected abstract spawnCommand: string;
+  protected abstract shell: string;
+  protected abstract getArgs(options: Record<string, string | string[]>): string[];
   protected interactionMap: Map<RegExp, string> = new Map();
 
   /**
-   * Escapes a string for use as a shell argument.
-   * Wraps in single quotes and escapes existing single quotes.
+   * Expands a value (string or array of strings) into an array of arguments.
    */
-  private escapeShellArg(arg: string): string {
-    if (!arg) return "''";
-    // Replace ' with '"'"' to escape single quotes in a single-quoted string
-    return `'${arg.replace(/'/g, () => '"' + "'" + '"')}'`;
+  protected expandArgs(args: string | string[] | undefined): string[] {
+    if (!args) return [];
+    return Array.isArray(args) ? args : [args];
   }
 
   /**
-   * Interpolates flags into the spawnCommand.
-   * Example: "aider --model {{model}}" -> "aider --model 'gpt-4o'"
+   * Resolves the shell and arguments for spawning the agent.
    */
-  getSpawnCommand(options: Record<string, string | string[]>): string {
-    let command = this.spawnCommand;
-    for (const [key, value] of Object.entries(options)) {
-      const escapedValue = Array.isArray(value) 
-        ? value.map(v => this.escapeShellArg(v)).join(' ') 
-        : this.escapeShellArg(value);
-      
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      command = command.replace(regex, () => escapedValue);
-    }
-
-    if (command.includes('{{') && command.includes('}}')) {
-      throw new Error(`Missing required options for spawn command. Remaining placeholders: ${command}`);
-    }
-
-    return command;
+  getSpawnConfig(options: Record<string, string | string[]>): SpawnConfig {
+    return {
+      shell: this.shell,
+      args: this.getArgs(options)
+    };
   }
-
 
   /**
    * Returns a predefined response if the input matches a regex in the interaction map.

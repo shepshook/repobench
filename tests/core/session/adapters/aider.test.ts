@@ -2,13 +2,16 @@ import { AiderAdapter } from '../../../../src/core/session/adapters/aider';
 import { describe, it, expect } from 'vitest';
 
 describe('AiderAdapter', () => {
-  it('should return the correct spawn command with array args', () => {
+  it('should return the correct spawn config with array args', () => {
     const adapter = new AiderAdapter();
     const options = { 
       model: 'gpt-4o', 
       extraArgs: ['--chat-mode', 'architect'] 
     };
-    expect(adapter.getSpawnCommand(options)).toBe("aider --model 'gpt-4o' --no-git '--chat-mode' 'architect'");
+    expect(adapter.getSpawnConfig(options)).toEqual({
+      shell: 'aider',
+      args: ['--model', 'gpt-4o', '--no-git', '--chat-mode', 'architect']
+    });
   });
 
   it('should handle Aider-specific interactions', () => {

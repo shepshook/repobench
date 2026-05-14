@@ -2,12 +2,15 @@ import { ClaudeCodeAdapter } from '../../../../src/core/session/adapters/claude-
 import { describe, it, expect } from 'vitest';
 
 describe('ClaudeCodeAdapter', () => {
-  it('should return the correct spawn command with extraArgs', () => {
+  it('should return the correct spawn config with extraArgs', () => {
     const adapter = new ClaudeCodeAdapter();
     const options = { 
       extraArgs: ['--dangerously-skip-permissions'] 
     };
-    expect(adapter.getSpawnCommand(options)).toBe("claude '--dangerously-skip-permissions'");
+    expect(adapter.getSpawnConfig(options)).toEqual({
+      shell: 'claude',
+      args: ['--dangerously-skip-permissions']
+    });
   });
 
   it('should handle Claude Code-specific interactions', () => {
