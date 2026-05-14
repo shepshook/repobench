@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import * as pty from 'node-pty';
 
+const MAX_BUFFER_SIZE = 1024 * 1024;
+
 export class Session implements ISession {
   private sandbox: ISandbox;
   private stateManager: SandboxStateManager;
@@ -13,6 +15,7 @@ export class Session implements ISession {
   private stderr = '';
   private startTime: number = 0;
   private ptyProcess: pty.IPty | null = null;
+  private pendingReads: Array<{ regex: RegExp, resolve: (value: string) => void, reject: (reason: any) => void, timeoutId: NodeJS.Timeout, offset: number }> = [];
 
   constructor(sandbox: ISandbox) {
     this.sandbox = sandbox;
@@ -40,7 +43,29 @@ export class Session implements ISession {
 
     this.ptyProcess.onData((data) => {
       this.stdout += data;
+      
+      if (this.stdout.length > MAX_BUFFER_SIZE) {
+        const truncateLen = this.stdout.length - MAX_BUFFER_SIZE;
+        this.stdout = this.stdout.substring(truncateLen);
+        for (const read of this.pendingReads) {
+          read.offset = Math.max(0, read.offset - truncateLen);
+        }
+      }
+
+      this.checkPendingReads();
     });
+  }
+
+  private checkPendingReads() {
+    for (let i = this.pendingReads.length - 1; i >= 0; i--) {
+      const { regex, resolve, offset } = this.pendingReads[i];
+      if (regex.test(this.stdout.substring(offset))) {
+        const read = this.pendingReads[i];
+        clearTimeout(read.timeoutId);
+        this.pendingReads.splice(i, 1);
+        resolve(this.stdout);
+      }
+    }
   }
 
   async write(command: string): Promise<void> {
@@ -49,7 +74,8 @@ export class Session implements ISession {
     }
     this.ptyProcess.write(command + '\r\n');
 
-    await new Promise(r => setTimeout(r, 500));
+    const promptRegex = /PS\s+.*>\s*$/;
+    await this.readUntil(promptRegex);
 
     const workingDir = await this.sandbox.getWorkingDir();
     const pathRegex = /([a-zA-Z0-9._\-/]+\.[a-z]{2,4})/g;
@@ -85,8 +111,15 @@ export class Session implements ISession {
     }
   }
 
-  async readUntil(regex: RegExp): Promise<string> {
-    return '';
+  async readUntil(regex: RegExp, timeout: number = 30000): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this.pendingReads = this.pendingReads.filter(r => r.timeoutId !== timeoutId);
+        reject(new Error(`Timeout waiting for regex ${regex} after ${timeout}ms`));
+      }, timeout);
+
+      this.pendingReads.push({ regex, resolve, reject, timeoutId, offset: this.stdout.length });
+    });
   }
 
   async end(): Promise<SessionResult> {
