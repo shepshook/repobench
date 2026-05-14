@@ -108,7 +108,7 @@ export class Session implements ISession {
         this.ptyProcess?.off('data', onData);
         reject(new TimeoutError());
       }, timeout);
-
+  
       const onData = () => {
         const match = this.buffer.match(regex);
         if (match) {
@@ -119,7 +119,7 @@ export class Session implements ISession {
           resolve(output);
         }
       };
-
+  
       const initialMatch = this.buffer.match(regex);
       if (initialMatch) {
         clearTimeout(timer);
@@ -128,12 +128,43 @@ export class Session implements ISession {
         resolve(output);
         return;
       }
-
+  
       this.ptyProcess?.on('data', onData);
     });
   }
-
+  
+  async resize(cols: number, rows: number): Promise<void> {
+    if (!this.ptyProcess) {
+      throw new Error('Session not started');
+    }
+    this.ptyProcess.resize(cols, rows);
+  }
+  
   async end(): Promise<SessionResult> {
+    if (this.ptyProcess) {
+      try {
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => {
+            this.ptyProcess?.off('exit', onExit);
+            this.ptyProcess?.off('close', onExit);
+            resolve();
+          }, 1000);
+  
+          const onExit = () => {
+            clearTimeout(timeout);
+            this.ptyProcess?.off('exit', onExit);
+            this.ptyProcess?.off('close', onExit);
+            resolve();
+          };
+          this.ptyProcess?.on('exit', onExit);
+          this.ptyProcess?.on('close', onExit);
+          this.ptyProcess.kill();
+        });
+      } catch (error) {
+        // Ignore errors during termination
+      }
+    }
+  
     if (this.logStream) {
       this.logStream.end();
     }
@@ -149,4 +180,5 @@ export class Session implements ISession {
       filesModified: this.filesModified.size,
     };
   }
+
 }

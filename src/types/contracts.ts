@@ -90,6 +90,7 @@ export interface ISession {
   start(): Promise<void>;
   write(text: string): Promise<void>;
   readUntil(regex: RegExp): Promise<string>;
+  resize(cols: number, rows: number): Promise<void>;
   end(): Promise<SessionResult>;
 }
 
