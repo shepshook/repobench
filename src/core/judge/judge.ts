@@ -1,8 +1,13 @@
-import { IJudge, ISandbox, VerificationResult, EvalMetrics, ISession } from '../../types/contracts';
+import { IJudge, ISandbox, VerificationResult, EvalMetrics, ISession, SemanticEvaluation } from '../../types/contracts';
 import { SandboxStateManager } from '../../sandbox/state-manager';
+import { ISemanticJudge } from '../../types/contracts';
+import { SemanticJudge } from './semantic-judge';
+import { RepoBenchConfig } from '../config';
 
 export class Judge implements IJudge {
-  constructor(private sandbox: ISandbox) {}
+  constructor(private sandbox: ISandbox, private config: RepoBenchConfig) {}
+
+  private semanticJudge: ISemanticJudge = new SemanticJudge(this.config);
 
   /**
    * Verifies if a fix is correct by running the test command in the sandbox.
@@ -29,7 +34,15 @@ export class Judge implements IJudge {
     }
   }
 
-  async verify(session: ISession, preFixHash: string, postFixHash: string, testCommand: string): Promise<EvalMetrics> {
+  async verify(
+    session: ISession, 
+    preFixHash: string, 
+    postFixHash: string, 
+    testCommand: string, 
+    bugDesc: string, 
+    groundTruth: string, 
+    agentFix: string
+  ): Promise<EvalMetrics> {
     const stateManager = new SandboxStateManager();
     const start = performance.now();
 
@@ -63,24 +76,29 @@ export class Judge implements IJudge {
     const filesModified = session.getFilesModified();
     const efficiencyRatio = filesOpened / Math.max(1, filesModified);
 
-    const result: EvalMetrics = {
+    const latency = performance.now() - start;
+
+    const metrics: EvalMetrics = {
       success: targetBugFixed && regressions.length === 0,
       regressions,
       searchEfficiency: efficiencyRatio,
-      latency: performance.now() - start,
-      cost: 0,
+      latency,
+      cost: 0, 
       eScore: 0,
     };
 
-    result.eScore = this.calculateScore(result);
-    return result;
+    metrics.eScore = this.calculateScore(metrics);
+
+    // 6. Semantic Evaluation
+    metrics.semantic = await this.semanticJudge.evaluate(bugDesc, groundTruth, agentFix);
+
+    return metrics;
   }
 
   private parsePassingTests(stdout: string): Set<string> {
     const passingTests = new Set<string>();
     const lines = stdout.split('\n');
     for (const line of lines) {
-      // Match patterns like "TestFoo: passed", "PASSED: TestBar", "OK: TestBaz"
       const match = line.match(/([a-zA-Z0-9_-]+):\s*(?:passed|OK)|(?:PASSED|OK):\s*([a-zA-Z0-9_-]+)/i);
       if (match) {
         passingTests.add(match[1] || match[2]);

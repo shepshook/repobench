@@ -110,12 +110,13 @@ export interface ISemanticJudge {
 export interface EvalMetrics {
   success: boolean;
   regressions: string[]; // List of tests that failed after the fix
-searchEfficiency: number; // Files modified / Files opened
-latency: number;
-cost: number;
-
+  searchEfficiency: number; // Files modified / Files opened
+  latency: number;
+  cost: number;
   eScore: number;
+  semantic?: SemanticEvaluation;
 }
+
 
 export interface VerificationResult {
   success: boolean;
@@ -129,7 +130,7 @@ export interface IJudge {
   /**
    * Verifies if a fix is correct by checking the pre-fix and post-fix state.
    */
-  verify(session: ISession, preFixHash: string, postFixHash: string, testCommand: string): Promise<EvalMetrics>;
+  verify(session: ISession, preFixHash: string, postFixHash: string, testCommand: string, bugDesc: string, groundTruth: string, agentFix: string): Promise<EvalMetrics>;
 
   /**
    * Runs a specific test command in the sandbox to verify a fix.
@@ -145,17 +146,6 @@ export interface IJudge {
    * Calculates the final E-Score based on the metrics.
    */
   calculateScore(metrics: Partial<EvalMetrics>): number;
-}
-
-export interface SemanticEvaluation {
-  correctness: number;
-  maintainability: number;
-  idiomaticity: number;
-  justification: string;
-}
-
-export interface ISemanticJudge {
-  evaluate(bugDesc: string, groundTruth: string, agentFix: string): Promise<SemanticEvaluation>;
 }
 
 export interface RunRecord {
