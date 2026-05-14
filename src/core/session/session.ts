@@ -35,11 +35,13 @@ export class Session implements ISession {
   private writeLock: Promise<void> = Promise.resolve();
   private pendingReads: Array<{ regex: RegExp, resolve: (value: string) => void, reject: (reason: any) => void, timeoutId: NodeJS.Timeout, offset: number }> = [];
   private agentName: string = '';
+  private modelName: string = '';
 
   constructor(sandbox: ISandbox, config: { agentName?: string, adapter?: AgentAdapter, spawnOptions?: Record<string, string | string[]> } = {}) {
     this.sandbox = sandbox;
     this.stateManager = new SandboxStateManager();
     this.spawnOptions = config.spawnOptions || {};
+    this.modelName = (this.spawnOptions.model as string) || '';
     this.agentName = config.agentName || '';
     
     if (config.adapter) {
@@ -274,7 +276,7 @@ export class Session implements ISession {
  
     const duration = Date.now() - this.startTime;
     const parser = CostParserFactory.getParser(this.agentName);
-    const costData = parser.parse(this.stdout);
+    const costData = parser.parse(this.stdout, this.modelName);
  
     this.lastResult = {
       stdout: this.stdout,
