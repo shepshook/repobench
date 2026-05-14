@@ -3,7 +3,15 @@ import { SandboxStateManager, StateCandidate } from '../../sandbox/state-manager
 import { DockerSandbox } from '../../sandbox/docker';
 import * as pty from 'node-pty';
 import path from 'path';
-import fs from 'fs/promises';
+import * as fs from 'fs';
+import { mkdir } from 'fs/promises';
+
+export class TimeoutError extends Error {
+  constructor(message: string = 'Operation timed out') {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
 
 export class Session implements ISession {
   private sandbox: ISandbox;
@@ -14,6 +22,8 @@ export class Session implements ISession {
   private stderr = '';
   private startTime: number = 0;
   private ptyProcess: any = null;
+  private buffer = '';
+  private logStream?: fs.WriteStream;
 
   constructor(sandbox: ISandbox) {
     this.sandbox = sandbox;
@@ -30,6 +40,11 @@ export class Session implements ISession {
 
   async start(): Promise<void> {
     this.startTime = Date.now();
+
+    await mkdir('logs', { recursive: true });
+    const logFile = path.join('logs', `session_${this.startTime}.log`);
+    this.logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
     await this.sandbox.init();
 
     const workingDir = this.sandbox.getWorkingDir();
@@ -52,6 +67,14 @@ export class Session implements ISession {
       cwd: this.sandbox instanceof DockerSandbox ? process.cwd() : workingDir,
     });
 
+    this.buffer = '';
+    this.ptyProcess.on('data', (data: string) => {
+      this.buffer += data;
+      if (this.logStream) {
+        this.logStream.write(`[IN] ${data}`);
+      }
+    });
+
     // Health check
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('PTY health check timed out')), 5000);
@@ -69,54 +92,51 @@ export class Session implements ISession {
     });
   }
 
-  async write(command: string): Promise<void> {
-    const workingDir = await this.sandbox.getWorkingDir();
-    const pathRegex = /([a-zA-Z0-9._\-/]+\.[a-z]{2,4})/g;
-    const matches = command.match(pathRegex) || [];
-    const candidateFiles = [...new Set(matches)];
-
-    const mtimesBefore = new Map<string, number>();
-    for (const file of candidateFiles) {
-      try {
-        const fullPath = path.join(workingDir, file);
-        const stats = await fs.stat(fullPath);
-        mtimesBefore.set(file, stats.mtimeMs);
-      } catch (e) {
-        // File doesn't exist yet
-      }
+  async write(text: string): Promise<void> {
+    if (!this.ptyProcess) {
+      throw new Error('Session not started');
     }
-
-    try {
-      const output = await this.sandbox.execute(command);
-      this.stdout += output;
-
-      for (const file of candidateFiles) {
-        try {
-          const fullPath = path.join(workingDir, file);
-          const stats = await fs.stat(fullPath);
-          const mtimeBefore = mtimesBefore.get(file);
-
-          if (mtimeBefore !== undefined && stats.mtimeMs > mtimeBefore) {
-            this.filesModified.add(file);
-          } else {
-            this.filesOpened.add(file);
-          }
-        } catch (e) {
-          // File was created during command
-          this.filesOpened.add(file);
-        }
-      }
-    } catch (e: any) {
-      this.stderr += e.message;
-      throw e;
+    if (this.logStream) {
+      this.logStream.write(`[OUT] ${text}\r\n`);
     }
+    this.ptyProcess.write(`${text}\r\n`);
   }
 
-  async readUntil(regex: RegExp): Promise<string> {
-    return '';
+  async readUntil(regex: RegExp, timeout: number = 30000): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.ptyProcess?.off('data', onData);
+        reject(new TimeoutError());
+      }, timeout);
+
+      const onData = () => {
+        const match = this.buffer.match(regex);
+        if (match) {
+          clearTimeout(timer);
+          const output = this.buffer.slice(0, match.index! + match[0].length);
+          this.buffer = this.buffer.slice(match.index! + match[0].length);
+          this.ptyProcess?.off('data', onData);
+          resolve(output);
+        }
+      };
+
+      const initialMatch = this.buffer.match(regex);
+      if (initialMatch) {
+        clearTimeout(timer);
+        const output = this.buffer.slice(0, initialMatch.index! + initialMatch[0].length);
+        this.buffer = this.buffer.slice(initialMatch.index! + initialMatch[0].length);
+        resolve(output);
+        return;
+      }
+
+      this.ptyProcess?.on('data', onData);
+    });
   }
 
   async end(): Promise<SessionResult> {
+    if (this.logStream) {
+      this.logStream.end();
+    }
     const duration = Date.now() - this.startTime;
     return {
       stdout: this.stdout,
