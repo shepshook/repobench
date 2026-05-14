@@ -25,5 +25,12 @@ export class AiderAdapter extends AgentAdapter {
     this.addInteraction(/Apply changes to file.*\(y\/n\)/i, 'y\n');
     this.addInteraction(/Continue\?/i, 'y\n');
     this.addInteraction(/Confirm\?/i, 'y\n');
+
+    // Done signatures
+    this.doneSignatures = [
+      /I have finished the task/i,
+      /All tests passed/i,
+      /Task complete/i,
+    ];
   }
 }

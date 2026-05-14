@@ -9,6 +9,7 @@ export abstract class AgentAdapter {
   protected abstract shell: string;
   protected abstract getArgs(options: Record<string, string | string[]>): string[];
   protected interactionMap: Map<RegExp, string> = new Map();
+  protected doneSignatures: RegExp[] = [];
 
   /**
    * Expands a value (string or array of strings) into an array of arguments.
@@ -45,5 +46,12 @@ export abstract class AgentAdapter {
    */
   addInteraction(regex: RegExp, response: string): void {
     this.interactionMap.set(regex, response);
+  }
+
+  /**
+   * Returns true if the input matches any of the defined done signatures.
+   */
+  isDone(input: string): boolean {
+    return this.doneSignatures.some(regex => regex.test(input));
   }
 }

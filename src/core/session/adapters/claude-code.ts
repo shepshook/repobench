@@ -17,5 +17,12 @@ export class ClaudeCodeAdapter extends AgentAdapter {
     this.addInteraction(/Allow this change\?\s*\(y\/n\)/i, 'y\n');
     this.addInteraction(/Apply changes\?\s*\(y\/n\)/i, 'y\n');
     this.addInteraction(/Continue\?\s*\(y\/n\)/i, 'y\n');
+
+    // Done signatures
+    this.doneSignatures = [
+      /I've completed the task/i,
+      /The task is now finished/i,
+      /Everything is set up and working/i,
+    ];
   }
 }
