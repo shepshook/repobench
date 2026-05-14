@@ -1,0 +1,5 @@
+mining:
+  keywords: ['hotfix']
+  exclude_paths: ['docs/']
+sandbox:
+  build_command: "npm install"

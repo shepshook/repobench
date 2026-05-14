@@ -257,10 +257,6 @@ export class DockerSandbox implements ISandbox {
     return this.hostTempDir || '';
   }
 
-  getContainerId(): string | null {
-    return this.container ? this.container.id : null;
-  }
-
   async ping(): Promise<boolean> {
     if (!this.container) return false;
     try {

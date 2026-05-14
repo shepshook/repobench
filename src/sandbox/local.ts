@@ -1,4 +1,4 @@
-import { ISandbox } from './types';
+import { ISandbox } from '../types/contracts';
 import { SandboxOptions } from '../types/contracts';
 import { spawn } from 'child_process';
 import fs from 'fs/promises';
@@ -22,7 +22,14 @@ export class LocalSandbox implements ISandbox {
     try {
       await fs.mkdir(this.tempDir, { recursive: true });
       const repoDir = path.join(this.tempDir, 'repo');
-      await this.runCommand('git', ['clone', this.options.repoPath, repoDir]);
+      
+      try {
+        await fs.access(repoDir);
+        // Repo already exists, skip clone
+      } catch {
+        await this.runCommand('git', ['clone', this.options.repoPath, repoDir], this.tempDir);
+      }
+      
       this.workingDir = repoDir;
       await this.runCommand('git', ['checkout', this.options.commitHash], this.workingDir);
     } catch (e: any) {

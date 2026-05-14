@@ -25,6 +25,9 @@ mining:
   exclude_paths: ['docs/', 'tests/fixtures/']
 sandbox:
   build_command: "npm install"
+llm:
+  model: "gpt-4-turbo"
+  api_key: "test-key"
 `;
     fs.writeFileSync(configPath, content);
     
@@ -32,6 +35,8 @@ sandbox:
     expect(config.mining.keywords).toEqual(['hotfix', 'patch']);
     expect(config.mining.exclude_paths).toEqual(['docs/', 'tests/fixtures/']);
     expect(config.sandbox.build_command).toBe('npm install');
+    expect(config.llm.model).toBe('gpt-4-turbo');
+    expect(config.llm.api_key).toBe('test-key');
   });
 
   it('should throw a clear error for invalid yaml schema', () => {

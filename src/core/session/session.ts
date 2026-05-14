@@ -6,6 +6,11 @@ import fs from 'fs/promises';
 import * as pty from 'node-pty';
 
 const MAX_BUFFER_SIZE = 1024 * 1024;
+const ANSI_REGEX = /\x1b\[[0-9;?]*[a-zA-Z]/g;
+
+function stripAnsi(str: string) {
+  return str.replace(ANSI_REGEX, '');
+}
 
 export class Session implements ISession {
   private sandbox: ISandbox;
@@ -15,6 +20,7 @@ export class Session implements ISession {
   private stdout = '';
   private stderr = '';
   private startTime: number = 0;
+  private lastReadOffset = 0;
   private ptyProcess: pty.IPty | null = null;
   private isCrashed = false;
   private writeLock: Promise<void> = Promise.resolve();
@@ -39,8 +45,12 @@ export class Session implements ISession {
     await this.sandbox.init();
 
     const workingDir = this.sandbox.getWorkingDir();
-    this.ptyProcess = pty.spawn('powershell.exe', [], {
-      name: 'powershell',
+    const shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/bash';
+    const shellArgs = process.platform === 'win32' ? ['-NoProfile'] : [];
+    const shellName = process.platform === 'win32' ? 'powershell' : 'bash';
+
+    this.ptyProcess = pty.spawn(shell, shellArgs, {
+      name: shellName,
       cwd: workingDir,
       env: process.env,
     });
@@ -58,18 +68,51 @@ export class Session implements ISession {
 
       this.checkPendingReads();
     });
+
+    // Consume initial prompt
+    await this.readUntil(/[>#$]\s*$/);
   }
 
   private checkPendingReads() {
     for (let i = this.pendingReads.length - 1; i >= 0; i--) {
       const { regex, resolve, offset } = this.pendingReads[i];
-      if (regex.test(this.stdout.substring(offset))) {
+      const searchArea = stripAnsi(this.stdout.substring(offset));
+      const match = searchArea.match(regex);
+      if (match && match.index !== undefined) {
         const read = this.pendingReads[i];
         clearTimeout(read.timeoutId);
         this.pendingReads.splice(i, 1);
+        this.lastReadOffset = this.stdout.length;
         resolve(this.stdout);
       }
     }
+  }
+
+  private async getFilesystemSnapshot(dir: string): Promise<Map<string, number>> {
+    const snapshot = new Map<string, number>();
+    const scan = async (currentDir: string, relativePath: string) => {
+      try {
+        const entries = await fs.readdir(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(currentDir, entry.name);
+          const relPath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+          if (entry.isDirectory()) {
+            await scan(fullPath, relPath);
+          } else if (entry.isFile()) {
+            try {
+              const stats = await fs.stat(fullPath);
+              snapshot.set(relPath, stats.mtimeMs);
+            } catch (e) {
+              // File might have been deleted since readdir
+            }
+          }
+        }
+      } catch (e) {
+        // Directory might have been deleted or inaccessible
+      }
+    };
+    await scan(dir, '');
+    return snapshot;
   }
 
   async write(command: string): Promise<void> {
@@ -80,41 +123,34 @@ export class Session implements ISession {
 
       await this.ping();
 
+      const workingDir = await this.sandbox.getWorkingDir();
+      const snapshotBefore = await this.getFilesystemSnapshot(workingDir);
+
       this.ptyProcess.write(command + '\r\n');
 
-      const promptRegex = /PS\s+.*>\s*$/;
+      const promptRegex = /[>#$]\s*$/;
       await this.readUntil(promptRegex);
+      
+      // Give the filesystem a moment to catch up
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      const workingDir = await this.sandbox.getWorkingDir();
-      const pathRegex = /([a-zA-Z0-9._\-/]+\.[a-z]{2,4})/g;
-      const matches = command.match(pathRegex) || [];
-      const candidateFiles = [...new Set(matches)];
-
-      const mtimesBefore = new Map<string, number>();
-      for (const file of candidateFiles) {
-        try {
-          const fullPath = path.join(workingDir, file);
-          const stats = await fs.stat(fullPath);
-          mtimesBefore.set(file, stats.mtimeMs);
-        } catch (e) {
-          // File doesn't exist yet
+      const snapshotAfter = await this.getFilesystemSnapshot(workingDir);
+      const modifiedInThisCall = new Set<string>();
+      for (const [file, mtimeAfter] of snapshotAfter) {
+        const mtimeBefore = snapshotBefore.get(file);
+        if (mtimeBefore === undefined || mtimeAfter > mtimeBefore) {
+          this.filesModified.add(file);
+          modifiedInThisCall.add(file);
         }
       }
 
+      const pathRegex = /([a-zA-Z0-9._\-/]+)/g;
+      const matches = command.match(pathRegex) || [];
+      const candidateFiles = [...new Set(matches)];
       for (const file of candidateFiles) {
-        try {
-          const fullPath = path.join(workingDir, file);
-          const stats = await fs.stat(fullPath);
-          const mtimeBefore = mtimesBefore.get(file);
-
-          if (mtimeBefore !== undefined && stats.mtimeMs > mtimeBefore) {
-            this.filesModified.add(file);
-          } else {
-            this.filesOpened.add(file);
-          }
-        } catch (e) {
-          // File was created during command
-          this.filesOpened.add(file);
+        const relFile = path.isAbsolute(file) ? path.relative(workingDir, file) : file;
+        if (snapshotAfter.has(relFile) && !modifiedInThisCall.has(relFile)) {
+          this.filesOpened.add(relFile);
         }
       }
     });
@@ -123,14 +159,21 @@ export class Session implements ISession {
     return promise;
   }
 
+
   async readUntil(regex: RegExp, timeout: number = 30000): Promise<string> {
+    const searchArea = stripAnsi(this.stdout.substring(this.lastReadOffset));
+    const match = searchArea.match(regex);
+    if (match && match.index !== undefined) {
+      this.lastReadOffset = this.stdout.length;
+      return this.stdout;
+    }
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pendingReads = this.pendingReads.filter(r => r.timeoutId !== timeoutId);
         reject(new Error(`Timeout waiting for regex ${regex} after ${timeout}ms`));
       }, timeout);
 
-      this.pendingReads.push({ regex, resolve, reject, timeoutId, offset: this.stdout.length });
+      this.pendingReads.push({ regex, resolve, reject, timeoutId, offset: this.lastReadOffset });
     });
   }
 
@@ -139,8 +182,8 @@ export class Session implements ISession {
 
     try {
       this.ptyProcess?.write('echo 1\r\n');
-      const promptRegex = /PS\s+.*>\s*$/;
-      await this.readUntil(promptRegex, 2000);
+       const promptRegex = /[>#$]\s*$/;
+      await this.readUntil(promptRegex, 5000);
     } catch (e) {
       this.isCrashed = true;
       throw new SessionCrashedError();

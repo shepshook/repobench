@@ -1,11 +1,18 @@
 import { AgentAdapter } from '../adapter';
 
 export class AiderAdapter extends AgentAdapter {
-  protected spawnCommand = 'aider {{model}} {{flags}}';
+  protected spawnCommand = 'aider --model {{model}} --no-git {{extraArgs}}';
 
-  protected interactionMap = new Map<RegExp, string>([
-    [/^\s*Do you want to apply these changes\? \[y\/n\].*$/i, 'y'],
-    [/^\s*Enter your OpenAI API key:.*$/i, process.env.OPENAI_API_KEY || ''],
-    [/^\s*Confirm to start\? \[y\/n\].*$/i, 'y'],
-  ]);
+  constructor() {
+    super();
+    this.setupInteractions();
+  }
+
+  private setupInteractions(): void {
+    // Common Aider prompts
+    this.addInteraction(/Do you want to run the tests\?/i, 'Yes\n');
+    this.addInteraction(/Apply changes to file.*\(y\/n\)/i, 'y\n');
+    this.addInteraction(/Continue\?/i, 'y\n');
+    this.addInteraction(/Confirm\?/i, 'y\n');
+  }
 }

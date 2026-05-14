@@ -12,7 +12,7 @@ Use this skill whenever you are tasked with implementing a new feature, fixing a
 
 ### Phase 1: Decomposition (The "Deep Dive")
 Before writing any code, you must decompose the request into a hierarchy of work items and present an **Implementation Roadmap** to the user.
-1. **Analyze**: Evaluate the feature against the current codebase and the `contracts.ts` file.
+1. **Analyze**: Read the parent Epic and Feature descriptions from GitHub to understand the full scope. Evaluate the feature against the current codebase and the `contracts.ts` file.
 2. **Split**: Break the feature into 2-5 **Atomic Tasks**.
 3. **Specify**: Write every task using the **Agent-Ready Format**:
     - **Contextual Map**: List of files to read and interfaces to follow.
@@ -20,7 +20,7 @@ Before writing any code, you must decompose the request into a hierarchy of work
     - **TDD Blueprint**: Specific test cases (Success, Edge, Failure) and the verification command.
     - **Constraints**: "No-Go" zones and pattern requirements.
     - **Definition of Done (DoD)**: A binary checklist (e.g., "tests pass", "typecheck passes").
-4. **Link**: Create the tasks as GitHub issues linked to the parent Feature.
+4. **Link**: Create the tasks as GitHub issues linked to the parent Feature. You MUST include the full Agent-Ready description in the issue body.
 
 ### Phase 2: Delegated TDD Execution
 For every atomic task, follow this strict loop:
@@ -33,7 +33,10 @@ For every atomic task, follow this strict loop:
 
 ### Phase 3: Closure
 1. **Commit**: Create a descriptive commit (e.g., `feat: implement X`) and push to the remote.
-2. **Close**: Mark the GitHub task and feature as completed.
+2. **Close**: Follow the closure chain:
+    - Mark the GitHub **Task** as completed immediately after verification.
+    - Mark the GitHub **Feature** as completed once all its associated tasks are closed.
+    - Mark the GitHub **Epic** as completed once all its associated features are closed.
 3. **Update**: If a new pattern or global configuration was introduced, update `AGENTS.md`.
 
 ## Interaction Guidelines
