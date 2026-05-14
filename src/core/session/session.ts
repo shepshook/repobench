@@ -3,6 +3,7 @@ import { SandboxStateManager, StateCandidate } from '../../sandbox/state-manager
 import { SessionCrashedError } from './errors';
 import { AgentAdapter } from './adapter';
 import { AdapterFactory } from './adapter-factory';
+import { CostParserFactory } from './cost-parser';
 import path from 'path';
 import fs from 'fs/promises';
 import * as pty from 'node-pty';
@@ -33,11 +34,13 @@ export class Session implements ISession {
   private isAutoResponding = false;
   private writeLock: Promise<void> = Promise.resolve();
   private pendingReads: Array<{ regex: RegExp, resolve: (value: string) => void, reject: (reason: any) => void, timeoutId: NodeJS.Timeout, offset: number }> = [];
+  private agentName: string = '';
 
   constructor(sandbox: ISandbox, config: { agentName?: string, adapter?: AgentAdapter, spawnOptions?: Record<string, string | string[]> } = {}) {
     this.sandbox = sandbox;
     this.stateManager = new SandboxStateManager();
     this.spawnOptions = config.spawnOptions || {};
+    this.agentName = config.agentName || '';
     
     if (config.adapter) {
       this.adapter = config.adapter;
@@ -268,15 +271,18 @@ export class Session implements ISession {
     }
     this.pendingReads = [];
     this.ptyProcess = null;
-
+ 
     const duration = Date.now() - this.startTime;
+    const parser = CostParserFactory.getParser(this.agentName);
+    const costData = parser.parse(this.stdout);
+ 
     this.lastResult = {
       stdout: this.stdout,
       stderr: this.stderr,
       exitCode: 0,
       duration,
-      tokensUsed: { input: 0, output: 0 },
-      cost: 0,
+      tokensUsed: costData ? { input: costData.inputTokens, output: costData.outputTokens } : { input: 0, output: 0 },
+      cost: costData ? costData.cost : 0,
       filesOpened: this.filesOpened.size,
       filesModified: this.filesModified.size,
     };
