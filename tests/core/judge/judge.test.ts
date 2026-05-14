@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Judge } from '../../../src/core/judge/judge';
-import { ISandbox } from '../../../src/types/contracts';
+import { ISandbox, ISession } from '../../../src/types/contracts';
 
 describe('Judge', () => {
   const mockSandbox: ISandbox = {
@@ -47,12 +47,21 @@ describe('Judge', () => {
   });
 
   describe('verify', () => {
+    const mockSession: ISession = {
+      start: vi.fn(),
+      write: vi.fn(),
+      readUntil: vi.fn(),
+      end: vi.fn(),
+      getFilesOpened: vi.fn().mockReturnValue(0),
+      getFilesModified: vi.fn().mockReturnValue(0),
+    };
+
     it('should detect regressions when a test passes pre-fix but fails post-fix', async () => {
       vi.mocked(mockSandbox.execute)
         .mockResolvedValueOnce('TestA: passed\nTestB: passed') // Pre-fix
         .mockResolvedValueOnce('TestA: passed\nTestC: passed'); // Post-fix
 
-      const result = await judge.verify('hash1', 'hash2', 'npm test');
+      const result = await judge.verify(mockSession, 'hash1', 'hash2', 'npm test');
 
       expect(result.success).toBe(false);
       expect(result.regressions).toContain('TestB');
@@ -63,7 +72,7 @@ describe('Judge', () => {
         .mockResolvedValueOnce('TestA: passed') // Pre-fix
         .mockResolvedValueOnce('TestA: passed\nTestB: passed'); // Post-fix
 
-      const result = await judge.verify('hash1', 'hash2', 'npm test');
+      const result = await judge.verify(mockSession, 'hash1', 'hash2', 'npm test');
 
       expect(result.success).toBe(true);
       expect(result.regressions).toEqual([]);
@@ -74,9 +83,29 @@ describe('Judge', () => {
         .mockResolvedValueOnce('TestA: passed') // Pre-fix
         .mockResolvedValueOnce('TestA: passed'); // Post-fix
 
-      const result = await judge.verify('hash1', 'hash2', 'npm test');
+      const result = await judge.verify(mockSession, 'hash1', 'hash2', 'npm test');
 
       expect(result.success).toBe(false);
+    });
+
+    it('should calculate the efficiency ratio correctly', async () => {
+      vi.mocked(mockSandbox.execute).mockResolvedValue('TestA: passed');
+      vi.mocked(mockSession.getFilesOpened).mockReturnValue(10);
+      vi.mocked(mockSession.getFilesModified).mockReturnValue(2);
+
+      const result = await judge.verify(mockSession, 'hash1', 'hash2', 'npm test');
+
+      expect(result.searchEfficiency).toBe(5);
+    });
+
+    it('should handle zero modified files for efficiency ratio', async () => {
+      vi.mocked(mockSandbox.execute).mockResolvedValue('TestA: passed');
+      vi.mocked(mockSession.getFilesOpened).mockReturnValue(5);
+      vi.mocked(mockSession.getFilesModified).mockReturnValue(0);
+
+      const result = await judge.verify(mockSession, 'hash1', 'hash2', 'npm test');
+
+      expect(result.searchEfficiency).toBe(5);
     });
   });
 });

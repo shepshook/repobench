@@ -91,6 +91,8 @@ export interface ISession {
   write(text: string): Promise<void>;
   readUntil(regex: RegExp): Promise<string>;
   end(): Promise<SessionResult>;
+  getFilesOpened(): number;
+  getFilesModified(): number;
 }
 
 // --- Epic 4: The Judge ---
@@ -104,17 +106,30 @@ cost: number;
   eScore: number;
 }
 
+export interface VerificationResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  duration: number;
+  efficiencyRatio: number;
+}
+
 export interface IJudge {
   /**
    * Verifies if a fix is correct by checking the pre-fix and post-fix state.
    */
-  verify(preFixCwd: string, postFixCwd: string, testCommand: string): Promise<EvalMetrics>;
+  verify(session: ISession, preFixHash: string, postFixHash: string, testCommand: string): Promise<EvalMetrics>;
+
+  /**
+   * Runs a specific test command in the sandbox to verify a fix.
+   */
+  verifyFix(sandbox: ISandbox, testCommand: string): Promise<VerificationResult>;
   
   /**
    * Runs a suite of regression tests against a sandbox.
    */
   runRegressionSuite(sandbox: ISandbox): Promise<EvalMetrics>;
-
+  
   /**
    * Calculates the final E-Score based on the metrics.
    */

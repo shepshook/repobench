@@ -259,7 +259,6 @@ export class Session implements ISession {
       if (this.lastResult) return this.lastResult;
       throw new Error('Session not started. Call start() first.');
     }
-
     this.ptyProcess.kill();
 
     if (this.timeoutTimer) {
@@ -273,11 +272,11 @@ export class Session implements ISession {
     }
     this.pendingReads = [];
     this.ptyProcess = null;
- 
+  
     const duration = Date.now() - this.startTime;
     const parser = CostParserFactory.getParser(this.agentName);
     const costData = parser.parse(this.stdout, this.modelName);
- 
+  
     this.lastResult = {
       stdout: this.stdout,
       stderr: this.stderr,
@@ -289,5 +288,13 @@ export class Session implements ISession {
       filesModified: this.filesModified.size,
     };
     return this.lastResult;
+  }
+
+  getFilesOpened(): number {
+    return this.filesOpened.size;
+  }
+
+  getFilesModified(): number {
+    return this.filesModified.size;
   }
 }

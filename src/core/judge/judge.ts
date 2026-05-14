@@ -1,4 +1,4 @@
-import { IJudge, ISandbox, VerificationResult, EvalMetrics } from '../../types/contracts';
+import { IJudge, ISandbox, VerificationResult, EvalMetrics, ISession } from '../../types/contracts';
 import { SandboxStateManager } from '../../sandbox/state-manager';
 
 export class Judge implements IJudge {
@@ -16,6 +16,7 @@ export class Judge implements IJudge {
         stdout,
         stderr: '',
         duration: performance.now() - start,
+        efficiencyRatio: 0,
       };
     } catch (e: unknown) {
       return {
@@ -23,11 +24,12 @@ export class Judge implements IJudge {
         stdout: '',
         stderr: e instanceof Error ? e.message : String(e),
         duration: performance.now() - start,
+        efficiencyRatio: 0,
       };
     }
   }
 
-  async verify(preFixHash: string, postFixHash: string, testCommand: string): Promise<EvalMetrics> {
+  async verify(session: ISession, preFixHash: string, postFixHash: string, testCommand: string): Promise<EvalMetrics> {
     const stateManager = new SandboxStateManager();
     const start = performance.now();
 
@@ -56,10 +58,15 @@ export class Judge implements IJudge {
     const fixedBugs = Array.from(passingPost).filter(test => !passingPre.has(test));
     const targetBugFixed = fixedBugs.length > 0;
 
+    // 5. Search Efficiency
+    const filesOpened = session.getFilesOpened();
+    const filesModified = session.getFilesModified();
+    const efficiencyRatio = filesOpened / Math.max(1, filesModified);
+
     return {
       success: targetBugFixed && regressions.length === 0,
       regressions,
-      searchEfficiency: 0,
+      searchEfficiency: efficiencyRatio,
       latency: performance.now() - start,
       cost: 0,
       eScore: 0,
