@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Session } from '../../../src/core/session/session';
 import { AiderAdapter } from '../../../src/core/session/adapters/aider';
+import { AgentAdapter } from '../../../src/core/session/adapter';
 import * as pty from 'node-pty';
 
 vi.mock('node-pty');
@@ -149,6 +150,74 @@ describe('Session Adapter Integration', () => {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     expect(ptyProcess.write).toHaveBeenCalledWith('Yes\n\r\n');
+  });
+
+  it('should terminate session when adapter reports isDone', async () => {
+    const doneRegex = /Session completed successfully\./;
+    class MockAdapter extends AgentAdapter {
+      protected shell = 'bash';
+      protected getArgs() { return []; }
+      constructor() {
+        super();
+        this.doneSignatures = [doneRegex];
+      }
+    }
+    const adapter = new MockAdapter();
+    const session = new Session(mockSandbox as any, { adapter });
+
+    let onDataCallback: (data: string) => void = () => {};
+    const ptyProcess = {
+      onData: vi.fn((cb) => {
+        onDataCallback = cb;
+        cb('> '); // Initial prompt
+      }),
+      write: vi.fn(),
+      kill: vi.fn(),
+    };
+    (pty.spawn as any).mockReturnValue(ptyProcess);
+
+    await session.start();
+
+    // Simulate output that matches 'Done' signature
+    onDataCallback('Session completed successfully.');
+
+    expect(ptyProcess.kill).toHaveBeenCalled();
+  });
+
+  it('should reject pending reads when session terminates via adapter', async () => {
+    const doneRegex = /Session completed successfully\./;
+    class MockAdapter extends AgentAdapter {
+      protected shell = 'bash';
+      protected getArgs() { return []; }
+      constructor() {
+        super();
+        this.doneSignatures = [doneRegex];
+      }
+    }
+    const adapter = new MockAdapter();
+    const session = new Session(mockSandbox as any, { adapter });
+
+    let onDataCallback: (data: string) => void = () => {};
+    const ptyProcess = {
+      onData: vi.fn((cb) => {
+        onDataCallback = cb;
+        cb('> '); // Initial prompt
+      }),
+      write: vi.fn(),
+      kill: vi.fn(),
+    };
+    (pty.spawn as any).mockReturnValue(ptyProcess);
+
+    await session.start();
+
+    // Start a readUntil that won't match immediately
+    const readPromise = session.readUntil(/Some specific output/);
+
+    // Simulate output that matches 'Done' signature
+    onDataCallback('Session completed successfully.');
+
+    // The session should end, and the readUntil promise should be rejected
+    await expect(readPromise).rejects.toThrow('Session ended');
   });
 
   it('should fall back to default shell if no adapter provided', async () => {

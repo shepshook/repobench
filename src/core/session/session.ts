@@ -27,6 +27,7 @@ export class Session implements ISession {
   private lastReadOffset = 0;
   private lastAutoResponseOffset = 0;
   private ptyProcess: pty.IPty | null = null;
+  private lastResult: SessionResult | null = null;
   private isCrashed = false;
   private isAutoResponding = false;
   private writeLock: Promise<void> = Promise.resolve();
@@ -79,28 +80,32 @@ export class Session implements ISession {
       env: process.env,
     });
 
-    this.ptyProcess.onData((data) => {
-      this.stdout += data;
-      
-       if (this.stdout.length > MAX_BUFFER_SIZE) {
-         const truncateLen = this.stdout.length - MAX_BUFFER_SIZE;
-         this.stdout = this.stdout.substring(truncateLen);
-         for (const read of this.pendingReads) {
-           read.offset = Math.max(0, read.offset - truncateLen);
-         }
-         this.lastAutoResponseOffset = Math.max(0, this.lastAutoResponseOffset - truncateLen);
-       }
+     this.ptyProcess.onData((data) => {
+       this.stdout += data;
+       
+        if (this.stdout.length > MAX_BUFFER_SIZE) {
+          const truncateLen = this.stdout.length - MAX_BUFFER_SIZE;
+          this.stdout = this.stdout.substring(truncateLen);
+          for (const read of this.pendingReads) {
+            read.offset = Math.max(0, read.offset - truncateLen);
+          }
+          this.lastAutoResponseOffset = Math.max(0, this.lastAutoResponseOffset - truncateLen);
+        }
 
-      this.checkPendingReads();
+       this.checkPendingReads();
 
-       if (this.adapter && !this.isAutoResponding) {
-         const response = this.adapter.getResponse(stripAnsi(this.stdout.substring(this.lastAutoResponseOffset)));
-         if (response) {
-           this.handleAutoResponse(response);
-           this.lastAutoResponseOffset = this.stdout.length;
-         }
-       }
-    });
+        if (this.adapter && !this.isAutoResponding) {
+          const response = this.adapter.getResponse(stripAnsi(this.stdout.substring(this.lastAutoResponseOffset)));
+          if (response) {
+            this.handleAutoResponse(response);
+            this.lastAutoResponseOffset = this.stdout.length;
+          }
+        }
+
+        if (this.adapter && this.adapter.isDone(stripAnsi(this.stdout))) {
+          this.end();
+        }
+     });
 
     // Consume initial prompt
     await this.readUntil(/[>#$]\s*$/);
@@ -233,7 +238,12 @@ export class Session implements ISession {
   }
 
   async end(): Promise<SessionResult> {
-    this.ptyProcess?.kill();
+    if (!this.ptyProcess) {
+      if (this.lastResult) return this.lastResult;
+      throw new Error('Session not started. Call start() first.');
+    }
+
+    this.ptyProcess.kill();
 
     for (const read of this.pendingReads) {
       clearTimeout(read.timeoutId);
@@ -243,7 +253,7 @@ export class Session implements ISession {
     this.ptyProcess = null;
 
     const duration = Date.now() - this.startTime;
-    return {
+    this.lastResult = {
       stdout: this.stdout,
       stderr: this.stderr,
       exitCode: 0,
@@ -253,5 +263,6 @@ export class Session implements ISession {
       filesOpened: this.filesOpened.size,
       filesModified: this.filesModified.size,
     };
+    return this.lastResult;
   }
 }
