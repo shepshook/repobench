@@ -96,6 +96,17 @@ export interface ISession {
 }
 
 // --- Epic 4: The Judge ---
+export interface SemanticEvaluation {
+  correctness: number;
+  maintainability: number;
+  idiomaticity: number;
+  justification: string;
+}
+
+export interface ISemanticJudge {
+  evaluate(bugDesc: string, groundTruth: string, agentFix: string): Promise<SemanticEvaluation>;
+}
+
 export interface EvalMetrics {
   success: boolean;
   regressions: string[]; // List of tests that failed after the fix
@@ -136,7 +147,17 @@ export interface IJudge {
   calculateScore(metrics: Partial<EvalMetrics>): number;
 }
 
-// --- Epic 5: The Leaderboard ---
+export interface SemanticEvaluation {
+  correctness: number;
+  maintainability: number;
+  idiomaticity: number;
+  justification: string;
+}
+
+export interface ISemanticJudge {
+  evaluate(bugDesc: string, groundTruth: string, agentFix: string): Promise<SemanticEvaluation>;
+}
+
 export interface RunRecord {
   id: string;
   agentId: string;
