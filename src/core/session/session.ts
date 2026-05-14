@@ -27,6 +27,7 @@ export class Session implements ISession {
   private lastReadOffset = 0;
   private lastAutoResponseOffset = 0;
   private ptyProcess: pty.IPty | null = null;
+  private timeoutTimer: NodeJS.Timeout | null = null;
   private lastResult: SessionResult | null = null;
   private isCrashed = false;
   private isAutoResponding = false;
@@ -53,10 +54,21 @@ export class Session implements ISession {
     }
   }
 
-  async start(): Promise<void> {
+  async start(timeoutMs: number = 3600000): Promise<void> {
     if (this.ptyProcess) return;
     this.startTime = Date.now();
+    this.stdout = '';
+    this.stderr = '';
+    this.filesOpened = new Set<string>();
+    this.filesModified = new Set<string>();
+    this.lastReadOffset = 0;
+    this.lastAutoResponseOffset = 0;
+    this.lastResult = null;
     await this.sandbox.init();
+
+    this.timeoutTimer = setTimeout(() => {
+      this.end().catch(err => console.error('Error during session timeout end:', err));
+    }, timeoutMs);
 
     const workingDir = this.sandbox.getWorkingDir();
     let shell: string;
@@ -244,6 +256,11 @@ export class Session implements ISession {
     }
 
     this.ptyProcess.kill();
+
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
 
     for (const read of this.pendingReads) {
       clearTimeout(read.timeoutId);
