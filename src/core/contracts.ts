@@ -16,6 +16,7 @@ export const CurationResultSchema = z.object({
   score: z.number().min(0).max(1),
   reasoning: z.string(),
   isApproved: z.boolean(),
+  rawResponse: z.string().optional(),
 });
 
 export type CurationResult = z.infer<typeof CurationResultSchema>;

@@ -104,6 +104,7 @@ export class GitMiner implements IMiner {
 
         console.log(`Curation for ${commit.hash}: ${curationResult.isApproved ? 'Approved' : 'Rejected'} (Latency: ${latency}ms)`);
         console.log(`Reasoning: ${curationResult.reasoning}`);
+        console.log(`Raw Response: ${curationResult.rawResponse}`);
 
         if (!curationResult.isApproved) continue;
 

@@ -47,7 +47,8 @@ Return a JSON object matching this schema:
         const content = response.choices[0].message.content;
         if (!content) throw new Error('No content in response');
         
-        return CurationResultSchema.parse(JSON.parse(content));
+        const parsed = JSON.parse(content);
+        return CurationResultSchema.parse({ ...parsed, rawResponse: content });
       } catch (error) {
         lastError = error;
         // Exponential backoff

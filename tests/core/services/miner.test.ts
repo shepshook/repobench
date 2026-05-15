@@ -36,8 +36,6 @@ describe('GitMiner Curation', () => {
       isSignificant: vi.fn().mockResolvedValue(true),
     };
 
-    // The test should fail because GitMiner does not accept ICurationService in the constructor
-    // @ts-expect-error - GitMiner does not yet accept ICurationService
     miner = new GitMiner(mockRepository, mockSignificanceFilter, mockCurationService);
   });
 
