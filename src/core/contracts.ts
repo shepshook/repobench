@@ -12,8 +12,10 @@ export interface IMiner {
   mineCommits(config: RepoBenchConfig): Promise<Candidate[]>;
 }
 
+import { SimpleGit } from 'simple-git';
+
 export interface ISignificanceFilter {
-  isSignificant(hash: string, files: string[]): Promise<boolean>;
+  isSignificant(git: SimpleGit, hash: string, files: string[]): Promise<boolean>;
 }
 
  

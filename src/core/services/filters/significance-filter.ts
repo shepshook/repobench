@@ -1,11 +1,11 @@
-import simpleGit from 'simple-git';
+import simpleGit, { SimpleGit } from 'simple-git';
 import { ISignificanceFilter } from '../../contracts.js';
 
 const NON_CODE_EXTENSIONS = ['.md', '.txt', '.json', '.yml', '.yaml', '.lock', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico'];
 
 function collapse(line: string): string {
   const trimmed = line.trim();
-  if (trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed === '*/') {
+  if (trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed.startsWith('*/')) {
     return '';
   }
   return line
@@ -16,10 +16,11 @@ function collapse(line: string): string {
 }
 
 export class BasicSignificanceFilter implements ISignificanceFilter {
-  async isSignificant(hash: string, files: string[]): Promise<boolean> {
+  async isSignificant(git: SimpleGit, hash: string, files: string[]): Promise<boolean> {
     if (files.length > 5) return false;
-    const git = simpleGit();
+    
     try {
+
       let stdDiff: string;
       let wDiff: string;
       try {
@@ -59,30 +60,32 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
       let significantLineFound = false;
       let hunkOld = '';
       let hunkNew = '';
-
+      
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-
+        
         if (line.startsWith('diff --git')) {
+          if (this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+            significantLineFound = true;
+            break;
+          }
           const match = line.match(/a\/([^ ]+)/);
           currentFile = match ? match[1] : '';
           hunkOld = '';
           hunkNew = '';
           continue;
         }
-
+        
         if (line.startsWith('@@')) {
-          if (currentFile && !NON_CODE_EXTENSIONS.some(ext => currentFile.endsWith(ext))) {
-            if (hunkOld !== hunkNew) {
-              significantLineFound = true;
-              break;
-            }
+          if (this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+            significantLineFound = true;
+            break;
           }
           hunkOld = '';
           hunkNew = '';
           continue;
         }
-
+        
         if (line.startsWith('+') && !line.startsWith('+++')) {
           hunkNew += collapse(line.slice(1));
         } else if (line.startsWith('-') && !line.startsWith('---')) {
@@ -90,15 +93,20 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
         }
       }
 
-      if (!significantLineFound && currentFile && !NON_CODE_EXTENSIONS.some(ext => currentFile.endsWith(ext))) {
-        if (hunkOld !== hunkNew) {
-          significantLineFound = true;
-        }
+      if (!significantLineFound && this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+        significantLineFound = true;
       }
 
       return significantLineFound;
     } catch (error: unknown) {
       throw new Error(`Significance filter failed for hash ${hash}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  private checkSignificance(currentFile: string, hunkOld: string, hunkNew: string): boolean {
+    if (currentFile && !NON_CODE_EXTENSIONS.some(ext => currentFile.endsWith(ext))) {
+      return hunkOld !== hunkNew;
+    }
+    return false;
   }
 }

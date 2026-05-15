@@ -18,12 +18,10 @@ describe('BasicSignificanceFilter', () => {
 
     it('should return true for commits with actual code changes', async () => {
       mockGit.diff.mockImplementation((args) => {
-        if (args.includes('-w')) {
-          return Promise.resolve('--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,1 @@\n-const a = 1;\n+const a = 2;');
-        }
-        return Promise.resolve('--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,1 @@\n-const a = 1;\n+const a = 2;');
+        const diff = 'diff --git a/src/index.ts b/src/index.ts\n--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,1 @@\n-const a = 1;\n+const a = 2;';
+        return Promise.resolve(diff);
       });
-      const result = await filter.isSignificant('hash1', ['src/index.ts']);
+      const result = await filter.isSignificant(mockGit, 'hash1', ['src/index.ts']);
       expect(result).toBe(true);
     });
 
@@ -34,7 +32,7 @@ describe('BasicSignificanceFilter', () => {
         }
         return Promise.resolve('--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,1 @@\n-const a = 1;\n+  const a = 1;');
       });
-      const result = await filter.isSignificant('hash2', ['src/index.ts']);
+      const result = await filter.isSignificant(mockGit, 'hash2', ['src/index.ts']);
       expect(result).toBe(false);
     });
 
@@ -43,7 +41,7 @@ describe('BasicSignificanceFilter', () => {
       mockGit.diff.mockImplementation((args) => {
         return Promise.resolve(args.includes('-w') ? diff : diff);
       });
-      const result = await filter.isSignificant('hash3', ['src/index.ts']);
+      const result = await filter.isSignificant(mockGit, 'hash3', ['src/index.ts']);
       expect(result).toBe(false);
     });
 
@@ -52,17 +50,17 @@ describe('BasicSignificanceFilter', () => {
       mockGit.diff.mockImplementation((args) => {
         return Promise.resolve(args.includes('-w') ? diff : diff);
       });
-      const result = await filter.isSignificant('hash4', ['README.md']);
+      const result = await filter.isSignificant(mockGit, 'hash4', ['README.md']);
       expect(result).toBe(false);
     });
 
     it('should return true for mixed commits with at least one significant change', async () => {
       const diff = 'diff --git a/src/index.ts b/src/index.ts\n--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,1 @@\n-const a = 1;\n+const a = 2;\n' +
-                   'diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1,1 +1,1 @@\n-Old\n+New';
+                   'diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1,1 +1,1 @@\n-Old\n+New\n';
       mockGit.diff.mockImplementation((args) => {
         return Promise.resolve(diff);
       });
-      const result = await filter.isSignificant('hash5', ['src/index.ts', 'README.md']);
+      const result = await filter.isSignificant(mockGit, 'hash5', ['src/index.ts', 'README.md']);
       expect(result).toBe(true);
     });
 
@@ -72,7 +70,7 @@ describe('BasicSignificanceFilter', () => {
       mockGit.diff.mockImplementation((args) => {
         return Promise.resolve(diff);
       });
-      const result = await filter.isSignificant('hash6', ['src/index.ts', 'README.md']);
+      const result = await filter.isSignificant(mockGit, 'hash6', ['src/index.ts', 'README.md']);
       expect(result).toBe(false);
     });
 

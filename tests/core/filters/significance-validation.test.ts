@@ -168,19 +168,20 @@ export async function runSignificanceValidation(filter: ISignificanceFilter, dat
   let passed = 0;
   const failures: string[] = [];
 
-  for (const caso of dataset) {
-    // Mock simple-git behavior for this specific case
-    (simpleGit as any).mockImplementation(() => ({
-      diff: vi.fn()
-        .mockResolvedValueOnce(caso.diff) // First call: stdDiff
-        .mockResolvedValueOnce(
-          caso.category === 'noise' && caso.name.includes('Whitespace') 
-            ? '' 
-            : caso.diff
-        ), // Second call: wDiff (simulates -w flag)
-    }));
+    for (const caso of dataset) {
+      // Mock simple-git behavior for this specific case
+      const mockGit = {
+        diff: vi.fn()
+          .mockResolvedValueOnce(caso.diff) // First call: stdDiff
+          .mockResolvedValueOnce(
+            caso.category === 'noise' && caso.name.includes('Whitespace') 
+              ? '' 
+              : caso.diff
+          ), // Second call: wDiff (simulates -w flag)
+      };
 
-    const result = await filter.isSignificant('mock-hash', ['mock-file.ts']);
+      const result = await filter.isSignificant(mockGit, 'mock-hash', ['mock-file.ts']);
+
     
     if (result === caso.expected) {
       passed++;

@@ -74,7 +74,7 @@ export class GitMiner implements IMiner {
 
         // Significance Filter
         if (shouldKeep) {
-          shouldKeep = await this.significanceFilter.isSignificant(commit.hash, files);
+          shouldKeep = await this.significanceFilter.isSignificant(git, commit.hash, files);
         }
 
         if (!shouldKeep) continue;
