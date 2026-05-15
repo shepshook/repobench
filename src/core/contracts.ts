@@ -30,6 +30,13 @@ export const CandidateSchema = z.object({
 });
 
 export type Candidate = z.infer<typeof CandidateSchema>;
+// --- Repository Types ---
+
+export interface ICandidateRepository {
+  save(candidate: Candidate): void;
+  exists(hash: string): boolean;
+  getAll(): Candidate[];
+}
 
 // --- Sandbox Types ---
 

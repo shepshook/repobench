@@ -32,7 +32,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.2.5: File-Level Noise Filtering](.agents/spec/task-1.2.5.md)
     - [x] [Task 1.2.6: Purity Threshold Tuning](.agents/spec/task-1.2.6.md)
   * **DoD:** Meaningful test additions are captured; trivial comment changes are discarded.
-* **[ ] Feature 1.3: Candidate Persistence Layer**
+* **[x] Feature 1.3: Candidate Persistence Layer**
   * **Spec:** Integrate `better-sqlite3`; create `candidates` table and `CandidateRepository`.
   * **DoD:** Candidates persist to `repobench.db` without duplicates on repeated runs.
 * **[ ] Feature 1.4: LLM-Based Candidate Curation**

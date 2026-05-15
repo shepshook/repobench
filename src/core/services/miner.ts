@@ -1,6 +1,6 @@
 import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
 import crypto from 'node:crypto';
-import { IMiner, Candidate, ISignificanceFilter } from '../contracts.js';
+import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
 import { BasicSignificanceFilter } from './filters/significance-filter.js';
 
@@ -14,7 +14,10 @@ interface GitLogEntry {
 }
 
 export class GitMiner implements IMiner {
-  constructor(private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter()) {}
+  constructor(
+    private repository: ICandidateRepository,
+    private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter()
+  ) {}
 
   async mineCommits(config: RepoBenchConfig): Promise<Candidate[]> {
     const git: SimpleGit = simpleGit();
@@ -40,6 +43,8 @@ export class GitMiner implements IMiner {
     
     // Process commits sequentially to avoid process exhaustion (EMFILE)
     for (const commit of commits) {
+        if (this.repository.exists(commit.hash)) continue;
+
         try {
           const filesContent = await git.show(['--format=', '--name-only', commit.hash]);
           const files = filesContent
@@ -79,14 +84,17 @@ export class GitMiner implements IMiner {
 
         if (!shouldKeep) continue;
 
-        candidates.push({
+        const candidate: Candidate = {
           id: crypto.randomUUID(),
           hash: commit.hash,
           message: commit.message,
           files,
           status: 'pending',
           created_at: new Date(),
-        });
+        };
+
+        this.repository.save(candidate);
+        candidates.push(candidate);
       } catch (error: unknown) {
         console.error(`Failed to retrieve files for commit ${commit.hash}: ${error instanceof Error ? error.message : String(error)}`);
         // Skip this commit and continue

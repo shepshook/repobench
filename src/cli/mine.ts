@@ -1,6 +1,8 @@
 import { Command } from 'commander';
 import { loadConfig } from '../core/config.js';
 import { GitMiner } from '../core/services/miner.js';
+import { CandidateRepository } from '../core/repositories/candidate-repository.js';
+import { initDatabase } from '../infrastructure/persistence/database.js';
 import process from 'node:process';
 
 export async function main() {
@@ -20,7 +22,9 @@ export async function main() {
         }
 
         const config = await loadConfig(options.config);
-        const miner = new GitMiner();
+        initDatabase();
+        const repository = new CandidateRepository();
+        const miner = new GitMiner(repository);
         const candidates = await miner.mineCommits(config);
         
         console.log(`Found ${candidates.length} candidates.`);
