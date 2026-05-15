@@ -36,6 +36,10 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Integrate `better-sqlite3`; create `candidates` table and `CandidateRepository`.
   * **DoD:** Candidates persist to `repobench.db` without duplicates on repeated runs.
 * **[x] Feature 1.4: LLM-Based Candidate Curation**
+    - [x] [Task 1.3.1: Define Candidate Entity & Repository Interface](.agents/spec/task-1.3.1.md)
+    - [x] [Task 1.3.2: SQLite Infrastructure Setup](.agents/spec/task-1.3.2.md)
+    - [x] [Task 1.3.3: CandidateRepository Implementation & Testing](.agents/spec/task-1.3.3.md)
+    - [x] [Task 1.3.4: GitMiner Integration](.agents/spec/task-1.3.3.md)
   * **Spec:** Build `CurationService` (e.g., GPT-4o-mini) to extract, rank, and validate raw candidates.
   * **Tasks:**
     - [x] [Task 1.4.1: Curation Service Contract Definition](.agents/spec/task-1.4.1.md)
