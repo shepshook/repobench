@@ -10,9 +10,10 @@ Use this whenever you are tasked with a new Epic, Feature, or Bugfix.
 
 ## 🛑 Strict Mandates
 1. **Hierarchy Discipline**: You MUST process in order: Epic ➔ Feature ➔ Atomic Task.
-2. **TDD Firewall**: The `implementer` subagent is strictly forbidden from modifying files created/modified by the `test_architect`.
+2. **Strict Execution**: You MUST follow these steps in order without skipping. No task can be marked complete without passing through the full TDD and review loop.
 3. **No Self-Audit**: Every task and every completed feature MUST be audited by the `critical_reviewer`.
-4. **Persistence**: Use `.agents/spec/task-x.y.z.md` for all task-level directives. No transient memory.
+4. **Persistence**: Use `.agents/spec/task-x.y.z.md` for all task-level directives.
+5. **Flaky Subagents**: If a subagent returns an empty response you MUST rerun it. No assumptions allowed.
 
 ---
 

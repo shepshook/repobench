@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node --loader ts-node/esm src/cli/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mine": "node --loader ts-node/esm src/cli/mine.ts"
   },
   "keywords": [],
   "author": "",

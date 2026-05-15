@@ -14,11 +14,20 @@ This document serves as the central source of truth for the project's strategic 
 - [ ] Export candidates to structured format.
 
 ### Features
-* **[ ] Feature 1.1: Configurable Mining Heuristics**
+* **[x] Feature 1.1: Configurable Mining Heuristics**
   * **Spec:** Parse `repobench.yaml` (keywords, `exclude_paths`); update `Miner.mineCommits`.
+  * **Tasks:**
+    - [x] [Task 1.1.1: Configuration Schema & Parser](.agents/spec/task-1.1.1.md)
+    - [x] [Task 1.1.2: Miner Interface & Basic Implementation](.agents/spec/task-1.1.2.md)
+    - [x] [Task 1.1.3: Keyword & Path Filtering Logic](.agents/spec/task-1.1.3.md)
+    - [x] [Task 1.1.4: Integration & CLI Command](.agents/spec/task-1.1.4.md)
   * **DoD:** Custom config successfully filters commits and ignores specified paths.
 * **[ ] Feature 1.2: Pure-Fix Quality Filter**
   * **Spec:** Implement 'Significance Filter' to ignore whitespace/comment-only test changes.
+  * **Tasks:**
+    - [ ] [Task 1.2.1: Significance Filter Interface & Strategy](.agents/spec/task-1.2.1.md)
+    - [ ] [Task 1.2.2: Pure-Fix Heuristics Implementation](.agents/spec/task-1.2.2.md)
+    - [ ] [Task 1.2.3: Noise Reduction & Filter Tuning](.agents/spec/task-1.2.3.md)
   * **DoD:** Meaningful test additions are captured; trivial comment changes are discarded.
 * **[ ] Feature 1.3: Candidate Persistence Layer**
   * **Spec:** Integrate `better-sqlite3`; create `candidates` table and `CandidateRepository`.

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RepoBenchConfig } from './config';
 
 /**
  * RepoBench Core Contracts
@@ -6,8 +7,17 @@ import { z } from 'zod';
  */
 
 // --- Miner Types ---
+ 
+export interface IMiner {
+  mineCommits(config: RepoBenchConfig): Promise<Candidate[]>;
+}
 
+export interface ISignificanceFilter {
+  isSignificant(hash: string, files: string[]): Promise<boolean>;
+}
+ 
 export const CandidateSchema = z.object({
+
   id: z.string().uuid(),
   hash: z.string(), // Git commit hash
   message: z.string(),
