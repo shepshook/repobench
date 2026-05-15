@@ -9,6 +9,9 @@ export const RepoBenchConfigSchema = z.object({
     since: z.string().datetime().optional(),
     limit: z.number().optional(),
   }),
+  curation: z.object({
+    prompt: z.string().optional(),
+  }).optional(),
 });
 
 export type RepoBenchConfig = z.infer<typeof RepoBenchConfigSchema>;

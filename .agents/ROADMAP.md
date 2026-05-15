@@ -35,8 +35,12 @@ This document serves as the central source of truth for the project's strategic 
 * **[x] Feature 1.3: Candidate Persistence Layer**
   * **Spec:** Integrate `better-sqlite3`; create `candidates` table and `CandidateRepository`.
   * **DoD:** Candidates persist to `repobench.db` without duplicates on repeated runs.
-* **[ ] Feature 1.4: LLM-Based Candidate Curation**
+* **[x] Feature 1.4: LLM-Based Candidate Curation**
   * **Spec:** Build `CurationService` (e.g., GPT-4o-mini) to extract, rank, and validate raw candidates.
+  * **Tasks:**
+    - [x] [Task 1.4.1: Curation Service Contract Definition](.agents/spec/task-1.4.1.md)
+    - [x] [Task 1.4.2: OpenAICurationService Implementation](.agents/spec/task-1.4.2.md)
+    - [x] [Task 1.4.3: Integration Loop for Curation](.agents/spec/task-1.4.3.md)
   * **DoD:** Reduces 100+ raw candidates to a curated set with logged LLM reasoning.
 * **[ ] Feature 1.5: Benchmark Validation**
   * **Spec:** Build `BenchmarkValidator` using `ISandbox` to verify Pre-fix (Fail) $\rightarrow$ Post-fix (Pass).

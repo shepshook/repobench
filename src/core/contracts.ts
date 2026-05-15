@@ -12,6 +12,18 @@ export interface IMiner {
   mineCommits(config: RepoBenchConfig): Promise<Candidate[]>;
 }
 
+export const CurationResultSchema = z.object({
+  score: z.number().min(0).max(1),
+  reasoning: z.string(),
+  isApproved: z.boolean(),
+});
+
+export type CurationResult = z.infer<typeof CurationResultSchema>;
+
+export interface ICurationService {
+  curate(candidate: Candidate): Promise<CurationResult>;
+}
+
 import { SimpleGit } from 'simple-git';
 
 export interface ISignificanceFilter {

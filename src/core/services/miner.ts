@@ -1,8 +1,9 @@
 import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
 import crypto from 'node:crypto';
-import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository } from '../contracts.js';
+import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository, ICurationService } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
 import { BasicSignificanceFilter } from './filters/significance-filter.js';
+import { NoOpCurationService } from './curation-service.js';
 
 interface GitLogEntry {
   hash: string;
@@ -16,7 +17,8 @@ interface GitLogEntry {
 export class GitMiner implements IMiner {
   constructor(
     private repository: ICandidateRepository,
-    private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter()
+    private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter(),
+    private curationService: ICurationService = new NoOpCurationService()
   ) {}
 
   async mineCommits(config: RepoBenchConfig): Promise<Candidate[]> {
@@ -92,6 +94,18 @@ export class GitMiner implements IMiner {
           status: 'pending',
           created_at: new Date(),
         };
+
+        // Curation
+        // NOTE: This is a synchronous, blocking operation. For large commit histories, 
+        // this will significantly increase the total mining time.
+        const startTime = Date.now();
+        const curationResult = await this.curationService.curate(candidate);
+        const latency = Date.now() - startTime;
+
+        console.log(`Curation for ${commit.hash}: ${curationResult.isApproved ? 'Approved' : 'Rejected'} (Latency: ${latency}ms)`);
+        console.log(`Reasoning: ${curationResult.reasoning}`);
+
+        if (!curationResult.isApproved) continue;
 
         this.repository.save(candidate);
         candidates.push(candidate);
