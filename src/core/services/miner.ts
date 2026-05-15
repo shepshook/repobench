@@ -1,6 +1,6 @@
 import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
 import crypto from 'node:crypto';
-import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository, ICurationService } from '../contracts.js';
+import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository, ICurationService, IBenchmarkValidator } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
 import { BasicSignificanceFilter } from './filters/significance-filter.js';
 import { NoOpCurationService } from './curation-service.js';
@@ -18,7 +18,8 @@ export class GitMiner implements IMiner {
   constructor(
     private repository: ICandidateRepository,
     private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter(),
-    private curationService: ICurationService = new NoOpCurationService()
+    private curationService: ICurationService = new NoOpCurationService(),
+    private validator?: IBenchmarkValidator
   ) {}
 
   async mineCommits(config: RepoBenchConfig): Promise<Candidate[]> {
@@ -108,6 +109,32 @@ export class GitMiner implements IMiner {
 
         if (!curationResult.isApproved) continue;
 
+        if (this.validator) {
+          try {
+            const validationResult = await this.validator.validate(candidate);
+            candidate.status = validationResult.isValid ? 'validated' : 'rejected';
+
+            if (validationResult.isValid) {
+              console.log(`Candidate ${candidate.hash} VALIDATED: Pre-fail, Post-pass (Latency: ${validationResult.latency}ms)`);
+            } else {
+              if (validationResult.preFixStatus === 'pass') {
+                console.log(`Candidate ${candidate.hash} REJECTED: Pre-pass (already fixed or not a bug) (Latency: ${validationResult.latency}ms)`);
+                console.log(`Pre-fix output: ${validationResult.preFixOutput}`);
+              } else if (validationResult.postFixStatus === 'fail') {
+                console.log(`Candidate ${candidate.hash} REJECTED: Post-fail (fix did not work) (Latency: ${validationResult.latency}ms)`);
+                console.log(`Post-fix output: ${validationResult.postFixOutput}`);
+              } else if (validationResult.preFixStatus === 'error' || validationResult.postFixStatus === 'error') {
+                console.log(`Candidate ${candidate.hash} REJECTED: Sandbox error during validation (Latency: ${validationResult.latency}ms)`);
+                if (validationResult.preFixStatus === 'error') console.log(`Pre-fix output: ${validationResult.preFixOutput}`);
+                if (validationResult.postFixStatus === 'error') console.log(`Post-fix output: ${validationResult.postFixOutput}`);
+              }
+            }
+          } catch (error: unknown) {
+            candidate.status = 'rejected';
+            console.log(`Candidate ${candidate.hash} REJECTED: Sandbox error during validation`);
+            console.log(`Error: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
         this.repository.save(candidate);
         candidates.push(candidate);
       } catch (error: unknown) {

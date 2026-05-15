@@ -102,7 +102,23 @@ export interface SessionResult {
 
 // --- Judge Types ---
 
+export const ValidationResultSchema = z.object({
+  isValid: z.boolean(),
+  preFixStatus: z.enum(['fail', 'pass', 'error']),
+  postFixStatus: z.enum(['fail', 'pass', 'error']),
+  preFixOutput: z.string(),
+  postFixOutput: z.string(),
+  latency: z.number(),
+});
+
+export type ValidationResult = z.infer<typeof ValidationResultSchema>;
+
+export interface IBenchmarkValidator {
+  validate(candidate: Candidate): Promise<ValidationResult>;
+}
+
 export interface EvalMetrics {
+
   regressions: string[]; // List of tests that started passing and then failed
   fixes: string[]; // List of tests that started failing and then passed
   totalTests: number;

@@ -42,8 +42,13 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.4.2: OpenAICurationService Implementation](.agents/spec/task-1.4.2.md)
     - [x] [Task 1.4.3: Integration Loop for Curation](.agents/spec/task-1.4.3.md)
   * **DoD:** Reduces 100+ raw candidates to a curated set with logged LLM reasoning.
-* **[ ] Feature 1.5: Benchmark Validation**
+* **[x] Feature 1.5: Benchmark Validation**
   * **Spec:** Build `BenchmarkValidator` using `ISandbox` to verify Pre-fix (Fail) $\rightarrow$ Post-fix (Pass).
+  * **Tasks:**
+    - [x] [Task 1.5.1: Validation Contract & Schema](.agents/spec/task-1.5.1.md)
+    - [x] [Task 1.5.2: BenchmarkValidator Implementation](.agents/spec/task-1.5.2.md)
+    - [x] [Task 1.5.3: Integration with Candidate Pipeline](.agents/spec/task-1.5.3.md)
+    - [x] [Task 1.5.4: Validation Reporting & Logging](.agents/spec/task-1.5.4.md)
   * **DoD:** Only validated candidates reach the orchestrator; rejections are logged.
 * **[ ] Feature 1.6: Dataset Portability**
   * **Spec:** Build `DatasetExporter`/`DatasetImporter` for JSONL formats; add CLI commands.

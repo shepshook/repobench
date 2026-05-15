@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitMiner } from '../../../src/core/services/miner';
 import { RepoBenchConfig } from '../../../src/core/config';
-import { Candidate, ICurationService, ICandidateRepository, ISignificanceFilter } from '../../../src/core/contracts';
+import { Candidate, ICurationService, ICandidateRepository, ISignificanceFilter, IBenchmarkValidator } from '../../../src/core/contracts';
 import simpleGit from 'simple-git';
 
 vi.mock('simple-git');
 
-describe('GitMiner Curation', () => {
+describe('GitMiner Pipeline Integration', () => {
   let miner: GitMiner;
   let mockGit: any;
   let mockCurationService: ICurationService;
   let mockRepository: ICandidateRepository;
   let mockSignificanceFilter: ISignificanceFilter;
+  let mockValidator: IBenchmarkValidator;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,15 +37,18 @@ describe('GitMiner Curation', () => {
       isSignificant: vi.fn().mockResolvedValue(true),
     };
 
-    miner = new GitMiner(mockRepository, mockSignificanceFilter, mockCurationService);
+    mockValidator = {
+      validate: vi.fn().mockResolvedValue({ isValid: true, preFixStatus: 'fail', postFixStatus: 'pass', preFixOutput: '', postFixOutput: '', latency: 100 }),
+    };
+
+    miner = new GitMiner(mockRepository, mockSignificanceFilter, mockCurationService, mockValidator);
   });
 
   it('should call curate() and only save if approved', async () => {
     const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
     mockGit.log.mockResolvedValue({ all: mockCommits });
     
-    // Test approved
-    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good' });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
 
@@ -58,8 +62,7 @@ describe('GitMiner Curation', () => {
     const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
     mockGit.log.mockResolvedValue({ all: mockCommits });
     
-    // Test rejected
-    (mockCurationService.curate as any).mockResolvedValue({ isApproved: false, score: 0, reasoning: 'bad' });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: false, score: 0, reasoning: 'bad', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
 
@@ -67,5 +70,48 @@ describe('GitMiner Curation', () => {
 
     expect(mockCurationService.curate).toHaveBeenCalled();
     expect(mockRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should save as validated when validator returns isValid: true', async () => {
+    const mockCommits = [{ hash: 'valid123', message: 'feat: valid' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+    (mockValidator.validate as any).mockResolvedValue({ isValid: true, preFixStatus: 'fail', postFixStatus: 'pass', preFixOutput: '', postFixOutput: '', latency: 100 });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockValidator.validate).toHaveBeenCalled();
+    expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+      hash: 'valid123',
+      status: 'validated'
+    }));
+  });
+
+  it('should save as rejected when validator returns isValid: false', async () => {
+    const mockCommits = [{ hash: 'invalid123', message: 'feat: invalid' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+    (mockValidator.validate as any).mockResolvedValue({ isValid: false, preFixStatus: 'fail', postFixStatus: 'fail', preFixOutput: '', postFixOutput: '', latency: 100 });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockValidator.validate).toHaveBeenCalled();
+    expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+      hash: 'invalid123',
+      status: 'rejected'
+    }));
+  });
+
+  it('should NOT call validator when curation rejects the candidate', async () => {
+    const mockCommits = [{ hash: 'rejected123', message: 'feat: rejected' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: false, score: 0, reasoning: 'bad', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockValidator.validate).not.toHaveBeenCalled();
   });
 });
