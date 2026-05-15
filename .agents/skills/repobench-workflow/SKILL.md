@@ -1,58 +1,54 @@
 ---
 name: repobench-workflow
-description: Core workflow to work on RepoBench features using the Agentic Engineering Loop (Decomposition, Delegated TDD, Closure).
+description: High-integrity Engineering Loop with role-separated TDD and multi-layer reviews.
 ---
 
 # Skill: RepoBench Workflow
 
 ## Trigger
-Use this skill whenever you are tasked with implementing a new feature, fixing a bug, or refactoring code within the RepoBench project.
+Use this whenever you are tasked with a new Epic, Feature, or Bugfix.
 
-## The Agentic Engineering Loop (SOP)
+## 🛑 Strict Mandates
+1. **Hierarchy Discipline**: You MUST process in order: Epic ➔ Feature ➔ Atomic Task.
+2. **TDD Firewall**: The `implementer` subagent is strictly forbidden from modifying files created/modified by the `test_architect`.
+3. **No Self-Audit**: Every task and every completed feature MUST be audited by the `critical_reviewer`.
+4. **Persistence**: Use `.agents/spec/task-x.y.z.md` for all task-level directives. No transient memory.
 
-### 🛑 Strict Mandate
-- **No Manual Implementation**: You MUST NEVER write core logic yourself. All implementation must be delegated to a `general` subagent.
-- **Mandatory Audit**: No task is "Done" without a `PASS` verdict from the `critical_reviewer` subagent.
-- **No Task-Hopping**: Complete the full Closure Chain for the current task before starting the next one.
-- **Subagent Failures**: If a subagent returns an empty result, refine the prompt or increase thoroughness. Do NOT take over the implementation.
+---
 
-### Phase 1: Decomposition (The "Deep Dive")
-Before writing any code, you must decompose the request into a hierarchy of work items and present an **Implementation Roadmap** to the user.
-1. **Analyze**: Read the parent Epic and Feature descriptions from GitHub to understand the full scope. Evaluate the feature against the current codebase and the `contracts.ts` file.
-2. **Split**: Break the feature into 2-5 **Atomic Tasks**.
-3. **Specify**: Write every task using the **Agent-Ready Format**:
-    - **Contextual Map**: List of files to read and interfaces to follow.
-    - **Atomic Technical Directive**: Step-by-step logic, function signatures, and integration points.
-    - **TDD Blueprint**: Specific test cases (Success, Edge, Failure) and the verification command.
-    - **Constraints**: "No-Go" zones and pattern requirements.
-    - **Definition of Done (DoD)**: A binary checklist (e.g., "tests pass", "typecheck passes").
-4. **Link**: Create the tasks as GitHub issues linked to the parent Feature. You MUST include the full Agent-Ready description in the issue body.
+## Phase 1: Decomposition & Plan Audit
+1. **Sync**: Read `ROADMAP.md` and `ARCHITECTURE.md`.
+2. **Decompose**: Split the active **Feature** into 2-5 **Atomic Tasks**.
+3. **Document**: Create `.agents/spec/task-x.y.z.md` for each task. Include:
+    - **Context Map**: Relevant interfaces from `contracts.ts` and files.
+    - **Technical Directive**: Implementation logic.
+    - **DoD**: Specific commands to verify (e.g., `npm run test:task`).
+4. **Plan Review**: Before starting, launch `critical_reviewer` to audit the decomposition. 
+    - *Focus*: "Does this decomposition cover the full scope of the Feature without logic gaps?"
+5. **Link**: Update `ROADMAP.md` with links to these spec files under the feature.
 
-### Phase 2: Delegated TDD Execution
-For every atomic task, follow this strict loop:
-1. **Read**: Consume the "Contextual Map" of the task.
-2. **Implementation (Delegated)**: Launch a **General Subagent** to execute the Red $\rightarrow$ Green $\rightarrow$ Refactor cycle.
-3. **Critical Review**: Launch the `critical_reviewer` subagent to audit the code changes and the task completion.
-4. **Root Cause Analysis (RCA)**: If the review returns a `FAIL` verdict, you MUST perform an RCA and present it to the user before attempting a fix.
-5. **Re-Iteration**: If the review returns a `FAIL` verdict (and RCA is completed), return to the implementation step with the reviewer's feedback and RCA results.
-6. **Final Verification**: Once the review is `PASS`, run `npm run typecheck` and the specific test command.
+## Phase 2: Separated TDD Execution (The Task Loop)
+For each task in the roadmap:
 
-### Phase 3: Closure
-You MUST complete this chain in order:
-1. **Commit**: Create a descriptive commit (e.g., `feat: implement X`) and push to the remote.
-2. **Close**: Follow the closure chain:
-    - Mark the GitHub **Task** as completed.
-    - Mark the GitHub **Feature** as completed once all its associated tasks are closed.
-    - Mark the GitHub **Epic** as completed once all its associated features are closed.
-3. **Update**: If a new pattern or global configuration was introduced, update `AGENTS.md`.
+1. **Step A: Test Architecture**:
+    - Launch `general` with a "Test-Only" prompt.
+    - **Goal**: Write failing tests based on the spec. 
+2. **Step B: Implementation**:
+    - Launch `general`. 
+    - **Constraint**: Provide ONLY the code files and the newly created test files. The implementer MUST NOT touch the tests.
+3. **Step C: Task Review**:
+    - Launch `critical_reviewer`. 
+    - **Audit**: Compare the implementation against the spec and `ARCHITECTURE.md`.
+    - **RCA**: If `FAIL`, perform Root Cause Analysis, update the spec file if necessary, and repeat Step B.
 
-## Interaction Guidelines
-- **Conciseness**: Do not explain the code after writing it. Only provide the result and the verification output.
-- **Proactiveness**: If a task is trivial, suggest a "Fast-Track" approach to the user, but always provide a test.
-- **Honesty**: If a test fails, do not "ignore" it. Analyze the failure and update the implementation or the test.
-- **Anti-Corruption Protocol**: 
-    - **Read-After-Write**: Always `read` the modified file after an `edit` to ensure no duplicates or fragments were introduced.
-    - **Anchored Edits**: Use large `oldString` blocks to avoid ambiguity and multiple-match errors.
-    - **Atomic Modification**: Minimize the scope of file edits to avoid corruption.
+## Phase 3: Feature Integration & Closure
+Once all tasks for a **Feature** are marked `[x]`:
 
-
+1. **Feature-Level Review**: 
+    - Launch `critical_reviewer` against the **entire feature**.
+    - **Focus**: Check for inconsistencies, duplicated logic across tasks, and adherence to `ARCHITECTURE.md`.
+2. **Verification**: Run `npm run typecheck` and the full project test suite.
+3. **State Update**:
+    - Mark Feature as `[x]` in `ROADMAP.md`.
+    - If all Features in an Epic are done, mark Epic as `[x]`.
+4. **Commit**: `feat(scope): implement feature X`.

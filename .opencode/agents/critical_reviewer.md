@@ -1,7 +1,6 @@
 ---
 description: Performs rigorous, critical code reviews focusing on architecture, quality, and debt.
 mode: subagent
-model: google/gemma-4-31b-it
 temperature: 0.1
 permission:
   edit: deny
