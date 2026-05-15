@@ -15,6 +15,7 @@ export interface IMiner {
 export interface ISignificanceFilter {
   isSignificant(hash: string, files: string[]): Promise<boolean>;
 }
+
  
 export const CandidateSchema = z.object({
 

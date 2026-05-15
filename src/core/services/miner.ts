@@ -1,7 +1,8 @@
 import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
 import crypto from 'node:crypto';
-import { IMiner, Candidate } from '../contracts.js';
+import { IMiner, Candidate, ISignificanceFilter } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
+import { BasicSignificanceFilter } from './filters/significance-filter.js';
 
 interface GitLogEntry {
   hash: string;
@@ -13,6 +14,8 @@ interface GitLogEntry {
 }
 
 export class GitMiner implements IMiner {
+  constructor(private significanceFilter: ISignificanceFilter = new BasicSignificanceFilter()) {}
+
   async mineCommits(config: RepoBenchConfig): Promise<Candidate[]> {
     const git: SimpleGit = simpleGit();
     
@@ -67,6 +70,11 @@ export class GitMiner implements IMiner {
           if (allFilesExcluded) {
             shouldKeep = false;
           }
+        }
+
+        // Significance Filter
+        if (shouldKeep) {
+          shouldKeep = await this.significanceFilter.isSignificant(commit.hash, files);
         }
 
         if (!shouldKeep) continue;

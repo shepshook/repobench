@@ -16,11 +16,16 @@ describe('GitMiner', () => {
     mockGit = {
       log: vi.fn(),
       show: vi.fn().mockResolvedValue(''),
+      diff: vi.fn().mockResolvedValue(''),
     };
-
+    
+    const mockFilter = {
+      isSignificant: vi.fn().mockResolvedValue(true),
+    };
     
     (simpleGit as any).mockReturnValue(mockGit);
-    miner = new GitMiner();
+    miner = new GitMiner(mockFilter);
+
   });
 
   it('should return a list of Candidates from git history', async () => {

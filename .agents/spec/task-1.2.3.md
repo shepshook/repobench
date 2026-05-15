@@ -1,20 +1,20 @@
-# Task 1.2.3: Noise Reduction & Filter Tuning
+# Task 1.2.3: BasicSignificanceFilter Implementation
 
 ## Context Map
-- `src/core/services/filters/significance-filter.ts`: Refine logic.
-- `tests/core/filters/significance-filter.test.ts`: Add edge cases.
+- `src/core/contracts.ts`: `ISignificanceFilter` interface.
+- `src/core/services/filters/significance-filter.ts`: Implementation file.
+- `tests/core/filters/significance-validation.test.ts`: The validation suite from Task 1.2.2.
 
 ## Technical Directive
-1. Refine the `BasicSignificanceFilter` to handle a wider range of "noise":
-   - Ignore changes to lock files (`package-lock.json`, `yarn.lock`).
-   - Ignore changes to common documentation files.
-2. Implement a "Purity Threshold":
-   - A commit is discarded if it modifies more than 5 files (configurable).
-   - A commit is discarded if the total lines changed exceed a certain threshold (e.g., 50 lines).
-3. Implement a "Minimum Change" threshold (e.g., a commit must change at least one line of actual code).
-4. Add test cases for these noise types to ensure they are correctly filtered out.
+1. Implement `BasicSignificanceFilter` implementing `ISignificanceFilter`.
+2. Logic must focus on **Significance** (Noise Removal):
+    - Use `git diff -w` to detect whitespace-only changes.
+    - Use regex to detect comment-only changes.
+    - Filter out common non-code extensions.
+3. Verify the implementation against the "Insignificant (Noise)" portion of the Golden Dataset.
+4. Iteratively refine the logic until all identified noise is correctly filtered out.
 
 ## DoD
-- `BasicSignificanceFilter` correctly filters out lock files and docs.
-- Purity thresholds (file count, line count) are implemented and verified.
-- Minimum change threshold is implemented and verified.
+- `BasicSignificanceFilter` implements `ISignificanceFilter`.
+- All "Insignificant (Noise)" examples in the Golden Dataset are correctly marked as `isSignificant = false`.
+- `npm run typecheck` passes.

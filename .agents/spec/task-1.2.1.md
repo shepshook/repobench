@@ -1,27 +1,16 @@
-# Task 1.2.1: Significance Filter Interface & Strategy
+# Task 1.2.1: Significance Filter Interface
 
 ## Context Map
-- `src/core/contracts.ts`: Define `ISignificanceFilter` interface.
-- `src/core/services/filters/significance-filter.ts`: (To be created) Implementation.
+- `src/core/contracts.ts`: Central location for all domain interfaces.
+- `ARCHITECTURE.md`: Mandates Contract-First development.
 
 ## Technical Directive
-1. Add `ISignificanceFilter` interface to `src/core/contracts.ts`:
-   ```typescript
-   export interface ISignificanceFilter {
-     isSignificant(hash: string, files: string[]): Promise<boolean>;
-   }
-   ```
-2. Create `src/core/services/filters/significance-filter.ts`.
-3. Implement `BasicSignificanceFilter` implementing `ISignificanceFilter`.
-4. The filter should use `simple-git`'s `diff` command to analyze the changes for the commit.
-5. **Significance Logic**:
-   - A commit is **insignificant** (return `false`) if all changes are only:
-     - Whitespace changes.
-     - Changes to comments (use a basic regex for common languages like TS/JS).
-     - Changes to non-code files (e.g., `.md`, `.txt`).
-   - Otherwise, it is **significant** (return `true`).
+1. Add the `ISignificanceFilter` interface to `src/core/contracts.ts`.
+2. The interface must define a method `isSignificant(hash: string, files: string[]): Promise<boolean>`.
+3. **Decision**: A boolean return is sufficient for the MVP to determine if a commit is "noisy" (insignificant) or a candidate for further purity analysis.
+4. Ensure the naming follows the `I`-prefix convention.
 
 ## DoD
-- `ISignificanceFilter` is defined in contracts.
-- `BasicSignificanceFilter` is implemented.
-- Unit tests in `tests/core/filters/significance-filter.test.ts` verify the logic for whitespace-only, comment-only, and meaningful changes.
+- `ISignificanceFilter` is correctly defined in `src/core/contracts.ts`.
+- Code passes `npm run typecheck`.
+- Interface is reviewed and approved by `critical_reviewer`.
