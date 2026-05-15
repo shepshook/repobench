@@ -14,6 +14,7 @@ Use this whenever you are tasked with a new Epic, Feature, or Bugfix.
 3. **No Self-Audit**: Every task and every completed feature MUST be audited by the `critical_reviewer`.
 4. **Persistence**: Use `.agents/spec/task-x.y.z.md` for all task-level directives.
 5. **Flaky Subagents**: If a subagent returns an empty response you MUST rerun it. No assumptions allowed.
+6. **Subagent Driven**: You MUST NOT edit code directly. All changes MUST be made through subagent orchestration.
 
 ---
 
