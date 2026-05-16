@@ -32,7 +32,10 @@ describe('GitMiner Logging (Task 1.5.4)', () => {
 
     mockRepository = {
       save: vi.fn(),
+      upsert: vi.fn((c) => mockRepository.save(c)),
       exists: vi.fn().mockReturnValue(false),
+      existsById: vi.fn().mockReturnValue(false),
+      getById: vi.fn(),
       getAll: vi.fn().mockReturnValue([]),
     };
 

@@ -1,5 +1,6 @@
 import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository, ICurationService, IBenchmarkValidator } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
 import { BasicSignificanceFilter } from './filters/significance-filter.js';
@@ -24,6 +25,21 @@ export class GitMiner implements IMiner {
 
   async mineCommits(config: RepoBenchConfig): Promise<Candidate[]> {
     const git: SimpleGit = simpleGit();
+    
+    let repositoryUrl = 'https://github.com/unknown/unknown';
+    let repositoryName = path.basename(process.cwd());
+
+    if (typeof (git as any).getConfig === 'function') {
+      try {
+        const rawUrl = await (git as any).getConfig('remote.origin.url');
+        if (typeof rawUrl === 'string') {
+          repositoryUrl = rawUrl;
+          repositoryName = rawUrl.split('/').pop()?.replace('.git', '') || repositoryName;
+        }
+      } catch {
+        // Fallback to defaults
+      }
+    }
     
     const logOptions: LogOptions = {};
     if (config.mining.limit) {
@@ -94,6 +110,8 @@ export class GitMiner implements IMiner {
           files,
           status: 'pending',
           created_at: new Date(),
+          repositoryUrl,
+          repositoryName,
         };
 
         // Curation
@@ -135,7 +153,7 @@ export class GitMiner implements IMiner {
             console.log(`Error: ${error instanceof Error ? error.message : String(error)}`);
           }
         }
-        this.repository.save(candidate);
+        this.repository.upsert(candidate);
         candidates.push(candidate);
       } catch (error: unknown) {
         console.error(`Failed to retrieve files for commit ${commit.hash}: ${error instanceof Error ? error.message : String(error)}`);

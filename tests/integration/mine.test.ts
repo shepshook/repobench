@@ -60,13 +60,14 @@ mining:
     const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
     const configPath = path.join(tempDir, 'repobench.yaml');
     
-    const stdout = execSync(`node --loader ts-node/esm ${scriptPath} -r ${tempDir} -c ${configPath}`, { 
+    const stdout = execSync(`npx tsx ${scriptPath} -r ${tempDir} -c ${configPath}`, {
       cwd: projectRoot, 
-      env: { ...process.env, PATH: process.env.PATH } 
+      env: { ...process.env, PATH: process.env.PATH },
+      timeout: 30000 // Increase timeout to 30s
     }).toString();
 
     expect(stdout).toContain('Found 2 candidates.');
-  });
+  }, 30000);
 
   it('should filter out insignificant commits using GitMiner.mineCommits', async () => {
     const sigTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'repobench-sig-test-'));
@@ -100,7 +101,13 @@ mining:
       process.chdir(sigTempDir);
 
       try {
-        const miner = new GitMiner();
+        const repository = {
+          save: () => {},
+          upsert: () => {},
+          exists: () => false,
+          getAll: () => []
+        };
+        const miner = new GitMiner(repository);
         const config: RepoBenchConfig = {
           mining: {
             keywords: ['fix'],

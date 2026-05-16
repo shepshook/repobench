@@ -23,8 +23,17 @@ describe('GitMiner', () => {
       isSignificant: vi.fn().mockResolvedValue(true),
     };
     
+    const mockRepository = {
+      save: vi.fn(),
+      upsert: vi.fn(),
+      exists: vi.fn().mockReturnValue(false),
+      existsById: vi.fn().mockReturnValue(false),
+      getById: vi.fn(),
+      getAll: vi.fn().mockReturnValue([]),
+    };
+    
     (simpleGit as any).mockReturnValue(mockGit);
-    miner = new GitMiner(mockFilter);
+    miner = new GitMiner(mockRepository, mockFilter);
 
   });
 

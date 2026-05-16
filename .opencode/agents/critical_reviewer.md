@@ -1,6 +1,7 @@
 ---
 description: Performs rigorous, critical code reviews focusing on architecture, quality, and debt.
 mode: subagent
+model: google/gemini-3.1-flash-lite
 temperature: 0.1
 permission:
   edit: deny

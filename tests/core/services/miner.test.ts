@@ -29,7 +29,10 @@ describe('GitMiner Pipeline Integration', () => {
 
     mockRepository = {
       save: vi.fn(),
+      upsert: vi.fn((c) => mockRepository.save(c)),
       exists: vi.fn().mockReturnValue(false),
+      existsById: vi.fn().mockReturnValue(false),
+      getById: vi.fn(),
       getAll: vi.fn().mockReturnValue([]),
     };
 
@@ -44,6 +47,22 @@ describe('GitMiner Pipeline Integration', () => {
     miner = new GitMiner(mockRepository, mockSignificanceFilter, mockCurationService, mockValidator);
   });
 
+  it('should include repositoryUrl and repositoryName in candidates', async () => {
+    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+    
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    
+    await miner.mineCommits(config);
+    
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      repositoryUrl: expect.any(String),
+      repositoryName: expect.any(String)
+    }));
+  });
+
   it('should call curate() and only save if approved', async () => {
     const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
     mockGit.log.mockResolvedValue({ all: mockCommits });
@@ -55,7 +74,7 @@ describe('GitMiner Pipeline Integration', () => {
     await miner.mineCommits(config);
 
     expect(mockCurationService.curate).toHaveBeenCalled();
-    expect(mockRepository.save).toHaveBeenCalled();
+    expect(mockRepository.upsert).toHaveBeenCalled();
   });
 
   it('should call curate() and NOT save if not approved', async () => {
@@ -69,7 +88,7 @@ describe('GitMiner Pipeline Integration', () => {
     await miner.mineCommits(config);
 
     expect(mockCurationService.curate).toHaveBeenCalled();
-    expect(mockRepository.save).not.toHaveBeenCalled();
+    expect(mockRepository.upsert).not.toHaveBeenCalled();
   });
 
   it('should save as validated when validator returns isValid: true', async () => {
@@ -82,7 +101,7 @@ describe('GitMiner Pipeline Integration', () => {
     await miner.mineCommits(config);
 
     expect(mockValidator.validate).toHaveBeenCalled();
-    expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
       hash: 'valid123',
       status: 'validated'
     }));
@@ -98,7 +117,7 @@ describe('GitMiner Pipeline Integration', () => {
     await miner.mineCommits(config);
 
     expect(mockValidator.validate).toHaveBeenCalled();
-    expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
       hash: 'invalid123',
       status: 'rejected'
     }));

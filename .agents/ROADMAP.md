@@ -4,7 +4,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [ ] Epic 1: Git-Based Benchmark Generation (The Miner)
+## [x] Epic 1: Git-Based Benchmark Generation (The Miner)
 **Description:** Automate the discovery of high-signal 'ground truth' benchmarks from a private repository.
 **Metrics:** Precision (>80% actual bug fixes), Candidate Density (High-quality candidates per 1k commits).
 **Success Criteria:**
@@ -54,8 +54,24 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.5.3: Integration with Candidate Pipeline](.agents/spec/task-1.5.3.md)
     - [x] [Task 1.5.4: Validation Reporting & Logging](.agents/spec/task-1.5.4.md)
   * **DoD:** Only validated candidates reach the orchestrator; rejections are logged.
-* **[ ] Feature 1.6: Dataset Portability**
+* **[x] Feature 1.6: Dataset Portability**
   * **Spec:** Build `DatasetExporter`/`DatasetImporter` for JSONL formats; add CLI commands.
+  * **Tasks:**
+    - [x] [Task 1.6.1: Define Exporter/Importer Contracts & JSONL Schema](.agents/spec/task-1.6.1.md)
+    - [x] [Task 1.6.2: Implement JSONL DatasetExporter](.agents/spec/task-1.6.2.md)
+    - [x] [Task 1.6.3: Implement JSONL DatasetImporter](.agents/spec/task-1.6.3.md)
+    - [x] [Task 1.6.4: CLI Integration for Dataset Portability](.agents/spec/task-1.6.4.md)
+    - [x] [Task 1.6.FIX: Feature Review Alignment](.agents/spec/task-1.6.fix.md)
+    - [x] [Task 1.6.FIX: Feature Review Alignment](.agents/spec/task-1.6.fix.md)
+    - [x] [Task 1.6.FIX: Feature Review Alignment](.agents/spec/task-1.6.fix.md)
+    - [x] [Task 1.6.FIX1: Feature Review Alignment Round 1](.agents/spec/task-1.6.fix1.md)
+    - [x] [Task 1.6.FIX2: Feature Review Alignment Round 2](.agents/spec/task-1.6.fix2.md)
+    - [x] [Task 1.6.FIX3: Feature Review Alignment Round 3](.agents/spec/task-1.6.fix3.md)
+    - [x] [Task 1.6.FIX4: Feature Review Alignment Round 4](.agents/spec/task-1.6.fix4.md)
+    - [x] [Task 1.6.FIX5: Fix Miner Candidate Type Errors](.agents/spec/task-1.6.fix5.md)
+    - [x] [Task 1.6.FIX6: Fix DatasetImporter Type Definition](.agents/spec/task-1.6.fix6.md)
+    - [x] [Task 1.6.FIX7: Fix DatasetImporter Deduplication](.agents/spec/task-1.6.fix7.md)
+        - [x] [Task 1.6.FIX8: Fix Database Initialization in Integration Tests](.agents/spec/task-1.6.fix8.md)
   * **DoD:** Curated datasets can be exported/imported via a single file retaining all metadata.
 
 ---

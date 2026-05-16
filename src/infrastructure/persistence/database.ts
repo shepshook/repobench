@@ -1,25 +1,88 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-// Database located in the root directory
-const dbPath = path.resolve(process.cwd(), 'repobench.db');
+let dbPath = process.env.REPOBENCH_DB_PATH || path.resolve(process.cwd(), 'repobench.db');
+let _rawDb = new Database(dbPath);
 
-export const db = new Database(dbPath);
+export const getRawDb = () => _rawDb;
+
+export function reinitDatabase(newDbPath?: string): void {
+  _rawDb.close();
+  if (newDbPath) {
+    dbPath = newDbPath;
+  }
+  _rawDb = new Database(dbPath);
+  initDatabase();
+}
+
+function snakeToCamel(str: string) {
+  return str.replace(/(_[a-z])/g, (group) =>
+    group.toUpperCase().replace('_', '')
+  );
+}
+
+export const db = {
+  prepare: (sql: string) => {
+      const stmt = _rawDb.prepare(sql);
+      return new Proxy(stmt, {
+        get(stmtTarget, stmtProp, stmtReceiver) {
+          const stmtValue = Reflect.get(stmtTarget, stmtProp, stmtReceiver);
+          if (typeof stmtValue === 'function') {
+            return (...stmtArgs: any[]) => {
+              if (stmtProp === 'get' || stmtProp === 'all') {
+                const result = stmtValue.apply(stmtTarget, stmtArgs);
+                if (!result) return result;
+                if (Array.isArray(result)) {
+                  return result.map(row => {
+                    const newRow: any = {};
+                    for (const key in row) {
+                      newRow[snakeToCamel(key)] = row[key];
+                    }
+                    return newRow;
+                  });
+                }
+                const newRow: any = {};
+                for (const key in result) {
+                  newRow[snakeToCamel(key)] = result[key];
+                }
+                return newRow;
+              }
+              return stmtValue.apply(stmtTarget, stmtArgs);
+            };
+          }
+          return stmtValue;
+        },
+      });
+  },
+  run: (sql: string, ...args: any[]) => _rawDb.prepare(sql).run(...args),
+};
 
 /**
  * Initializes the database schema.
  * Creates the candidates table if it does not exist.
  */
-export function initDatabase(): void {
+export function initDatabase(newDbPath?: string): void {
+  if (newDbPath) {
+    reinitDatabase(newDbPath);
+    return;
+  }
   try {
-    db.prepare(`
+    _rawDb.prepare(`
       CREATE TABLE IF NOT EXISTS candidates (
         id TEXT PRIMARY KEY,
-        hash TEXT NOT NULL UNIQUE,
+        hash TEXT NOT NULL,
         message TEXT NOT NULL,
         files TEXT NOT NULL,
         status TEXT NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        repository_url TEXT,
+        repository_name TEXT,
+        pre_fix_hash TEXT,
+        post_fix_hash TEXT,
+        curation_score REAL,
+        curation_reasoning TEXT,
+        curation_is_approved INTEGER,
+        curation_raw_response TEXT
       )
     `).run();
   } catch (error) {
@@ -27,3 +90,7 @@ export function initDatabase(): void {
     throw error;
   }
 }
+
+// Initialize database schema on load
+initDatabase();
+

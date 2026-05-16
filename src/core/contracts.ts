@@ -16,7 +16,7 @@ export const CurationResultSchema = z.object({
   score: z.number().min(0).max(1),
   reasoning: z.string(),
   isApproved: z.boolean(),
-  rawResponse: z.string().optional(),
+  rawResponse: z.string().nullable().optional(),
 });
 
 export type CurationResult = z.infer<typeof CurationResultSchema>;
@@ -33,13 +33,17 @@ export interface ISignificanceFilter {
 
  
 export const CandidateSchema = z.object({
-
   id: z.string().uuid(),
   hash: z.string(), // Git commit hash
   message: z.string(),
   files: z.array(z.string()), // Affected files
-  status: z.enum(['pending', 'validated', 'rejected']),
+  status: z.enum(['pending', 'validated', 'rejected', 'curated']),
   created_at: z.date(),
+  repositoryUrl: z.string().url(),
+  repositoryName: z.string(),
+  preFixHash: z.string().optional(),
+  postFixHash: z.string().optional(),
+  curation: CurationResultSchema.nullable().optional(),
 });
 
 export type Candidate = z.infer<typeof CandidateSchema>;
@@ -47,7 +51,10 @@ export type Candidate = z.infer<typeof CandidateSchema>;
 
 export interface ICandidateRepository {
   save(candidate: Candidate): void;
+  upsert(candidate: Candidate): void;
   exists(hash: string): boolean;
+  existsById(id: string): boolean;
+  getById(id: string): Candidate | undefined;
   getAll(): Candidate[];
 }
 
@@ -149,3 +156,30 @@ export const RunResultSchema = z.object({
 });
 
 export type RunResult = z.infer<typeof RunResultSchema>;
+
+// --- Dataset Export/Import Types ---
+
+export interface IDatasetExporter {
+  export(path: string): Promise<number>;
+}
+
+export interface IDatasetImporter {
+  import(path: string): Promise<number>;
+}
+
+export const CandidateExportSchema = z.object({
+  repository: z.object({
+    url: z.string().url(),
+    name: z.string(),
+  }),
+  preFixHash: z.string().length(40),
+  postFixHash: z.string().length(40),
+  curation: CurationResultSchema,
+  status: z.enum(['pending', 'validated', 'rejected', 'curated']),
+  metadata: z.object({
+    candidateId: z.string().uuid(),
+    createdAt: z.string().datetime(),
+  }),
+});
+
+export type CandidateExport = z.infer<typeof CandidateExportSchema>;

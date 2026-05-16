@@ -5,10 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node --loader ts-node/esm src/cli/index.ts",
+    "start": "npx tsx src/cli/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "mine": "node --loader ts-node/esm src/cli/mine.ts"
+    "mine": "npx tsx src/cli/mine.ts"
   },
   "keywords": [],
   "author": "",
