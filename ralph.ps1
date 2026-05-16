@@ -1,5 +1,5 @@
 # RalphLoop.ps1 - Hierarchical Ralph Loop Orchestrator
-$MaxIterations = 100
+$MaxIterations = 1000
 $Iteration = 1
 
 Write-Host "🚀 Starting Hierarchical RepoBench Ralph Loop..." -ForegroundColor Cyan
@@ -23,7 +23,7 @@ while ($Iteration -le $MaxIterations) {
             Write-Host "  📍 Active Feature Layer: Feature ${FeatureID}" -ForegroundColor Yellow
             
             # STATE A: DECOMPOSITION CHECK
-            if ($FeatureBlock -notmatch '-\s*\[.\]\s*Task') {
+            if ($FeatureBlock -notmatch '-\s*\[.\]\s*\[Task\s+(.+):') {
                 Write-Host "    📂 State: Needs Decomposition..." -ForegroundColor Yellow
                 opencode run "You are the PLANNER. Read .agents/ROADMAP.md and .agents/ARCHITECTURE.md. Isolate Feature ${FeatureID} inside Epic ${EpicID}. Decompose it into 2-5 atomic tasks under a '  * **Tasks:**' block. Create .agents/spec/task-${FeatureID}.X.md files for each. Call critical_reviewer to audit the plan. Once PASS, update .agents/ROADMAP.md and EXIT."
                 continue
@@ -57,8 +57,9 @@ If FAIL: Append a new task line to this feature: '    - [ ] [Task ${FeatureID}.F
 "@
             opencode run $closerMsg
             continue
-
+        } else {
             # --- STEP 3: EPIC COMPLETION & REVIEW ---
+            # All features for this epic are marked [x], proceed with epic-level review
             Write-Host "🏆 State: All features for Epic ${EpicID} are complete. Launching Epic-Level Review..." -ForegroundColor Blue
             $architectMsg = @"
 You are the PRINCIPAL ARCHITECT. All features for Epic ${EpicID} are marked [x], but the Epic checkbox is open. Evaluate system-wide stability, structural integrity across modules, cross-feature boundary leaks, and total regression logs.
