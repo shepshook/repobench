@@ -12,7 +12,23 @@ export const RepoBenchConfigSchema = z.object({
   curation: z.object({
     prompt: z.string().optional(),
   }).optional(),
-});
+  sandbox: z.object({
+    build_command: z.string().optional(),
+    test_command: z.string().optional(),
+    env_vars: z.record(z.string()).optional(),
+    base_image: z.string().optional(),
+    cache_paths: z.array(z.string()).optional(),
+  }).optional(),
+}).transform((data) => ({
+  ...data,
+  sandbox: data.sandbox ? {
+    buildCommand: data.sandbox.build_command,
+    testCommand: data.sandbox.test_command,
+    envVars: data.sandbox.env_vars,
+    baseImage: data.sandbox.base_image,
+    cachePaths: data.sandbox.cache_paths,
+  } : undefined,
+}));
 
 export type RepoBenchConfig = z.infer<typeof RepoBenchConfigSchema>;
 
@@ -23,6 +39,7 @@ const DEFAULT_CONFIG: RepoBenchConfig = {
     since: undefined,
     limit: undefined,
   },
+  sandbox: undefined,
 };
 
 export async function loadConfig(path: string = 'repobench.yaml'): Promise<RepoBenchConfig> {

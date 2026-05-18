@@ -85,6 +85,15 @@ export function initDatabase(newDbPath?: string): void {
         curation_raw_response TEXT
       )
     `).run();
+    _rawDb.prepare(`
+      CREATE TABLE IF NOT EXISTS containers (
+        container_id TEXT PRIMARY KEY,
+        image TEXT,
+        created_at TEXT,
+        status TEXT,
+        labels TEXT
+      )
+    `).run();
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;

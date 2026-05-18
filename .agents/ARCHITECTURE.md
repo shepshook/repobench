@@ -66,8 +66,7 @@ src/
 ```
 
 ### 4.3. Error Handling
-
-* **No Silent Failures**: Always wrap I/O (Docker, Git, PTY) in `try/catch` blocks.
+* **No Silent Failures**: Do not swallow errors. Wrap I/O (Docker, Git, PTY) in `try/catch` blocks *only* when a recovery path exists. If an error should trigger a fallback (e.g., Docker $\rightarrow$ Simulation) or fail the operation, it must bubble up to the orchestrator.
 * **RCA Requirement**: Throw descriptive errors that include the `stdout` or `stderr` context to assist the Orchestrator's Root Cause Analysis.
 
 ---
@@ -89,3 +88,18 @@ The project uses **File-Based Memory** to manage context overflow:
 * **Docker**: All images must be labeled with `app=repobench` for automated cleanup.
 * **PTY**: Use `node-pty` for real-time interaction. Do not use standard `child_process.exec` for agents requiring TTY.
 * **Scoring**: The E-Score is the primary metric. Any change to the scoring logic must be reflected in `Feature 4.3` of the Roadmap.
+
+## 7. Testing Principles
+To ensure deterministic benchmarks and reliable CI, all tests must adhere to these principles:
+
+### 7.1. Test Execution
+* **Strict Isolation**: Tests must not rely on or mutate shared static state. Any static state (e.g., simulation caches) must be explicitly reset in `beforeEach`.
+* **DI-Driven Mocking**: Use Dependency Injection to provide mocks. Prefer injecting mock implementations of interfaces (e.g., `IDocker`) over mocking global modules.
+* **State-Aware Expectations**: Distinguish between instance-level state (e.g., performance stats) and process-wide state (e.g., simulated volumes) in assertions.
+* **Explicit Environment**: Use temporary directories for all file-based tests. Never rely on the existence of files in the workspace.
+* **No "Hope-based" Testing**: Mocking should be precise. Avoid broad mocks that return generic success; use specific setup helpers to define expected behaviors.
+
+### 7.2. Organization & Maintenance
+* **Functional Grouping**: Do not create a new test file for every bug fix (e.g., avoid `feature-fix1.test.ts`). Group tests by functional domain (e.g., `sandbox-core.test.ts`, `volume-manager-stats.test.ts`).
+* **Fixture-Based Setup**: Use centralized fixtures (e.g., `tests/infrastructure/fixtures.ts`) to reduce boilerplate and ensure consistent setup across the suite.
+* **Regression Integration**: When fixing a bug, add the regression test to the existing relevant feature suite rather than creating isolated "fix" files.

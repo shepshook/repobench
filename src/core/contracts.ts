@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { RepoBenchConfig } from './config';
+import { SANDBOX_APP_LABEL } from './constants';
+
+export { SANDBOX_APP_LABEL };
 
 /**
  * RepoBench Core Contracts
@@ -60,21 +63,74 @@ export interface ICandidateRepository {
 
 // --- Sandbox Types ---
 
+export interface ISandboxManager {
+  cleanupOrphanedContainers(): Promise<void>;
+  trackContainer(containerId: string): Promise<void>;
+  stopContainer(containerId: string): Promise<void>;
+  killTimedOutContainers(timeoutMs: number): Promise<void>;
+  createCacheForSession(sessionId: string, lockId: string): Promise<void>;
+  setCacheLimit(limit: number): Promise<void>;
+  pruneCache(): Promise<void>;
+  listCacheVolumes(): Promise<string[]>;
+  teardown(): Promise<void>;
+  getCacheStatus(): Promise<{ pruned: boolean }>;
+}
+
+export const ContainerRepositorySchema = z.object({
+  containerId: z.string(),
+  image: z.string(),
+  createdAt: z.string().datetime(),
+  status: z.string(),
+  labels: z.object({
+    app: z.literal(SANDBOX_APP_LABEL),
+  }),
+});
+
+export type ContainerMetadata = z.infer<typeof ContainerRepositorySchema>;
+
 export interface SandboxConfig {
-  buildCommand: string;
-  testCommand: string;
-  envVars: Record<string, string>;
+  buildCommand?: string;
+  testCommand?: string;
+  envVars?: Record<string, string>;
   baseImage?: string;
   baseImagePath?: string;
+  cacheVolumes?: { hostPath: string; containerPath: string }[];
+  cachePaths?: string[];
+  project?: string;
+}
+
+export interface IDocker {
+  createVolume(options: any): Promise<any>;
+  getVolume(name: string): any;
+  getImage(image: string): any;
+  pull(image: string): Promise<any>;
+  createContainer(options: any): Promise<any>;
+}
+
+export interface IVolumeManager {
+  calculateCacheKey(lockFile?: string): Promise<string>;
+  setupCacheVolumes(cacheVolumes: { hostPath: string; containerPath: string }[], project: string, lockFile?: string, isSimulation?: boolean): Promise<boolean>;
+  recordCacheStatus(project: string, lockFile?: string, isSimulation?: boolean): Promise<{ hit: boolean }>;
+  getVolumes(): Record<string, string>;
+  createVolume(name: string): Promise<boolean>;
+  mountVolume(name: string, path: string): Promise<void>;
+  removeVolume(name: string): Promise<void>;
+  resetStats(): void;
+  getDocker(): IDocker;
+  getCacheStats(): Promise<{ hits: number; misses: number }>;
+  resetStats(): void;
+  readonly simCacheRoot: string;
 }
 
 export interface ISandbox {
   readonly id: string;
+  readonly config: SandboxConfig;
   init(): Promise<void>;
   destroy(): Promise<void>;
   execute(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }>;
   switchState(hash: string): Promise<void>;
   getFilesystemSnapshot(): Promise<string[]>;
+  getCacheStats(): Promise<{ hits: number; misses: number }>;
   ping(): Promise<boolean>;
 }
 
@@ -122,6 +178,10 @@ export type ValidationResult = z.infer<typeof ValidationResultSchema>;
 
 export interface IBenchmarkValidator {
   validate(candidate: Candidate): Promise<ValidationResult>;
+}
+
+export interface IBenchmarkService {
+  runBenchmark(config: SandboxConfig): Promise<{ coldStart: number, warmStart: number, hitRatio: number }>;
 }
 
 export interface EvalMetrics {

@@ -71,12 +71,12 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.6.FIX5: Fix Miner Candidate Type Errors](.agents/spec/task-1.6.fix5.md)
     - [x] [Task 1.6.FIX6: Fix DatasetImporter Type Definition](.agents/spec/task-1.6.fix6.md)
     - [x] [Task 1.6.FIX7: Fix DatasetImporter Deduplication](.agents/spec/task-1.6.fix7.md)
-        - [x] [Task 1.6.FIX8: Fix Database Initialization in Integration Tests](.agents/spec/task-1.6.fix8.md)
+    - [x] [Task 1.6.FIX8: Fix Database Initialization in Integration Tests](.agents/spec/task-1.6.fix8.md)
   * **DoD:** Curated datasets can be exported/imported via a single file retaining all metadata.
 
 ---
 
-## [ ] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
+## [x] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
 **Description:** Create a 'Clean Room' environment for agent execution using Docker.
 **Metrics:** Init Latency (<30s for standard projects), Setup Reliability (% of successful builds).
 **Success Criteria:**
@@ -84,18 +84,46 @@ This document serves as the central source of truth for the project's strategic 
 - [ ] Automated resource teardown.
 
 ### Features
-* **[ ] Feature 2.1: Configurable Environment Setup**
+* **[x] Feature 2.1: Configurable Environment Setup**
   * **Spec:** Add sandbox config to `repobench.yaml` (`build_command`, `test_command`, `env_vars`); update `Sandbox.init`.
+  * **Tasks:**
+    - [x] [Task 2.1.1: Configuration Schema & Parser](.agents/spec/task-2.1.1.md)
+    - [x] [Task 2.1.2: Sandbox Implementation & Contracts](.agents/spec/task-2.1.2.md)
+    - [x] [Task 2.1.3: Integration Testing Suite](.agents/spec/task-2.1.3.md)
   * **DoD:** Sandbox correctly initializes using custom build commands; tests run via config.
-* **[ ] Feature 2.2: Robust Container Lifecycle Management**
-  * **Spec:** Build `SandboxManager` to track/cleanup containers with `repobench` label; add timeouts.
+* **[x] Feature 2.2: Robust Container Lifecycle Management**
+  * **Spec:** Build `SandboxManager` to track/cleanup containers with `repobench` label; add timeouts, use `ContainerRepository` for persistence.
+  * **Tasks:**
+    - [x] [Task 2.2.1: SandboxManager Interface Definition & Persistence Setup](.agents/spec/task-2.2.1.md)
+    - [x] [Task 2.2.2: ContainerRepository & SandboxManager Implementation](.agents/spec/task-2.2.2.md)
+    - [x] [Task 2.2.3: Timeout Logic, Resource Teardown, and Error Handling](.agents/spec/task-2.2.3.md)
+    - [x] [Task 2.2.FIX1: Audit SandboxManager cleanupOrphanedContainers error handling](.agents/spec/task-2.2.fix1.md)
+    - [x] [Task 2.2.FIX2: Fix SandboxManager cleanupOrphanedContainers error handling](.agents/spec/task-2.2.fix2.md)
+    - [x] [Task 2.2.FIX3: Consolidate Error Handling in SandboxManager](.agents/spec/task-2.2.fix3.md)
+    - [x] [Task 2.2.FIX4: Update SandboxManager Tests to Assert Rejection](.agents/spec/task-2.2.fix4.md)
+    - [x] [Task 2.2.FIX5: Reconcile SandboxManager cleanupOrphanedContainers Error Handling with Tests](.agents/spec/task-2.2.fix5.md)
   * **DoD:** Zero orphaned containers post-run; long-running processes are killed.
-* **[ ] Feature 2.3: Pre-Fix vs Post-Fix State Switching**
+* **[x] Feature 2.3: Pre-Fix vs Post-Fix State Switching**
   * **Spec:** Implement `Sandbox.switchState(hash)` optimized via `git checkout`.
+  * **Tasks:**
+    - [x] [Task 2.3.1: Define ISandbox interface for switchState](.agents/spec/task-2.3.1.md)
+    - [x] [Task 2.3.2: Implement Sandbox.switchState using git checkout](.agents/spec/task-2.3.2.md)
+    - [x] [Task 2.3.3: Add verification tests for state switching](.agents/spec/task-2.3.3.md)
   * **DoD:** Evaluator can seamlessly test `commit_pre_fix`, apply fix, and test the result.
-* **[ ] Feature 2.4: Docker Image Optimization & Caching**
-  * **Spec:** Support custom base images and Docker volumes for `node_modules`/`pip` caching.
-  * **DoD:** Subsequent initialization times are significantly reduced.
+* **[x] Feature 2.4: Docker Image Optimization & Caching**
+  * **Spec:** Support custom base images and Docker volumes for `node_modules`/`pip` caching with cache invalidation and lifecycle management.
+  * **Tasks:**
+    - [x] [Task 2.4.1: Research & Define Caching Strategy](.agents/spec/task-2.4.1.md)
+    - [x] [Task 2.4.2: Infrastructure Implementation (Volumes/Base Images)](.agents/spec/task-2.4.2.md)
+    - [x] [Task 2.4.3: Cache Lifecycle Management](.agents/spec/task-2.4.3.md)
+    - [x] [Task 2.4.4: Verification & Performance Benchmarking](.agents/spec/task-2.4.4.md)
+    - [x] [Task 2.4.FIX1: Fix VolumeManager Docker Interaction](.agents/spec/task-2.4.fix1.md)
+    - [x] [Task 2.4.FIX2: Fix Sandbox Caching Persistence & Invalidation](.agents/spec/task-2.4.fix2.md)
+    - [x] [Task 2.4.FIX3: Fix Sandbox Base Image Configuration](.agents/spec/task-2.4.fix3.md)
+    - [x] [Task 2.4.FIX4: Fix VolumeManager Concurrency](.agents/spec/task-2.4.fix4.md)
+    - [x] [Task 2.4.FIX5: Fix Caching Stats & Volume Mounting](.agents/spec/task-2.4.fix5.md)
+    - [x] [Task 2.4.FIX6: Investigate and Fix Test Suite Failures](.agents/spec/task-2.4.fix6.md)
+  * **DoD:** Subsequent initialization times are significantly reduced; cache does not grow unboundedly; dependencies are correctly invalidated.
 
 ---
 

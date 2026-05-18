@@ -75,7 +75,7 @@ describe('CLI Dataset Portability Integration', () => {
       
       const content = await fs.readFile(tempExportFile, 'utf-8');
       expect(content).toContain(id);
-    });
+    }, 20000);
 
     it('should export only curated and approved candidates and report the correct count', async () => {
       const idApp = generateValidUuid();

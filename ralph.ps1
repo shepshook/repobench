@@ -39,7 +39,7 @@ while ($Iteration -le $MaxIterations) {
                 
                 # 1. Test Architect
                 Write-Host "       > TEST_ARCHITECT generating test assertions..." -ForegroundColor Magenta
-                opencode run -m ${FreeTierModel} "You are the TEST_ARCHITECT. Read @.agents\spec\task-${TaskID}.md and @.agents\ARCHITECTURE.md. Write failing integration or unit tests in the tests/ directory for this task. Do NOT touch files in src/. Do NOT duplicate existing tests. EXIT when done."
+                opencode run -m ${FreeTierModel} "You are the TEST_ARCHITECT. Read @.agents\spec\task-${TaskID}.md and @.agents\ARCHITECTURE.md and follow the described testing principles. Review the existing tests before adding new. Write failing integration or unit tests in the tests/ directory for this task if they don't introduce overlap with existing tests. Do NOT touch files in src/. EXIT when done."
                 
                 # 2. Implementer
                 Write-Host "       > IMPLEMENTER writing functional logic..." -ForegroundColor Magenta
