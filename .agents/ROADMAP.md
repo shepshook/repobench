@@ -181,7 +181,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.
   * **Tasks:**
     - [x] [Task 3.4.1: Define IDoneDetector interface and completion signature schemas](.agents/spec/task-3.4.1.md)
-    - [ ] [Task 3.4.2: Implement DoneDetector service with regex scanning](.agents/spec/task-3.4.2.md)
+    - [x] [Task 3.4.2: Implement DoneDetector service with regex scanning](.agents/spec/task-3.4.2.md)
     - [ ] [Task 3.4.3: Implement session-level timeout mechanism in PtySession](.agents/spec/task-3.4.3.md)
     - [ ] [Task 3.4.4: Integrate DoneDetector and timeout management into SessionOrchestrator](.agents/spec/task-3.4.4.md)
   * **DoD:** Orchestrator accurately terminates upon task completion or timeout.
