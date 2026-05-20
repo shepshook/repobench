@@ -190,7 +190,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Build `CostParser` to extract token/cost data from agent outputs.
   * **Tasks:**
     - [x] [Task 3.5.1: Define CostParser Contract & Schema](.agents/spec/task-3.5.1.md)
-    - [ ] [Task 3.5.2: Implement CostParser Service](.agents/spec/task-3.5.2.md)
+        - [x] [Task 3.5.2: Implement CostParser Service](.agents/spec/task-3.5.2.md)
     - [ ] [Task 3.5.3: Integrate CostParser into SessionOrchestrator](.agents/spec/task-3.5.3.md)
     - [ ] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
   * **DoD:** Output logs include precise financial cost per run.
