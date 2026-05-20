@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { RepoBenchConfig } from './config';
 import { SANDBOX_APP_LABEL } from './constants';
+import { CostMetricsSchema, CostMetrics } from './entities/cost-metrics';
 
-export { SANDBOX_APP_LABEL };
+export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics };
 
 /**
  * RepoBench Core Contracts
@@ -210,6 +211,20 @@ export interface SessionResult {
 }
 
 // --- Judge Types ---
+
+export interface ICostParser {
+  parse(logs: string): CostMetrics;
+}
+
+export const CostParsingRuleSchema = z.object({
+  agentId: z.string(),
+  promptTokensPattern: z.string(),
+  completionTokensPattern: z.string(),
+  costPattern: z.string().optional(),
+  currency: z.string().default('USD'),
+});
+
+export type CostParsingRule = z.infer<typeof CostParsingRuleSchema>;
 
 export const ValidationResultSchema = z.object({
   isValid: z.boolean(),

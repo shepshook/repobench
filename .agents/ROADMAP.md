@@ -177,7 +177,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.3.FIX4: Fix PtySession Injection Sync Test — Echo Commands](.agents/spec/task-3.3.fix4.md)
     - [x] [Task 3.3.FIX5: Fix PTY Sync Failure Test — Echo Commands](.agents/spec/task-3.3.fix5.md)
   * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
-* **[ ] Feature 3.4: Session Termination & Done Detection**
+* **[x] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.
   * **Tasks:**
     - [x] [Task 3.4.1: Define IDoneDetector interface and completion signature schemas](.agents/spec/task-3.4.1.md)
@@ -188,6 +188,11 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Orchestrator accurately terminates upon task completion or timeout.
 * **[ ] Feature 3.5: Token & Cost Telemetry Scraper**
   * **Spec:** Build `CostParser` to extract token/cost data from agent outputs.
+  * **Tasks:**
+    - [x] [Task 3.5.1: Define CostParser Contract & Schema](.agents/spec/task-3.5.1.md)
+    - [ ] [Task 3.5.2: Implement CostParser Service](.agents/spec/task-3.5.2.md)
+    - [ ] [Task 3.5.3: Integrate CostParser into SessionOrchestrator](.agents/spec/task-3.5.3.md)
+    - [ ] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
   * **DoD:** Output logs include precise financial cost per run.
 * **[ ] Feature 3.6: Agent Configuration Management**
   * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters via `BatchRunner`.
