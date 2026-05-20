@@ -173,7 +173,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.3.5: Implement Rollback Mechanism](.agents/spec/task-3.3.5.md)
     - [x] [Task 3.3.FIX1: Fix SessionOrchestrator Test Mock Sandbox](.agents/spec/task-3.3.fix1.md)
     - [x] [Task 3.3.FIX2: Fix PromptHandler Integration Test Sandbox Init](.agents/spec/task-3.3.fix2.md)
-    - [ ] [Task 3.3.FIX3: Fix PTY Injection Synchronization Test](.agents/spec/task-3.3.fix3.md)
+    - [x] [Task 3.3.FIX3: Fix PTY Injection Synchronization Test](.agents/spec/task-3.3.fix3.md)
   * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
 * **[ ] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.

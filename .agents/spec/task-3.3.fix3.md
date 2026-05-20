@@ -61,7 +61,7 @@ The fundamental problem is that the Docker driver's `write()` resolves before th
       expect(midIdx).toBeLessThan(lastIdx);
 ```
 
-## Verification
-```bash
-npx vitest run tests/infrastructure/pty-session.test.ts
-```
+## Audit Feedback Round 1
+- `src/infrastructure/pty/pty-worker.cjs`: `injectData` still contains an artificial delay (`setTimeout`) of 200ms, contrary to instructions to remove it entirely.
+- `tests/infrastructure/pty-session.test.ts`: The test `should synchronize injected responses with other PTY operations` still uses `accumulated` for assertions, instead of `getScreenState()` as explicitly instructed in the spec.
+

@@ -180,6 +180,7 @@ describe('PtySession Integration', () => {
       session.onData((data) => { received += data; });
 
       await (session as any).injectResponse(testResponse);
+      await waitForText(session, testResponse);
 
       expect(received).toContain(testResponse);
       expect(session.getScreenState()).toContain(testResponse);
@@ -201,10 +202,11 @@ describe('PtySession Integration', () => {
 
       await waitForText(session, 'Last');
 
-      // We expect them to appear in the order they were called
-      const firstIdx = accumulated.indexOf('First');
-      const midIdx = accumulated.indexOf('Injected Middle');
-      const lastIdx = accumulated.indexOf('Last');
+      // Use screen state for ordering checks (normalized output)
+      const screenState = session.getScreenState();
+      const firstIdx = screenState.indexOf('First');
+      const midIdx = screenState.indexOf('Injected Middle');
+      const lastIdx = screenState.indexOf('Last');
 
       expect(firstIdx).toBeLessThan(midIdx);
       expect(midIdx).toBeLessThan(lastIdx);

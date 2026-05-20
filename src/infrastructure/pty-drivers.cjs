@@ -188,7 +188,11 @@ class DockerDriver extends PtyDriver {
 
         this.shellProcess.on('data', (data) => {
             if (this.dataCallback) {
-                this.dataCallback(new Uint8Array(data));
+                let buffer = Buffer.from(data);
+                if (buffer.length >= 8 && buffer[0] === 1 && buffer[1] === 0 && buffer[2] === 0) {
+                    buffer = buffer.slice(8);
+                }
+                this.dataCallback(new Uint8Array(buffer));
             }
         });
 

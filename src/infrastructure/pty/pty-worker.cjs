@@ -50,9 +50,9 @@ node_worker_threads_1.parentPort?.on('message', async (message) => {
                 break;
             }
             case 'injectData': {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const data = typeof payload === 'string' ? new TextEncoder().encode(payload) : payload;
-                node_worker_threads_1.parentPort?.postMessage({ type: 'data', data });
+                if (!driver) throw new Error('PTY driver not spawned');
+                const data = typeof payload === 'string' ? payload : new TextDecoder().decode(payload);
+                await driver.write(data);
                 if (id) {
                     node_worker_threads_1.parentPort?.postMessage({ type: 'response', id, result: true });
                 }
