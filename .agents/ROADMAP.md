@@ -170,7 +170,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.3.2: Implement PromptHandler Logic](.agents/spec/task-3.3.2.md)
     - [x] [Task 3.3.3: Implement Response Injection & Synchronization](.agents/spec/task-3.3.3.md)
     - [x] [Task 3.3.4: Integration & Verification](.agents/spec/task-3.3.4.md)
-    - [ ] [Task 3.3.5: Implement Rollback Mechanism](.agents/spec/task-3.3.5.md)
+    - [x] [Task 3.3.5: Implement Rollback Mechanism](.agents/spec/task-3.3.5.md)
   * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
 * **[ ] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.

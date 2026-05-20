@@ -129,9 +129,16 @@ export interface ISandbox {
   destroy(): Promise<void>;
   execute(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }>;
   switchState(hash: string): Promise<void>;
+  createSnapshot(): Promise<void>;
+  restoreSnapshot(): Promise<void>;
   getFilesystemSnapshot(): Promise<string[]>;
   getCacheStats(): Promise<{ hits: number; misses: number }>;
   ping(): Promise<boolean>;
+}
+
+export interface ISessionOrchestrator {
+  createSession(config: AgentConfig, sandbox: ISandbox): Promise<IPtySession>;
+  executeSession(config: AgentConfig, sandbox: ISandbox, buildCommand: string): Promise<{ success: boolean }>;
 }
 
 import type { IAgentAdapter } from './contracts/agent-adapter';
@@ -157,6 +164,7 @@ export interface IPtySession {
   injectResponse(data: string): Promise<void>;
   close(): Promise<void>;
   getScreenState(): string;
+  waitForExit(): Promise<number>;
 }
 
 export const AgentConfigSchema = z.object({

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import Docker from 'dockerode';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { VolumeManager, VolumeManagerError } from './volume-manager';
@@ -46,6 +46,7 @@ export class Sandbox implements ISandbox {
   public get simulationDir() { return this._simulationDir; }
   public set simulationDir(value: string | null) { this._simulationDir = value; }
   private _simulationDir: string | null = null;
+  private _snapshotDir: string | null = null;
   private currentHash: string | null = null;
   private volumeManager: IVolumeManager;
   private statsCounted = false;
@@ -464,16 +465,57 @@ export class Sandbox implements ISandbox {
            } catch (e: any) {
              result = { stdout: '', stderr: e.message, exitCode: 1 };
            }
-         } else if (trimmedPart.startsWith('cat ')) {
-           const target = trimmedPart.split(' ').slice(1).join(' ').replace(/"/g, '');
-           try {
-             const content = readFileSync(target, 'utf8');
-             result = { stdout: content, stderr: '', exitCode: 0 };
-           } catch (e: any) {
-             result = { stdout: '', stderr: `cat: ${target}: No such file or directory`, exitCode: 1 };
-           }
-         } else {
+          } else if (trimmedPart.startsWith('cat ')) {
+            const target = trimmedPart.split(' ').slice(1).join(' ').replace(/"/g, '');
             try {
+              const content = readFileSync(target, 'utf8');
+              result = { stdout: content, stderr: '', exitCode: 0 };
+            } catch (e: any) {
+              result = { stdout: '', stderr: `cat: ${target}: No such file or directory`, exitCode: 1 };
+            }
+          } else if (trimmedPart.startsWith('grep ')) {
+            const parts = trimmedPart.split(' ');
+            if (parts.length >= 3) {
+              const pattern = parts[1].replace(/"/g, '');
+              const target = parts.slice(2).join(' ').replace(/"/g, '');
+              try {
+                const content = readFileSync(target, 'utf8');
+                const lines = content.split('\n');
+                const matches = lines.filter(line => line.includes(pattern));
+                if (matches.length > 0) {
+                  result = { stdout: matches.join('\n') + '\n', stderr: '', exitCode: 0 };
+                } else {
+                  result = { stdout: '', stderr: '', exitCode: 1 };
+                }
+              } catch (e: any) {
+                result = { stdout: '', stderr: `grep: ${target}: No such file or directory`, exitCode: 2 };
+              }
+            } else {
+              result = { stdout: '', stderr: 'grep: missing arguments', exitCode: 1 };
+            }
+          } else if (trimmedPart.startsWith('echo ')) {
+            const match = trimmedPart.match(/^echo\s+(.*)\s+(>|>>)\s+(.*)$/);
+            if (match) {
+              const content = match[1].replace(/^"|"$/g, '');
+              const operator = match[2];
+              const target = match[3].replace(/"/g, '');
+              try {
+                writeFileSync(target, content, { flag: operator === '>>' ? 'a' : 'w' });
+                result = { stdout: '', stderr: '', exitCode: 0 };
+              } catch (e: any) {
+                result = { stdout: '', stderr: e.message, exitCode: 1 };
+              }
+            } else {
+              const content = trimmedPart.split(' ').slice(1).join(' ');
+              result = { stdout: content + '\n', stderr: '', exitCode: 0 };
+            }
+          } else if (trimmedPart.startsWith('exit ')) {
+            const code = parseInt(trimmedPart.split(' ')[1]) || 0;
+            result = { stdout: '', stderr: '', exitCode: code };
+          } else if (trimmedPart === 'exit') {
+            result = { stdout: '', stderr: '', exitCode: 0 };
+          } else {
+             try {
               const finalCmd = this.expandSimulationCommand(
                 trimmedPart,
                 { ...process.env, ...this.config.envVars, ...options?.env }
@@ -563,6 +605,38 @@ export class Sandbox implements ISandbox {
     }
   }
 
+  async createSnapshot(): Promise<void> {
+    if (!this.initialized) throw new Error('Sandbox not initialized');
+
+    if (this.isSimulation && this.simulationDir) {
+      this._snapshotDir = mkdtempSync(join(tmpdir(), 'repobench-snapshot-'));
+      cpSync(this.simulationDir, this._snapshotDir, { recursive: true });
+    } else {
+      // For Docker, use tar inside the container for simplicity
+      const result = await this.execute('tar -cf /tmp/snapshot.tar --exclude=/tmp/snapshot.tar /app /tmp');
+      if (result.exitCode !== 0) {
+        throw new Error(`Failed to create snapshot: ${result.stderr}`);
+      }
+    }
+  }
+
+  async restoreSnapshot(): Promise<void> {
+    if (!this.initialized) throw new Error('Sandbox not initialized');
+
+    if (this.isSimulation && this.simulationDir && this._snapshotDir) {
+      rmSync(this.simulationDir, { recursive: true, force: true });
+      cpSync(this._snapshotDir, this.simulationDir, { recursive: true });
+    } else if (this.isSimulation) {
+      throw new Error('No snapshot available to restore');
+    } else {
+      // For Docker, restore using tar
+      const result = await this.execute('tar -xf /tmp/snapshot.tar -C /');
+      if (result.exitCode !== 0) {
+        throw new Error(`Failed to restore snapshot: ${result.stderr}`);
+      }
+    }
+  }
+
   async destroy(): Promise<void> {
     if (this.sessions.size > 0) {
       await Promise.all(Array.from(this.sessions).map(s => s.close().catch(() => {})));
@@ -571,6 +645,11 @@ export class Sandbox implements ISandbox {
     if (this.isSimulation && this.simulationDir) {
       try {
         rmSync(this.simulationDir, { recursive: true, force: true });
+      } catch {}
+    }
+    if (this.isSimulation && this._snapshotDir) {
+      try {
+        rmSync(this._snapshotDir, { recursive: true, force: true });
       } catch {}
     }
     if (this.container) {

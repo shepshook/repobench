@@ -97,7 +97,7 @@ while ($Iteration -le $MaxIterations) {
 
                 # 3. Task Reviewer
                 Write-Host "       > CRITICAL_REVIEWER verifying code compliance..." -ForegroundColor Magenta
-                opencode run -m ${MiddleTierModel} "You are the CRITICAL_REVIEWER. Audit Task ${TaskID} against its spec and @.agents\ARCHITECTURE.md and review the code quality. If PASS, rewrite .agents\ROADMAP.md changing '- [ ] [Task ${TaskID}:' to '    - [x] [Task ${TaskID}:'. If FAIL, write precise feedback into the spec file under '## Audit Feedback Round N' (.agents\spec\task-${TaskID}.md) and do NOT check it off. EXIT."
+                opencode run -m ${MiddleTierModel} "You are the CRITICAL_REVIEWER. Audit Task ${TaskID} against its spec and @.agents\ARCHITECTURE.md and review the code quality. If PASS, rewrite .agents\ROADMAP.md changing '- [ ] [Task ${TaskID}:' to '    - [x] [Task ${TaskID}:'. If FAIL, write down precise feedback into the spec file under '## Audit Feedback Round N' (.agents\spec\task-${TaskID}.md) and do NOT check it off. EXIT."
 
                 # Check PASS/FAIL and commit if passed
                 $RoadmapAfter = Get-Content ".agents/ROADMAP.md" -Raw

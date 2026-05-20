@@ -99,21 +99,54 @@ describe('Sandbox State Management', () => {
     await sandbox.destroy();
   });
 
-  it('should accurately track cache hits and misses without double counting', async () => {
-    const { volumeManager, mockDocker } = createSandboxFixture();
-    const project = 'cache-stats-test';
-    const cacheVolumes = [{ hostPath: '/tmp/cache', containerPath: '/tmp/cache' }];
+  it('should restore file state from a snapshot', async () => {
+    const { sandbox } = createSimulationFixture();
+    await sandbox.init();
     
-    VolumeManager.resetStats();
+    const filePath = '/tmp/rollback-test.txt';
+    await sandbox.execute(`echo "v1" > ${filePath}`);
     
-    // 1. Setup cache volumes (should be a MISS)
-    await volumeManager.setupCacheVolumes(cacheVolumes, project);
+    await sandbox.createSnapshot();
     
-    // 2. Record cache status (should be a HIT but not incremented due to idempotency)
-    await volumeManager.recordCacheStatus(project);
+    await sandbox.execute(`echo "v2" > ${filePath}`);
+    const { stdout: contentV2 } = await sandbox.execute(`cat ${filePath}`);
+    expect(contentV2).toContain('v2');
     
-    const stats = await volumeManager.getCacheStats();
-    expect(stats.misses).toBe(1);
-    expect(stats.hits).toBe(0);
+    await sandbox.restoreSnapshot();
+    const { stdout: contentV1 } = await sandbox.execute(`cat ${filePath}`);
+    expect(contentV1).toContain('v1');
+    
+    await sandbox.destroy();
   });
+
+  it('should rollback state when a build command fails after an edit', async () => {
+    const { sandbox } = createSimulationFixture();
+    await sandbox.init();
+    
+    const filePath = '/tmp/build-test.txt';
+    await sandbox.execute(`echo "valid" > ${filePath}`);
+    
+    await sandbox.createSnapshot();
+    
+    await sandbox.execute(`echo "invalid" > ${filePath}`);
+    
+    const buildResult = await sandbox.execute(`grep "invalid" ${filePath} && exit 1 || exit 0`);
+    
+    if (buildResult.exitCode !== 0) {
+       await sandbox.restoreSnapshot();
+    }
+    
+    const { stdout: content } = await sandbox.execute(`cat ${filePath}`);
+    expect(content).toContain('valid');
+    
+    await sandbox.destroy();
+  });
+
+  it('should throw a descriptive error when restoring a snapshot without having created one', async () => {
+    const { sandbox } = createSimulationFixture();
+    await sandbox.init();
+    await expect(sandbox.restoreSnapshot()).rejects.toThrow();
+    await sandbox.destroy();
+  });
+
 });

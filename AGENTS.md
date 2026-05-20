@@ -12,7 +12,6 @@ npm run typecheck
 ```
 
 ### Linting
-(Not yet configured - please install ESLint/Prettier)
 ```bash
 npm run lint
 ```
