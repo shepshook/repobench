@@ -163,7 +163,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.2.4: Integrate Adapter Selection in SessionOrchestrator](.agents/spec/task-3.2.4.md)
     - [x] [Task 3.2.FIX1: Audit and Fix PtySession Adapter Compatibility](.agents/spec/task-3.2.fix1.md)
   * **DoD:** RepoBench launches specific agents via CLI arguments using adapter factory.
-* **[ ] Feature 3.3: Auto-Approval & Interaction Logic**
+* **[x] Feature 3.3: Auto-Approval & Interaction Logic**
   * **Spec:** Build `PromptHandler` to monitor PTY and inject auto-responses (e.g., 'y') using state-synchronized injection and rollback-capable safety layer.
   * **Tasks:**
     - [x] [Task 3.3.1: Define IPromptHandler and InteractionRule Schema](.agents/spec/task-3.3.1.md)
@@ -179,6 +179,11 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
 * **[ ] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.
+  * **Tasks:**
+    - [x] [Task 3.4.1: Define IDoneDetector interface and completion signature schemas](.agents/spec/task-3.4.1.md)
+    - [ ] [Task 3.4.2: Implement DoneDetector service with regex scanning](.agents/spec/task-3.4.2.md)
+    - [ ] [Task 3.4.3: Implement session-level timeout mechanism in PtySession](.agents/spec/task-3.4.3.md)
+    - [ ] [Task 3.4.4: Integrate DoneDetector and timeout management into SessionOrchestrator](.agents/spec/task-3.4.4.md)
   * **DoD:** Orchestrator accurately terminates upon task completion or timeout.
 * **[ ] Feature 3.5: Token & Cost Telemetry Scraper**
   * **Spec:** Build `CostParser` to extract token/cost data from agent outputs.

@@ -153,7 +153,20 @@ export const InteractionRuleSchema = z.object({
 
 export type InteractionRule = z.infer<typeof InteractionRuleSchema>;
 
+export const CompletionSignatureSchema = z.object({
+  pattern: z.string(),
+  name: z.string(),
+});
+
+export type CompletionSignature = z.infer<typeof CompletionSignatureSchema>;
+
+export interface IDoneDetector {
+  isDone(output: string): boolean;
+  setSignatures(signatures: CompletionSignature[]): void;
+}
+
 export interface IPromptHandler {
+
   handle(data: string): string | null;
   setRules(rules: InteractionRule[]): void;
 }

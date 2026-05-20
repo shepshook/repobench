@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator } from '../../src/core/contracts';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema } from '../../src/core/contracts';
 
 describe('ValidationResultSchema', () => {
   it('should validate a correct ValidationResult object', () => {
@@ -69,5 +69,56 @@ describe('IBenchmarkValidator', () => {
     }
     const validator: IBenchmarkValidator = new MockValidator();
     expect(validator).toBeDefined();
+  });
+});
+
+describe('IDoneDetector', () => {
+  it('should be implementable by a mock class', () => {
+    class MockDoneDetector implements IDoneDetector {
+      isDone(output: string): boolean {
+        return output.includes('DONE');
+      }
+    }
+    const detector: IDoneDetector = new MockDoneDetector();
+    expect(detector.isDone('Task is DONE')).toBe(true);
+    expect(detector.isDone('Task is not done')).toBe(false);
+  });
+});
+
+describe('CompletionSignature', () => {
+  it('should be usable as a type for signature collections', () => {
+    const signatures: CompletionSignature[] = [
+      { pattern: 'Finished', name: 'basic' },
+      { pattern: 'Task complete', name: 'detailed' },
+    ];
+    expect(signatures).toHaveLength(2);
+    expect(signatures[0].pattern).toBe('Finished');
+  });
+});
+
+describe('CompletionSignatureSchema', () => {
+  it('should validate a correct CompletionSignature object', () => {
+    const validSignature = {
+      pattern: 'Finished',
+      name: 'basic',
+    };
+    expect(() => CompletionSignatureSchema.parse(validSignature)).not.toThrow();
+  });
+
+  it('should throw an error for missing required fields', () => {
+    const invalidSignature = {
+      pattern: 'Finished',
+    };
+    // @ts-expect-error - testing runtime validation
+    expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
+  });
+
+  it('should throw an error for invalid types', () => {
+    const invalidSignature = {
+      pattern: 123,
+      name: 'basic',
+    };
+    // @ts-expect-error - testing runtime validation
+    expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
   });
 });
