@@ -26,7 +26,9 @@ describe('Session Orchestration Integration', () => {
     } as any;
 
     mockSession = {
+      onData: vi.fn(),
       write: vi.fn().mockResolvedValue(true),
+      onTimeout: vi.fn(),
       close: vi.fn().mockResolvedValue(undefined),
       waitForExit: vi.fn().mockResolvedValue(0),
     };

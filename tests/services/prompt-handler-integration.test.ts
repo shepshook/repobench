@@ -37,6 +37,7 @@ describe('PromptHandler Orchestrator Integration', () => {
     };
     (PtySession.create as any).mockResolvedValue({
       onData: vi.fn(),
+      onTimeout: vi.fn(),
       write: vi.fn(),
       close: vi.fn(),
       waitForExit: vi.fn(),

@@ -26,7 +26,9 @@ describe('Session Rollback Mechanism', () => {
     } as any;
 
     mockSession = {
+      onData: vi.fn(),
       write: vi.fn(),
+      onTimeout: vi.fn(),
       close: vi.fn(),
       waitForExit: vi.fn().mockResolvedValue(0),
     };
