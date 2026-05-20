@@ -16,9 +16,18 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         }));
         promptHandler.setRules(rules);
 
-        return await PtySession.create(sandbox, adapter, {
+        const session = await PtySession.create(sandbox, adapter, {
             args: config.cliArgs
         }, promptHandler);
+
+        session.onData(data => {
+            const response = promptHandler.handle(data);
+            if (response) {
+                session.write(response + '\n');
+            }
+        });
+
+        return session;
     }
 
     async executeSession(config: AgentConfig, sandbox: Sandbox, buildCommand: string): Promise<{ success: boolean }> {

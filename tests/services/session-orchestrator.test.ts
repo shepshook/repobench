@@ -15,7 +15,41 @@ describe('SessionOrchestrator Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     orchestrator = new SessionOrchestrator();
-    mockSandbox = {} as Sandbox;
+    mockSandbox = {
+      createSnapshot: vi.fn().mockResolvedValue(undefined),
+      restoreSnapshot: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn().mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+      id: 'mock-sandbox',
+      config: {},
+      getContainer: vi.fn().mockReturnValue({ id: 'mock-container' }),
+      registerSession: vi.fn(),
+      unregisterSession: vi.fn(),
+    } as unknown as Sandbox;
+    (AgentAdapterFactory.createAdapter as any).mockReturnValue({
+      interactionMap: new Map(),
+      getStartupCommand: () => 'agent-cli',
+    });
+    (PtySession.create as any).mockResolvedValue({
+      onData: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+      getScreenState: vi.fn(),
+      waitForExit: vi.fn(),
+    });
+  });
+
+  it('should call createSnapshot on the sandbox during session creation', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+    
+    await orchestrator.createSession(config, mockSandbox);
+    expect(mockSandbox.createSnapshot).toHaveBeenCalled();
   });
 
   it('should integrate PromptHandler during session creation to process PTY output', async () => {

@@ -142,14 +142,7 @@ export class PtySession implements IPtySession {
     }
     const normalized = AnsiProcessor.normalize(output, isBehavior, this.writtenCommands);
     
-    // Auto-respond based on PromptHandler
-    const response = this.promptHandler.handle(normalized);
-    if (response) {
-        this.write(response + '\n');
-    }
-    
     this.rawDataCallbacks.forEach(cb => cb(dataString));
-
     this.dataCallbacks.forEach(cb => cb(normalized));
   }
 
