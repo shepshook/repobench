@@ -179,7 +179,7 @@ describe('PtySession Integration', () => {
       let received = '';
       session.onData((data) => { received += data; });
 
-      await (session as any).injectResponse(testResponse);
+       await session.injectResponse(`echo "${testResponse}"`);
       await waitForText(session, testResponse);
 
       expect(received).toContain(testResponse);

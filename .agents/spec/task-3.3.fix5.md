@@ -36,3 +36,10 @@ Also removes the unnecessary `(session as any)` cast — `injectResponse` is on 
 ```bash
 npx vitest run tests/infrastructure/pty-sync.test.ts
 ```
+
+## Audit Feedback Round 1
+- **Status**: FAIL
+- **Observation**: The code in `tests/infrastructure/pty-sync.test.ts` does not match the specifications defined in this file. Specifically:
+  - The injection command is still `(session as any).injectResponse('Injected Middle')` instead of `session.injectResponse('echo "Injected Middle"')`.
+  - The `(session as any)` type cast remains.
+- **Required Actions**: Implement the changes exactly as specified in the "Fix Instructions" section.

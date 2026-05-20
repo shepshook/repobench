@@ -33,8 +33,8 @@ describe('PtySession Synchronization Failure', () => {
 
       // Slow down the first write
       await session.write('sleep 0.5 && echo "First"\n');
-      // Inject immediately
-      await (session as any).injectResponse('Injected Middle');
+       // Inject immediately — use echo to produce visible output through Docker exec
+       await session.injectResponse('echo "Injected Middle"');
       // Write the last one
       await session.write('echo "Last"\n');
 
@@ -48,6 +48,7 @@ describe('PtySession Synchronization Failure', () => {
       expect(firstIdx).not.toBe(-1);
       expect(midIdx).not.toBe(-1);
       expect(lastIdx).not.toBe(-1);
+      expect(accumulated).not.toContain('not found');
 
       console.log(`Indices - First: ${firstIdx}, Mid: ${midIdx}, Last: ${lastIdx}`);
 

@@ -360,7 +360,7 @@ export class PtySession implements IPtySession {
       this.queue.push({
         execute: async () => {
           if (this.state === SessionState.CLOSED) return;
-          await this.sendRequest('injectData', data + '\n');
+           await this.sendRequest('injectData', data + '\n');
         },
         resolve,
         reject

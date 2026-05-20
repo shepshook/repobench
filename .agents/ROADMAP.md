@@ -175,7 +175,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.3.FIX2: Fix PromptHandler Integration Test Sandbox Init](.agents/spec/task-3.3.fix2.md)
     - [x] [Task 3.3.FIX3: Fix PTY Injection Synchronization Test](.agents/spec/task-3.3.fix3.md)
     - [x] [Task 3.3.FIX4: Fix PtySession Injection Sync Test — Echo Commands](.agents/spec/task-3.3.fix4.md)
-    - [ ] [Task 3.3.FIX5: Fix PTY Sync Failure Test — Echo Commands](.agents/spec/task-3.3.fix5.md)
+    - [x] [Task 3.3.FIX5: Fix PTY Sync Failure Test — Echo Commands](.agents/spec/task-3.3.fix5.md)
   * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
 * **[ ] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.
