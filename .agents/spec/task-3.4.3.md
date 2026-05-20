@@ -7,3 +7,7 @@
 - Throw descriptive errors if timeout/cleanup fails.
 - **Testing:** Include integration tests verifying that sessions terminate correctly after configurable inactivity.
 **DoD:** Sessions are automatically terminated after configurable inactivity; integration tests pass.
+
+## Audit Feedback Round 1
+The implementation of the timeout mechanism in `PtySession` appears functional in the code.
+However, the requirement regarding integration tests for the timeout mechanism (point 8 in Requirements, DoD) is NOT met. There is no active test verifying that sessions terminate correctly after configurable inactivity in `tests/infrastructure/pty-session.test.ts`.

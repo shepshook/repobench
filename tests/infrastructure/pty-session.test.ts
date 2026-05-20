@@ -155,10 +155,80 @@ describe('PtySession Integration', () => {
     }
   });
 
-  it('should timeout when the worker does not respond', { timeout: 0 }, async () => {
-    // Skipping this test as it uses fake timers which may cause issues with worker threads
-    // await expect(true).toBe(true);
-  })
+
+  it('should terminate session after configured inactivity timeout', async () => {
+    const session: IPtySession = await PtySession.create(sandbox, { timeout: 1000 });
+    try {
+      // Wait for timeout to occur
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Session should be closed
+      const exitCode = await session.waitForExit();
+      expect(exitCode).toBeDefined();
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('should call onTimeout callback when session times out', async () => {
+    const session: IPtySession = await PtySession.create(sandbox, { timeout: 1000 });
+    try {
+      let timeoutCalled = false;
+      session.onTimeout(() => { timeoutCalled = true; });
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      expect(timeoutCalled).toBe(true);
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('should reset timeout on session activity (writing)', async () => {
+    const session: IPtySession = await PtySession.create(sandbox, { timeout: 1000 });
+    try {
+      let timeoutCalled = false;
+      session.onTimeout(() => { timeoutCalled = true; });
+
+      // Wait for 800ms, then write
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await session.write('echo "still here"\n');
+      
+      // Wait another 800ms
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Should not have timed out yet
+      expect(timeoutCalled).toBe(false);
+      
+      // Wait for the rest of the timeout
+      await new Promise(resolve => setTimeout(resolve, 500));
+      expect(timeoutCalled).toBe(true);
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('should reset timeout on session activity (receiving data)', async () => {
+    const session: IPtySession = await PtySession.create(sandbox, { timeout: 1000 });
+    try {
+      let timeoutCalled = false;
+      session.onTimeout(() => { timeoutCalled = true; });
+
+      // Start a command that produces output after a delay
+      await session.write('sleep 0.5 && echo "delayed output"\n');
+      
+      // Wait for 800ms. The output should have arrived at 500ms, resetting timer.
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Should not have timed out yet
+      expect(timeoutCalled).toBe(false);
+      
+      // Wait for it to eventually time out
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      expect(timeoutCalled).toBe(true);
+    } finally {
+      await session.close();
+    }
+  });
 
 
   it('should successfully create a PTY session with an explicit adapter', async () => {

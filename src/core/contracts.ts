@@ -173,6 +173,7 @@ export interface IPromptHandler {
 
 export interface IPtySession {
   onData(callback: (data: string) => void): void;
+  onTimeout(callback: () => void): void;
   write(data: string): Promise<boolean>;
   injectResponse(data: string): Promise<void>;
   close(): Promise<void>;

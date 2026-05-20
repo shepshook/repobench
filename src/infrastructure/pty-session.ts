@@ -10,7 +10,7 @@ import { AnsiProcessor } from './ansi-processor';
 import { VirtualScreen } from './pty/virtual-screen';
 import { VteParser } from './pty/vte-parser';
 import { mapSpawnErrorToRca } from './pty/rca-utils';
-import { PtyRequest, PtyResponse, PtyResponseExit, PtyResponseError, PtyResponseSuccess, PtyResponseData, PtyRequestType } from './pty/types';
+import { PtyRequest, PtyResponse, PtyResponseError, PtyResponseSuccess, PtyRequestType } from './pty/types';
 
 export class PtySessionClosedError extends Error {
   constructor(message = 'PTY session is closed') {
@@ -55,14 +55,21 @@ export class PtySession implements IPtySession {
   private pendingRequests = new Map<string, { resolve: (value: any) => void, reject: (reason: any) => void }>();
   private requestId = 0;
   private lastError: any = null;
+  private timeoutMs?: number;
+  private timeoutTimer: NodeJS.Timeout | null = null;
+  private timeoutCallback: (() => void) | null = null;
   
-  private constructor(sandbox: Sandbox, worker: Worker, adapter: IAgentAdapter, promptHandler: IPromptHandler) {
+  private constructor(sandbox: Sandbox, worker: Worker, adapter: IAgentAdapter, promptHandler: IPromptHandler, timeoutMs?: number) {
     this.sandbox = sandbox;
     this.worker = worker;
     this.adapter = adapter;
     this.promptHandler = promptHandler;
+    this.timeoutMs = timeoutMs;
     
     this.setupWorkerListeners();
+    if (this.timeoutMs) {
+      this.resetTimeout();
+    }
   }
 
   private setupWorkerListeners(): void {
@@ -110,6 +117,10 @@ export class PtySession implements IPtySession {
   }
   
   private handleWorkerTermination(): void {
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
     this.state = SessionState.CLOSED;
     if (this.exitResolver) {
       this.exitResolver(this.exitCode ?? 0);
@@ -144,6 +155,7 @@ export class PtySession implements IPtySession {
     
     this.rawDataCallbacks.forEach(cb => cb(dataString));
     this.dataCallbacks.forEach(cb => cb(normalized));
+    this.resetTimeout();
 
     const response = this.promptHandler.handle(normalized);
     if (response) {
@@ -212,7 +224,7 @@ export class PtySession implements IPtySession {
         finalPromptHandler.setRules(rules);
     }
     
-    const session = new PtySession(sandbox, worker, finalAdapter, finalPromptHandler);
+    const session = new PtySession(sandbox, worker, finalAdapter, finalPromptHandler, (finalOptions as any)?.timeout);
     sandbox.registerSession(session);
     
     const startupCmd = finalAdapter.getStartupCommand();
@@ -281,7 +293,7 @@ export class PtySession implements IPtySession {
         resolve,
         reject
       });
-      this.processQueue();
+       void this.processQueue();
     });
   }
 
@@ -296,6 +308,7 @@ export class PtySession implements IPtySession {
     return new Promise<void>((resolve, reject) => {
       this.queue.push({
         execute: async () => {
+          await Promise.resolve();
           if (this.state === SessionState.CLOSED) {
             return; // Resolve silently if already closed
           }
@@ -306,10 +319,32 @@ export class PtySession implements IPtySession {
         resolve,
         reject
       });
-      this.processQueue();
+       void this.processQueue();
     });
   }
 
+  public onTimeout(callback: () => void): void {
+    this.timeoutCallback = callback;
+  }
+
+  private resetTimeout(): void {
+    if (!this.timeoutMs) return;
+    if (this.timeoutTimer) clearTimeout(this.timeoutTimer);
+    
+    this.timeoutTimer = setTimeout(() => {
+      (async () => {
+        console.log(`[PtySession] Session timed out after ${this.timeoutMs}ms of inactivity`);
+        if (this.timeoutCallback) {
+          this.timeoutCallback();
+        }
+        try {
+          await this.close();
+        } catch (e: any) {
+          console.error(`[PtySession] Error during timeout cleanup: ${e.message}`);
+        }
+      })();
+    }, this.timeoutMs);
+  }
 
   public onData(callback: (data: string) => void): void {
     this.dataCallbacks.push(callback);
@@ -318,7 +353,6 @@ export class PtySession implements IPtySession {
   public onRawData(callback: (data: string) => void): void {
     this.rawDataCallbacks.push(callback);
   }
-
   public async write(data: string): Promise<boolean> {
     if (this.state === SessionState.CLOSING || this.state === SessionState.CLOSED) {
       return false;
@@ -336,18 +370,19 @@ export class PtySession implements IPtySession {
           let finalData = data;
           finalData = finalData.replace(/([^\r])\n/g, '$1\r\n').replace(/^\n/g, '\r\n');
 
-          try {
-            this.writtenCommands.push(finalData);
-            await this.sendRequest('write', finalData);
-            return true;
-          } catch (e: any) {
-            return false;
-          }
+           try {
+             this.writtenCommands.push(finalData);
+             this.resetTimeout();
+             await this.sendRequest('write', finalData);
+             return true;
+           } catch {
+             return false;
+           }
         },
         resolve,
         reject: () => resolve(false) // Ensure we never reject the write promise
       });
-      this.processQueue();
+       void this.processQueue();
     });
   }
 
@@ -358,14 +393,15 @@ export class PtySession implements IPtySession {
 
     return new Promise<void>((resolve, reject) => {
       this.queue.push({
-        execute: async () => {
-          if (this.state === SessionState.CLOSED) return;
+         execute: async () => {
+           if (this.state === SessionState.CLOSED) return;
+           this.resetTimeout();
            await this.sendRequest('injectData', data + '\n');
-        },
+         },
         resolve,
         reject
       });
-      this.processQueue();
+       void this.processQueue();
     });
   }
 
@@ -376,18 +412,22 @@ export class PtySession implements IPtySession {
     
     return new Promise<void>((resolve, reject) => {
       this.queue.push({
-        execute: async () => {
-          try {
-            await this.sendRequest('close', {});
-          } catch (e) {}
-          this.state = SessionState.CLOSED;
-          this.worker.terminate();
-          this.sandbox.unregisterSession(this);
-        },
+         execute: async () => {
+           try {
+             await this.sendRequest('close', {});
+           } catch (e) {}
+           if (this.timeoutTimer) {
+             clearTimeout(this.timeoutTimer);
+             this.timeoutTimer = null;
+           }
+           this.state = SessionState.CLOSED;
+           this.worker.terminate();
+           this.sandbox.unregisterSession(this);
+         },
         resolve,
         reject
       });
-      this.processQueue();
+       void this.processQueue();
     });
   }
 
