@@ -58,7 +58,6 @@ Replace `vi.mock('../../infrastructure/sandbox');` (line 9) with proper mock set
 
 **Note:** The `vi.mock('../../infrastructure/sandbox')` on line 9 should also be removed if the mock is inline, since we're creating an inline mock object.
 
-## Verification
-```bash
-npx vitest run tests/services/prompt-handler-integration.test.ts
-```
+## Audit Feedback Round 1
+- **FAIL**: The requirement to remove `vi.mock` for the Sandbox infrastructure was not met. The instruction explicitly stated: "Note: The `vi.mock('../../infrastructure/sandbox')` on line 9 should also be removed if the mock is inline". Line 9 in `tests/services/prompt-handler-integration.test.ts` still contains `vi.mock('../../src/infrastructure/sandbox');`. Please remove this line to adhere to the spec.
+

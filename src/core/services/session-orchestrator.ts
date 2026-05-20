@@ -20,7 +20,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             args: config.cliArgs
         }, promptHandler);
 
-        session.onData(data => {
+        session.onData?.(data => {
             const response = promptHandler.handle(data);
             if (response) {
                 session.write(response + '\n');

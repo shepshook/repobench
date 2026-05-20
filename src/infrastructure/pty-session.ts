@@ -144,6 +144,11 @@ export class PtySession implements IPtySession {
     
     this.rawDataCallbacks.forEach(cb => cb(dataString));
     this.dataCallbacks.forEach(cb => cb(normalized));
+
+    const response = this.promptHandler.handle(normalized);
+    if (response) {
+      this.write(response + '\n');
+    }
   }
 
     private async sendRequest(type: PtyRequestType, payload: any): Promise<any> {

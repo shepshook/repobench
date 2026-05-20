@@ -5,8 +5,7 @@ import { PtySession } from '../../src/infrastructure/pty-session';
 import { AgentAdapterFactory } from '../../src/core/services/agent-adapter-factory';
 import { AgentConfig } from '../../src/core/contracts';
 
-vi.mock('../../infrastructure/pty-session');
-vi.mock('../../infrastructure/sandbox');
+vi.mock('../../src/infrastructure/pty-session');
 vi.mock('../../src/core/services/agent-adapter-factory');
 
 describe('PromptHandler Orchestrator Integration', () => {
@@ -17,7 +16,18 @@ describe('PromptHandler Orchestrator Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     orchestrator = new SessionOrchestrator();
-    mockSandbox = new Sandbox({} as any);
+    mockSandbox = {
+      createSnapshot: vi.fn().mockResolvedValue(undefined),
+      restoreSnapshot: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn().mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+      id: 'mock-sandbox',
+      config: {},
+      getContainer: vi.fn().mockReturnValue({ id: 'mock-container' }),
+      isSimulation: false,
+      registerSession: vi.fn(),
+      unregisterSession: vi.fn(),
+    } as unknown as Sandbox;
     mockConfig = {
       agentId: 'test-agent',
       model: 'gpt-4',
@@ -25,6 +35,12 @@ describe('PromptHandler Orchestrator Integration', () => {
       systemPrompt: 'You are a helper',
       cliArgs: ['--verbose'],
     };
+    (PtySession.create as any).mockResolvedValue({
+      onData: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+      waitForExit: vi.fn(),
+    });
   });
 
   it('should create a session that uses PromptHandler based on adapter rules', async () => {
