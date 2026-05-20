@@ -187,6 +187,7 @@ export const AgentConfigSchema = z.object({
   temperature: z.number().min(0).max(2),
   systemPrompt: z.string(),
   cliArgs: z.array(z.string()),
+  completionSignatures: z.array(CompletionSignatureSchema).optional(),
 });
 
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;

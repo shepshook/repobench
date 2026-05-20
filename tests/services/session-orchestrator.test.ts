@@ -4,6 +4,7 @@ import { PtySession } from '../../src/infrastructure/pty-session';
 import { AgentAdapterFactory } from '../../src/core/services/agent-adapter-factory';
 import { Sandbox } from '../../src/infrastructure/sandbox';
 import { PromptHandler } from '../../src/core/services/prompt-handler';
+import { IDoneDetector } from '../../src/core/contracts';
 
 vi.mock('../../src/infrastructure/pty-session');
 vi.mock('../../src/core/services/agent-adapter-factory');
@@ -11,10 +12,19 @@ vi.mock('../../src/core/services/agent-adapter-factory');
 describe('SessionOrchestrator Integration', () => {
   let orchestrator: SessionOrchestrator;
   let mockSandbox: Sandbox;
+  let mockDoneDetector: IDoneDetector;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    orchestrator = new SessionOrchestrator();
+    
+    mockDoneDetector = {
+      isDone: vi.fn().mockReturnValue(false),
+      setSignatures: vi.fn(),
+    };
+
+    // Injecting mockDoneDetector as required by Task 3.4.4
+    orchestrator = new SessionOrchestrator(mockDoneDetector);
+    
     mockSandbox = {
       createSnapshot: vi.fn().mockResolvedValue(undefined),
       restoreSnapshot: vi.fn().mockResolvedValue(undefined),
@@ -32,6 +42,7 @@ describe('SessionOrchestrator Integration', () => {
     });
     (PtySession.create as any).mockResolvedValue({
       onData: vi.fn(),
+      onTimeout: vi.fn(),
       write: vi.fn(),
       close: vi.fn(),
       getScreenState: vi.fn(),
@@ -63,6 +74,7 @@ describe('SessionOrchestrator Integration', () => {
 
     const mockSession = {
       onData: vi.fn(),
+      onTimeout: vi.fn(),
       write: vi.fn(),
       close: vi.fn(),
       getScreenState: vi.fn(),
@@ -76,29 +88,169 @@ describe('SessionOrchestrator Integration', () => {
 
     const session = await orchestrator.createSession(config, mockSandbox);
 
-    // This test expects that SessionOrchestrator is responsible for 
-    // hooking up the PromptHandler to the session's data stream.
-    // Currently, this will FAIL because SessionOrchestrator just calls PtySession.create 
-    // and doesn't perform any PromptHandler integration itself.
     expect(mockSession.onData).toHaveBeenCalled();
     
-    // Verify that a PromptHandler is actually used to handle the data
     const dataCallback = (mockSession.onData as any).mock.calls[0][0];
     const promptHandler = new PromptHandler();
     promptHandler.setRules([{ pattern: 'Confirm\\? \\[y/n\\]', response: 'y' }]);
     
-    // We simulate the data callback being called (which the orchestrator should have set up)
-    // and verify that it results in a write to the session.
-    // Note: This is a high-level integration test.
-    
-    // If the orchestrator had integrated PromptHandler, it would have done something like:
-    // session.onData(data => { 
-    //   const res = promptHandler.handle(data);
-    //   if (res) session.write(res);
-    // });
-    
-    // We simulate the prompt being received
     dataCallback('Confirm? [y/n]');
     expect(mockSession.write).toHaveBeenCalledWith('y\n');
+  });
+
+  it('should configure DoneDetector with signatures from agent config during session creation', async () => {
+    const signatures = [
+      { pattern: 'Task completed', name: 'completion' },
+      { pattern: 'I have finished', name: 'completion' },
+    ];
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+      completionSignatures: signatures,
+    } as any;
+
+    await orchestrator.createSession(config, mockSandbox);
+
+    expect(mockDoneDetector.setSignatures).toHaveBeenCalledWith(signatures);
+  });
+
+  it('should terminate session when DoneDetector signals completion', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    
+    const session = await orchestrator.createSession(config, mockSandbox);
+    
+    // Simulate data that DoneDetector recognizes as 'done'
+    mockDoneDetector.isDone.mockReturnValue(true);
+    const dataCallback = (mockSession.onData as any).mock.calls[0][0];
+    
+    await dataCallback('Task completed successfully.');
+    
+    expect(mockSession.close).toHaveBeenCalled();
+  });
+
+  it('should throw a descriptive error when session.close fails during completion', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockRejectedValue(new Error('Close failed')),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    mockDoneDetector.isDone.mockReturnValue(true);
+    const dataCallback = (mockSession.onData as any).mock.calls[0][0];
+    
+    await expect(dataCallback('Task completed.')).rejects.toThrow('Failed to close session on completion: Close failed');
+  });
+
+  it('should terminate session when timeout event occurs', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    // Simulate timeout event
+    const timeoutCallback = (mockSession.onTimeout as any).mock.calls[0][0];
+    await timeoutCallback();
+    
+    expect(mockSession.close).toHaveBeenCalled();
+  });
+
+  it('should throw a descriptive error when session.close fails during timeout', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockRejectedValue(new Error('Close failed')),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    const timeoutCallback = (mockSession.onTimeout as any).mock.calls[0][0];
+    
+    await expect(timeoutCallback()).rejects.toThrow('Failed to close session on timeout: Close failed');
+  });
+
+  it('should ensure robust cleanup of sandbox and session on failure', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockRejectedValue(new Error('Cleanup failed')),
+      getScreenState: vi.fn(),
+      waitForExit: vi.fn().mockRejectedValue(new Error('Session crashed')),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    
+    await expect(orchestrator.executeSession(config, mockSandbox, 'npm test'))
+      .rejects.toThrow('Session crashed');
+      
+    expect(mockSession.close).toHaveBeenCalled();
   });
 });

@@ -1,10 +1,15 @@
 import { Sandbox } from '../../infrastructure/sandbox';
 import { PtySession } from '../../infrastructure/pty-session';
 import { AgentAdapterFactory } from './agent-adapter-factory';
-import { IPtySession, AgentConfig, IPromptHandler, ISessionOrchestrator } from '../contracts';
+import { IPtySession, AgentConfig, IPromptHandler, ISessionOrchestrator, IDoneDetector } from '../contracts';
 import { PromptHandler } from './prompt-handler';
 
 export class SessionOrchestrator implements ISessionOrchestrator {
+    constructor(private doneDetector: IDoneDetector = {
+        isDone: () => false,
+        setSignatures: () => {},
+    }) {}
+
     async createSession(config: AgentConfig, sandbox: Sandbox): Promise<IPtySession> {
         await sandbox.createSnapshot();
         const adapter = AgentAdapterFactory.createAdapter(config.agentId);
@@ -20,11 +25,26 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             args: config.cliArgs
         }, promptHandler);
 
-        session.onData?.(data => {
+        if (config.completionSignatures) {
+            this.doneDetector.setSignatures(config.completionSignatures);
+        }
+
+        session.onData?.(async (data) => {
+            if (this.doneDetector.isDone(data)) {
+                return session.close().catch(err => {
+                    throw new Error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
+                });
+            }
             const response = promptHandler.handle(data);
             if (response) {
                 session.write(response + '\n');
             }
+        });
+
+        session.onTimeout(async () => {
+            return session.close().catch(err => {
+                throw new Error(`Failed to close session on timeout: ${err instanceof Error ? err.message : err}`);
+            });
         });
 
         return session;
@@ -37,7 +57,12 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             const success = await this.validateAndRollback(sandbox, buildCommand);
             return { success };
         } finally {
-            await session.close();
+            try {
+                await session.close();
+            } catch (err) {
+                // Cleanup failure should be logged, but not override the primary exception
+                console.error(`Session cleanup failed: ${err instanceof Error ? err.message : err}`);
+            }
         }
     }
 
