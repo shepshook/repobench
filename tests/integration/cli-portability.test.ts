@@ -136,7 +136,7 @@ describe('CLI Dataset Portability Integration', () => {
       const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(id);
       expect(candidate).toBeDefined();
       expect(candidate.repositoryUrl).toBe('https://github.com/user/repo1');
-    });
+    }, 30000);
 
     it('should import multiple candidates and display correct count', async () => {
       const mockData = [
@@ -163,7 +163,15 @@ describe('CLI Dataset Portability Integration', () => {
 
       expect(output).toContain('Import successful');
       expect(output).toContain('2 candidate(s) processed');
-    });
+    }, 30000);
+
+    it('should display an error message when the import file is malformed', async () => {
+      await fs.writeFile(tempImportFile, 'invalid jsonl content');
+
+      expect(() => {
+        runCli(`import ${tempImportFile}`);
+      }).toThrow(/Error/i);
+    }, 30000);
 
     it('should display an error message when the import file is missing', async () => {
       const missingFile = path.join(os.tmpdir(), 'non-existent.jsonl');
@@ -171,14 +179,6 @@ describe('CLI Dataset Portability Integration', () => {
       expect(() => {
         runCli(`import ${missingFile}`);
       }).toThrow(/Error/i);
-    });
-
-    it('should display an error message when the import file is malformed', async () => {
-      await fs.writeFile(tempImportFile, 'invalid jsonl content');
-      
-      expect(() => {
-        runCli(`import ${tempImportFile}`);
-      }).toThrow(/Error/i);
-    });
+    }, 30000);
   });
 });

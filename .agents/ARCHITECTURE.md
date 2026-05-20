@@ -86,7 +86,8 @@ The project uses **File-Based Memory** to manage context overflow:
 ## 6. Infrastructure Specifics
 
 * **Docker**: All images must be labeled with `app=repobench` for automated cleanup.
-* **PTY**: Use `node-pty` for real-time interaction. Do not use standard `child_process.exec` for agents requiring TTY.
+* **Batch Command Execution**: Use `container.exec()` (Docker's native exec API) for non-interactive infrastructure commands (git operations, build commands, test commands). This provides clean stdout/stderr separation via multiplexed streams, direct exit codes via `exec.inspect()`, and avoids unnecessary PTY overhead. Do NOT route batch commands through `PtySession` — they don't need a TTY and benefit from the simpler, faster direct-exec path.
+* **Interactive Sessions (Agents)**: Use `node-pty` via `PtySession.create()` for AI agent sessions that require TTY interaction. The worker-based architecture (`pty-worker.cjs`) provides terminal emulation (`VirtualScreen`), ECMA-48 compliant ANSI parsing (`VteParser`), and stateful shell interaction. Do not use `child_process.exec` or raw Docker exec for agents requiring TTY — they need the full PTY infrastructure for bidirectional conversational I/O.
 * **Scoring**: The E-Score is the primary metric. Any change to the scoring logic must be reflected in `Feature 4.3` of the Roadmap.
 
 ## 7. Testing Principles

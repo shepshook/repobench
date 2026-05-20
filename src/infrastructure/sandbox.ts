@@ -7,6 +7,8 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { VolumeManager, VolumeManagerError } from './volume-manager';
+import { PtySession } from './pty-session';
+import { DefaultAdapter } from '../core/services/base-agent-adapter';
 
 const execAsync = promisify(exec);
 
@@ -27,10 +29,23 @@ class GitOperationError extends Error {
 export class Sandbox implements ISandbox {
   public readonly id: string;
   public readonly config: SandboxConfig;
+  public getContainer() { return this.container; }
   private container: any = null;
   private initialized = false;
-  private simulationDir: string | null = null;
-  private isSimulation = false;
+  private sessions: Set<any> = new Set();
+
+  public registerSession(session: any) {
+    this.sessions.add(session);
+  }
+
+  public unregisterSession(session: any) {
+    this.sessions.delete(session);
+  }
+
+  public isSimulation = false;
+  public get simulationDir() { return this._simulationDir; }
+  public set simulationDir(value: string | null) { this._simulationDir = value; }
+  private _simulationDir: string | null = null;
   private currentHash: string | null = null;
   private volumeManager: IVolumeManager;
   private statsCounted = false;
@@ -47,9 +62,12 @@ export class Sandbox implements ISandbox {
   }
 
   async init(): Promise<void> {
+    console.log(`DEBUG: Sandbox init starting...`);
     try {
       await this.initDocker();
+      console.log(`DEBUG: Sandbox initDocker succeeded`);
     } catch (error: any) {
+      console.log(`DEBUG: Sandbox initDocker failed: ${error.message}`);
       const isDockerError = 
           error.code === 'ENOENT' || 
           error.message?.includes('docker_engine') || 
@@ -57,9 +75,11 @@ export class Sandbox implements ISandbox {
           (error instanceof VolumeManagerError && (error.message?.includes('docker_engine') || error.message?.includes('ENOENT')));
       
       if (isDockerError) {
+        console.log(`DEBUG: Falling back to simulation`);
         this.volumeManager.resetStats();
         await this.initSimulation();
       } else {
+        console.log(`DEBUG: Throwing non-docker error`);
         throw error;
       }
     }
@@ -120,6 +140,7 @@ export class Sandbox implements ISandbox {
     }
     
     this.container = container;
+    console.log(`DEBUG: Sandbox container created: ${container.id}`);
 
     if (this.container && typeof this.container.start === 'function') {
       await this.container.start();
@@ -154,7 +175,7 @@ export class Sandbox implements ISandbox {
     private async initSimulation(): Promise<void> {
       this.isSimulation = true;
       const baseDir = mkdtempSync(join(tmpdir(), 'repobench-'));
-      this.simulationDir = baseDir;
+      this._simulationDir = baseDir;
  
       const cacheVolumes = this.config.cacheVolumes || (this.config.cachePaths ? this.config.cachePaths.map(p => ({ hostPath: p, containerPath: p })) : null);
       
@@ -178,7 +199,7 @@ export class Sandbox implements ISandbox {
         }
       }
  
-      const tmpPath = join(this.simulationDir, 'tmp');
+      const tmpPath = join(this.simulationDir!, 'tmp');
       
       // Create tmp directory
       try {
@@ -195,7 +216,7 @@ export class Sandbox implements ISandbox {
         } else if (cmd.includes('npm install') || cmd.includes('npm run build')) {
           // Simulate success for standard npm build commands in simulation mode to allow tests to pass without Docker
         } else {
-            const repoPath = join(this.simulationDir, 'repo');
+             const repoPath = join(this.simulationDir!, 'repo');
             let translatedCmd = this.expandSimulationCommand(
               cmd.replace('/tmp/', `${tmpPath}/`).replace(/\/app/g, repoPath),
               { ...process.env, ...this.config.envVars }
@@ -209,7 +230,7 @@ export class Sandbox implements ISandbox {
                     await execAsync(`cmd /c git config user.email "sim@example.com"`, { cwd: repoPath });
                     await execAsync(`cmd /c git config user.name "Sim User"`, { cwd: repoPath });
                     await execAsync(`cmd /c git commit --allow-empty -m "Sim initial commit"`, { cwd: repoPath });
-                    this.simulationDir = repoPath;
+                    this._simulationDir = repoPath;
                 } catch (e: any) {
                     console.log(`DEBUG: Failed to simulate git clone: ${e.message}`);
                     // Fallback to executing the actual command if simulation fails
@@ -218,11 +239,11 @@ export class Sandbox implements ISandbox {
                 console.log(`DEBUG: Executing simulation build command: ${translatedCmd}`);
                 try {
                   await execAsync(`cmd /c ${translatedCmd}`, { 
-                    cwd: this.simulationDir,
+                    cwd: this.simulationDir!,
                     env: { ...process.env, ...this.config.envVars }
                   });
                   if (cmd.includes('/app')) {
-                    this.simulationDir = repoPath;
+                    this._simulationDir = repoPath;
                   }
                 } catch (error: any) {
                   console.log(`DEBUG: Simulation build command failed: ${translatedCmd}`);
@@ -239,6 +260,63 @@ export class Sandbox implements ISandbox {
       this.initialized = true;
     }
 
+  private async runPtyCommand(name: string, args: string[], env?: Record<string, string>, timeout?: number): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    let stdout = '';
+    // If it's a docker command, we let PtySession handle the Docker-native path by not passing name/args
+    const isDockerExec = (name === 'docker' && args[0] === 'exec');
+    
+    const adapter = new DefaultAdapter(name, name);
+    const spawnOptions = isDockerExec
+      ? { env } 
+      : { args, env };
+      
+    const session = await PtySession.create(this, adapter, spawnOptions);
+    await session.initialize();
+    session.onData((data) => {
+      stdout += data;
+    });
+
+    // Write the command to the interactive shell, then exit so waitForExit resolves
+    if (name === 'docker' && args[0] === 'exec') {
+      const cmdIndex = args.indexOf('-c');
+      if (cmdIndex !== -1 && cmdIndex + 1 < args.length) {
+        const command = args.slice(cmdIndex + 1).join(' ');
+        await session.write(command + '; exit\n');
+      }
+    }
+
+    try {
+      if (timeout) {
+
+        await Promise.race([
+          session.waitForExit(),
+          new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
+      } else {
+        await session.waitForExit();
+      }
+    } catch (error: any) {
+      if (error.message === 'Timeout') {
+        await session.close();
+        return { stdout, stderr: 'Command timed out', exitCode: 124 };
+      }
+      throw error;
+    }
+
+    const exitCode = await session.waitForExit();
+    await session.close();
+
+    return { 
+      stdout: stdout.trimEnd(), 
+      stderr: '', 
+      exitCode 
+    };
+  }
+
+  /** Execute a non-interactive command inside the sandbox.
+   * For batch/infrastructure commands (git, build, test) uses direct Docker exec
+   * (fast, clean stdout/stderr, direct exit codes).
+   * For interactive TTY sessions (AI agents), use PtySession.create() directly. */
   async execute(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     if (!this.initialized) {
       throw new Error('Sandbox not initialized');
@@ -248,21 +326,11 @@ export class Sandbox implements ISandbox {
       return this.executeSimulation(command, options);
     }
 
-    let envs: string[] | undefined;
-    if (options?.env) {
-      const mergedEnv = { ...this.config.envVars, ...options.env };
-      envs = Object.entries(mergedEnv).map(([k, v]) => `${k}=${v}`);
-    }
-
-    try {
-      return await this.runDockerCommand(command, envs, options?.timeout);
-    } catch (error: any) {
-      return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || '',
-        exitCode: error.exitCode || 1,
-      };
-    }
+    // Use direct Docker exec for non-interactive commands (faster than PTY)
+    const envs = options?.env 
+      ? Object.entries({ ...this.config.envVars, ...options.env }).map(([k, v]) => `${k}=${v}`)
+      : undefined;
+    return this.runDockerCommand(command, envs, options?.timeout);
   }
 
   private async runDockerCommand(command: string, envs?: string[], timeout?: number): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -405,17 +473,24 @@ export class Sandbox implements ISandbox {
              result = { stdout: '', stderr: `cat: ${target}: No such file or directory`, exitCode: 1 };
            }
          } else {
-           try {
-             const finalCmd = this.expandSimulationCommand(
-               trimmedPart,
-               { ...process.env, ...this.config.envVars, ...options?.env }
-             );
-             const res = await execAsync(`cmd /c ${finalCmd}`, { 
-               cwd: this.simulationDir,
-               env: { ...process.env, ...this.config.envVars, ...options?.env }
-             });
-             result = { stdout: res.stdout, stderr: res.stderr, exitCode: 0 };
-           } catch (error: any) {
+            try {
+              const finalCmd = this.expandSimulationCommand(
+                trimmedPart,
+                { ...process.env, ...this.config.envVars, ...options?.env }
+              );
+               const ptyResult = await this.runPtyCommand(
+                 process.platform === 'win32' ? 'cmd.exe' : 'bash',
+                 process.platform === 'win32' ? ['/c', finalCmd] : ['-c', finalCmd],
+                 Object.fromEntries(
+                   Object.entries({ ...process.env, ...this.config.envVars, ...options?.env })
+                     .filter(([_, v]) => v !== undefined)
+                     .map(([k, v]) => [k, v as string])
+                 ),
+                 options?.timeout
+               );
+              result = { stdout: ptyResult.stdout, stderr: ptyResult.stderr, exitCode: ptyResult.exitCode };
+            } catch (error: any) {
+
              console.log(`DEBUG: Simulation command failed: ${trimmedPart}`);
              console.log(`DEBUG: stderr: ${error.stderr || error.message}`);
              result = {
@@ -458,12 +533,16 @@ export class Sandbox implements ISandbox {
         translatedCommand,
         { ...process.env, ...this.config.envVars, ...options?.env }
       );
-      const { stdout, stderr } = await execAsync(`cmd /c ${finalCommand}`, { 
-        cwd: this.simulationDir || undefined,
-        timeout: options?.timeout,
-        env: { ...process.env, ...this.config.envVars, ...options?.env }
-      });
-      return { stdout, stderr, exitCode: 0 };
+      return await this.runPtyCommand(
+        process.platform === 'win32' ? 'cmd.exe' : 'bash',
+        process.platform === 'win32' ? ['/c', finalCommand] : ['-c', finalCommand],
+        Object.fromEntries(
+          Object.entries({ ...process.env, ...this.config.envVars, ...options?.env })
+            .filter(([_, v]) => v !== undefined)
+            .map(([k, v]) => [k, v as string])
+        ),
+        options?.timeout
+      );
     } catch (error: any) {
       return {
         stdout: error.stdout || '',
@@ -485,6 +564,10 @@ export class Sandbox implements ISandbox {
   }
 
   async destroy(): Promise<void> {
+    if (this.sessions.size > 0) {
+      await Promise.all(Array.from(this.sessions).map(s => s.close().catch(() => {})));
+      this.sessions.clear();
+    }
     if (this.isSimulation && this.simulationDir) {
       try {
         rmSync(this.simulationDir, { recursive: true, force: true });
@@ -497,7 +580,7 @@ export class Sandbox implements ISandbox {
       } catch {}
     }
     this.container = null;
-    this.simulationDir = null;
+    this._simulationDir = null;
     this.initialized = false;
   }
 

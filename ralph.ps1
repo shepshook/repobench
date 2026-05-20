@@ -4,6 +4,43 @@ $Iteration = 1
 $HighTierModel = "openrouter/deepseek/deepseek-v4-flash"
 $MiddleTierModel = "google/gemini-3.1-flash-lite"
 $FreeTierModel = "google/gemma-4-31b-it"
+$StateFile = Join-Path $PSScriptRoot ".agents\.ralph-state.json"
+
+function Get-TaskAttempts {
+    param([string]$taskId)
+    if (Test-Path $StateFile) {
+        $data = Get-Content $StateFile -Raw | ConvertFrom-Json
+        $task = $data.tasks | Where-Object { $_.id -eq $taskId }
+        if ($task) { return $task.attempts }
+    }
+    return 0
+}
+
+function Increment-TaskAttempt {
+    param([string]$taskId)
+    $data = @{ tasks = @() }
+    if (Test-Path $StateFile) {
+        $data = Get-Content $StateFile -Raw | ConvertFrom-Json
+    }
+    $task = $data.tasks | Where-Object { $_.id -eq $taskId }
+    if (-not $task) {
+        $task = [PSCustomObject]@{ id = $taskId; attempts = 0 }
+        $data.tasks += $task
+    }
+    $task.attempts++
+    $data | ConvertTo-Json -Depth 10 | Set-Content $StateFile
+    return $task.attempts
+}
+
+function Reset-TaskAttempt {
+    param([string]$taskId)
+    if (Test-Path $StateFile) {
+        $data = Get-Content $StateFile -Raw | ConvertFrom-Json
+        $task = $data.tasks | Where-Object { $_.id -eq $taskId }
+        if ($task) { $task.attempts = 0 }
+        $data | ConvertTo-Json -Depth 10 | Set-Content $StateFile
+    }
+}
 
 Write-Host "🚀 Starting Hierarchical RepoBench Ralph Loop..." -ForegroundColor Cyan
 
@@ -35,19 +72,45 @@ while ($Iteration -le $MaxIterations) {
             # STATE B: PENDING TASK CHECK
             if ($FeatureBlock -match '-\s*\[ \]\s*\[Task\s+([\d\.\w]+):') {
                 $TaskID = $Matches[1]
-                Write-Host "    🧪 State: Task ${TaskID} is Pending. Entering TDD Pipeline..." -ForegroundColor Magenta
-                
+                $taskAttempts = Get-TaskAttempts $TaskID
+                Write-Host "    🧪 State: Task ${TaskID} is Pending. (Attempt $($taskAttempts + 1))" -ForegroundColor Magenta
+
+                # ESCALATION: after 2 failed reviews, escalate to premium model
+                if ($taskAttempts -ge 2) {
+                    Write-Host "       ⚠️ Task ${TaskID} has failed review $taskAttempts times. Escalating to premium model..." -ForegroundColor Red
+                    opencode run -m ${HighTierModel} "You are the ARCHITECTURAL ESCALATION ENGINE. Read @.agents\ROADMAP.md (feature context), @.agents\spec\task-${TaskID}.md (all audit feedback rounds), and @.agents\ARCHITECTURE.md. Determine why Task ${TaskID} is stuck after ${taskAttempts} failed review attempts. Decide: (A) Continue — append '## ESCALATION DIRECTIVE' to @.agents\spec\task-${TaskID}.md with precise fix instructions. (B) Refactor — append '## ESCALATION: REFACTOR' with a refactor plan. (C) Blocked — append '## ESCALATION: BLOCKED' AND write 'BLOCKED' to .agents\.ralph-halt. EXIT."
+                    if (Test-Path ".agents\.ralph-halt") {
+                        Write-Host "       🛑 Escalation declared task BLOCKED. Halting." -ForegroundColor Red
+                        Get-Content ".agents\.ralph-halt" -Raw | Write-Host -ForegroundColor Red
+                        break
+                    }
+                    Write-Host "       ✓ Escalation completed. Continuing with directive." -ForegroundColor Green
+                }
+
                 # 1. Test Architect
                 Write-Host "       > TEST_ARCHITECT generating test assertions..." -ForegroundColor Magenta
                 opencode run -m ${FreeTierModel} "You are the TEST_ARCHITECT. Read @.agents\spec\task-${TaskID}.md and @.agents\ARCHITECTURE.md and follow the described testing principles. Review the existing tests before adding new. Write failing integration or unit tests in the tests/ directory for this task if they don't introduce overlap with existing tests. Do NOT touch files in src/. EXIT when done."
-                
-                # 2. Implementer
+
+                # 2. Implementer — MUST address all review feedback
                 Write-Host "       > IMPLEMENTER writing functional logic..." -ForegroundColor Magenta
-                opencode run -m ${FreeTierModel} "You are the IMPLEMENTER. Read @.agents\spec\task-${TaskID}.md, @.agents\ARCHITECTURE.md, and the new tests. Modify files in src/ to make the tests pass. Do NOT touch the test files. EXIT when done."
-                
+                opencode run -m ${FreeTierModel} "You are the IMPLEMENTER. Read @.agents\spec\task-${TaskID}.md (pay CLOSE attention to ALL '## Audit Feedback Round' and '## ESCALATION' sections — fix every unresolved issue), @.agents\ARCHITECTURE.md, and the new tests. Modify files in src/ to make the tests pass. Do NOT touch the test files. EXIT when done."
+
                 # 3. Task Reviewer
                 Write-Host "       > CRITICAL_REVIEWER verifying code compliance..." -ForegroundColor Magenta
                 opencode run -m ${MiddleTierModel} "You are the CRITICAL_REVIEWER. Audit Task ${TaskID} against its spec and @.agents\ARCHITECTURE.md and review the code quality. If PASS, rewrite .agents\ROADMAP.md changing '- [ ] [Task ${TaskID}:' to '    - [x] [Task ${TaskID}:'. If FAIL, write precise feedback into the spec file under '## Audit Feedback Round N' (.agents\spec\task-${TaskID}.md) and do NOT check it off. EXIT."
+
+                # Check PASS/FAIL and commit if passed
+                $RoadmapAfter = Get-Content ".agents/ROADMAP.md" -Raw
+                $escapedId = $TaskID -replace '\.', '\.'
+                if ($RoadmapAfter -match "\[x\]\s*\[Task\s+${escapedId}:") {
+                    Write-Host "       ✓ Task ${TaskID} passed review. Committing..." -ForegroundColor Green
+                    Reset-TaskAttempt $TaskID
+                    git add -A
+                    git commit -m "feat: complete Task ${TaskID}"
+                } else {
+                    $newCount = Increment-TaskAttempt $TaskID
+                    Write-Host "       ✗ Task ${TaskID} failed review (attempt $newCount). Feedback written to spec." -ForegroundColor Yellow
+                }
                 continue
             }
 

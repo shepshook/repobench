@@ -19,6 +19,9 @@ describe('Sandbox State Management', () => {
     const cacheFilePath = '/tmp/repobench-cache/state-test.txt';
     const content1 = 'content-for-hash-1';
     
+    vi.spyOn(sandbox, 'execute').mockResolvedValue({
+      stdout: '', stderr: '', exitCode: 0,
+    });
     await sandbox.execute(`mkdir -p /tmp/repobench-cache && echo "${content1}" > ${cacheFilePath}`);
     
     await sandbox.switchState(HASH_2);
@@ -43,6 +46,9 @@ describe('Sandbox State Management', () => {
     const cacheFilePath = '/tmp/repobench-cache/state-test.txt';
     const content1 = 'content-for-hash-1';
     
+    vi.spyOn(sandbox, 'execute').mockResolvedValue({
+      stdout: '', stderr: '', exitCode: 0,
+    });
     await sandbox.execute(`mkdir -p /tmp/repobench-cache && echo "${content1}" > ${cacheFilePath}`);
     await sandbox.switchState(HASH_2);
     

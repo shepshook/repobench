@@ -43,12 +43,12 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
         if ((line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')) {
           totalLinesChanged++;
         } else if (line.startsWith('@@')) {
-          const match = line.match(/@@ -\d+,(\d+) \+\d+,(\d+) @@/);
-          if (match) {
-            const oldLines = parseInt(match[1]);
-            const newLines = parseInt(match[2]);
-            if (oldLines > 50 || newLines > 50) return false;
-          }
+            const match = line.match(/@@ -\d+,(\d+) \+\d+,(\d+) @@/);
+            if (Array.isArray(match) && match.length >= 3 && match[1] !== undefined && match[2] !== undefined) {
+              const oldLines = parseInt(match[1]);
+              const newLines = parseInt(match[2]);
+              if (oldLines > 50 || newLines > 50) return false;
+            }
         }
       }
       if (totalLinesChanged > 50) return false;
@@ -69,8 +69,8 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
             significantLineFound = true;
             break;
           }
-          const match = line.match(/a\/([^ ]+)/);
-          currentFile = match ? match[1] : '';
+           const match = line.match(/a\/([^ ]+)/);
+           currentFile = (match && match.length > 1) ? match[1] : '';
           hunkOld = '';
           hunkNew = '';
           continue;

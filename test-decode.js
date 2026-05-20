@@ -1,0 +1,1 @@
+console.log(new TextDecoder().decode("hello"));

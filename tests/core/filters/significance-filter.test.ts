@@ -74,4 +74,19 @@ describe('BasicSignificanceFilter', () => {
       expect(result).toBe(false);
     });
 
+    it('should not throw TypeError for malformed hunk headers', async () => {
+      const malformedDiff = 'diff --git a/src/index.ts b/src/index.ts\n@@ invalid header @@\n+test';
+      mockGit.diff.mockImplementation(() => Promise.resolve(malformedDiff));
+      
+      await expect(filter.isSignificant(mockGit, 'hash7', ['src/index.ts'])).resolves.not.toThrow();
+    });
+
+    it('should handle hunk headers with missing comma values', async () => {
+      const malformedDiff = 'diff --git a/src/index.ts b/src/index.ts\n@@ -1 +1 @@\n+test';
+      mockGit.diff.mockImplementation(() => Promise.resolve(malformedDiff));
+      
+      await expect(filter.isSignificant(mockGit, 'hash8', ['src/index.ts'])).resolves.not.toThrow();
+    });
+
+
 });

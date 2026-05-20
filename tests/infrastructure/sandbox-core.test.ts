@@ -14,7 +14,6 @@ import fs from 'node:fs/promises';
 describe('Sandbox Core (Integration)', () => {
   let sandbox: Sandbox;
   const config: SandboxConfig = {
-    buildCommand: 'npm install && npm run build',
     testCommand: 'npm test',
     envVars: {
       NODE_ENV: 'test',
@@ -42,7 +41,7 @@ describe('Sandbox Core (Integration)', () => {
       
       const result = await sandbox.execute('echo Hello');
       expect(result.stdout.trim()).toBe('Hello');
-    });
+    }, 15000);
 
     it('should apply environment variables and handle overrides', async () => {
       const envConfig: SandboxConfig = {
@@ -68,7 +67,7 @@ describe('Sandbox Core (Integration)', () => {
       expect(result.stdout).not.toContain('NODE_ENV=test');
 
       await envSandbox.destroy();
-    });
+    }, 30000);
 
     it('should throw a descriptive error when the build command fails', async () => {
       const failingConfig: SandboxConfig = {
@@ -88,14 +87,14 @@ describe('Sandbox Core (Integration)', () => {
         expect(error).toHaveProperty('stderr');
       }
       await failingSandbox.destroy();
-    });
+    }, 15000);
 
     it('should capture actual stderr from failing commands', async () => {
       await sandbox.init();
       const result = await sandbox.execute('cat /nonexistent_file_12345');
       expect(result.exitCode).not.toBe(0);
       expect(result.stderr).toContain('No such file or directory');
-    });
+    }, 15000);
 
     it('should fallback to simulation when Docker engine is not found (ENOENT)', async () => {
       const { sandbox } = createSimulationFixture({

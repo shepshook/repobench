@@ -134,7 +134,30 @@ export interface ISandbox {
   ping(): Promise<boolean>;
 }
 
+import type { IAgentAdapter } from './contracts/agent-adapter';
 // --- Session Types ---
+
+export { IAgentAdapter };
+
+export const InteractionRuleSchema = z.object({
+  pattern: z.string(),
+  response: z.string(),
+});
+
+export type InteractionRule = z.infer<typeof InteractionRuleSchema>;
+
+export interface IPromptHandler {
+  handle(data: string): string | null;
+  setRules(rules: InteractionRule[]): void;
+}
+
+export interface IPtySession {
+  onData(callback: (data: string) => void): void;
+  write(data: string): Promise<boolean>;
+  injectResponse(data: string): Promise<void>;
+  close(): Promise<void>;
+  getScreenState(): string;
+}
 
 export const AgentConfigSchema = z.object({
   agentId: z.string(),

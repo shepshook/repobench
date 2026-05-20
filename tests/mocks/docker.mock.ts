@@ -27,13 +27,21 @@ export class MockDocker implements IDocker {
   async createContainer(options: any): Promise<any> {
     const result = await this.createContainerMock(options);
     return result || {
+      id: 'mock-container-id',
+      Id: 'mock-container-id',
       start: vi.fn().mockResolvedValue({}),
       stop: vi.fn().mockResolvedValue({}),
       remove: vi.fn().mockResolvedValue({}),
       inspect: vi.fn().mockResolvedValue({ State: { Running: true } }),
       exec: vi.fn().mockResolvedValue({
         start: vi.fn().mockResolvedValue({
-          on: vi.fn((event, callback) => { if (event === 'end') callback(); }),
+          on: vi.fn((event, callback) => { 
+            if (event === 'data') {
+              // Simulate some data emission
+              setTimeout(() => callback(Buffer.from('native\n')), 10);
+            }
+            if (event === 'end') callback(); 
+          }),
         }),
         inspect: vi.fn().mockResolvedValue({ ExitCode: 0 }),
       }),
@@ -99,13 +107,21 @@ export class MockDocker implements IDocker {
    */
   setupCreateContainerSuccess() {
     this.createContainerMock.mockResolvedValue({
+      id: 'mock-container-id',
+      Id: 'mock-container-id',
       start: vi.fn().mockResolvedValue({}),
       stop: vi.fn().mockResolvedValue({}),
       remove: vi.fn().mockResolvedValue({}),
       inspect: vi.fn().mockResolvedValue({ State: { Running: true } }),
       exec: vi.fn().mockResolvedValue({
         start: vi.fn().mockResolvedValue({
-          on: vi.fn((event, callback) => { if (event === 'end') callback(); }),
+          on: vi.fn((event, callback) => { 
+            if (event === 'data') {
+              // Simulate some data emission
+              setTimeout(() => callback(Buffer.from('native\n')), 10);
+            }
+            if (event === 'end') callback(); 
+          }),
         }),
         inspect: vi.fn().mockResolvedValue({ ExitCode: 0 }),
       }),

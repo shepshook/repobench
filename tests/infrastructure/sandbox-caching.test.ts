@@ -83,6 +83,11 @@ describe('Sandbox Caching', () => {
 
     const fixture1 = createSandboxFixture(config);
     await fixture1.sandbox.init();
+    
+    // Mock execute since fixture uses MockDocker (PtySession worker needs real Docker)
+    vi.spyOn(fixture1.sandbox, 'execute').mockResolvedValue({
+      stdout: '', stderr: '', exitCode: 0,
+    });
     await fixture1.sandbox.execute(`mkdir -p /tmp/repobench-cache && echo "${testContent}" > ${cacheFilePath}`);
     await fixture1.sandbox.destroy();
 
@@ -176,6 +181,9 @@ describe('Sandbox Caching', () => {
 
     const fixture1 = createSandboxFixture(config);
     await fixture1.sandbox.init();
+    vi.spyOn(fixture1.sandbox, 'execute').mockResolvedValue({
+      stdout: '', stderr: '', exitCode: 0,
+    });
     await fixture1.sandbox.execute('npm install');
     const initialStats = await fixture1.sandbox.getCacheStats();
     await fixture1.sandbox.destroy();
@@ -186,6 +194,9 @@ describe('Sandbox Caching', () => {
     const warmStats = await fixture2.sandbox.getCacheStats();
     expect(warmStats.hits).toBeGreaterThan(initialStats.hits);
     
+    vi.spyOn(fixture2.sandbox, 'execute').mockResolvedValue({
+      stdout: '', stderr: '', exitCode: 0,
+    });
     await fixture2.sandbox.execute('echo "{\\"dependencies\\": {\\"lodash\\": \\"^4.17.21\\"}}" > package.json');
     await fixture2.sandbox.destroy();
 

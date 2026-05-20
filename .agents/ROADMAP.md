@@ -134,15 +134,44 @@ This document serves as the central source of truth for the project's strategic 
 - [ ] Reliable wrapper, auto-approve scripts, and 'Done' signal detection.
 
 ### Features
-* **[ ] Feature 3.1: PTY-Based Session Orchestration**
+* **[x] Feature 3.1: PTY-Based Session Orchestration**
   * **Spec:** Integrate `node-pty` for real-time stdout/stderr I/O and state maintenance.
+  * **Note:** `Sandbox` uses a dual-path execution model. Direct `docker.exec` for batch/infrastructure commands (`execute()`), and `PtySession.create()` for interactive agent TTY sessions. See `ARCHITECTURE.md §6` for the rationale.
+  * **Tasks:**
+    - [x] [Task 3.1.1: Research & Prototype node-pty Integration](.agents/spec/task-3.1.1.md)
+    - [x] [Task 3.1.2: Implement PtySession Service](.agents/spec/task-3.1.2.md)
+    - [x] [Task 3.1.3: Sandbox Orchestration Integration](.agents/spec/task-3.1.3.md)
+    - [x] [Task 3.1.4: Verify Terminal Emulation & State Maintenance](.agents/spec/task-3.1.4.md)
+    - [x] [Task 3.1.FIX1: Resolve Windows PTY AttachConsole Race Condition](.agents/spec/task-3.1.fix1.md)
+    - [x] [Task 3.1.FIX2: Fix PTY Terminal Simulation Compatibility](.agents/spec/task-3.1.fix2.md)
+    - [x] [Task 3.1.FIX3: Improve PTY Test Robustness](.agents/spec/task-3.1.fix3.md)
+    - [x] [Task 3.1.FIX4: Audit and Resolve PTY EPIPE Errors in Stress Tests](.agents/spec/task-3.1.fix4.md)
+    - [x] [Task 3.1.FIX5: Audit PTY Concurrency Issues Round 1](.agents/spec/task-3.1.fix5.md)
+    - [x] [Task 3.1.FIX6: Fix PTY Race Condition in Write/Close Round 1](.agents/spec/task-3.1.fix6.md)
+    - [x] [Task 3.1.FIX7: Audit PtySession State Transitions and Lock Mechanism](.agents/spec/task-3.1.fix7.md)
+    - [x] [Task 3.1.FIX8: Implement Robust PtySession Lock and State Management](.agents/spec/task-3.1.fix8.md)
+    - [x] [Task 3.1.FIX9: Update PtySession Tests to Assert Concurrent Safety](.agents/spec/task-3.1.fix9.md)
+    - [x] [Task 3.1.FIX10: Audit PTY Alpine shell environment and missing utilities](.agents/spec/task-3.1.fix10.md)
+
   * **DoD:** Agent interacts with the sandbox exactly as a real terminal.
-* **[ ] Feature 3.2: Interactive Agent Adapter Framework**
-  * **Spec:** Build `AgentAdapter` (abstract) with concrete classes for Aider/ClaudeCode; map interactions.
-  * **DoD:** RepoBench launches specific agents via CLI arguments.
+* **[x] Feature 3.2: Interactive Agent Adapter Framework**
+  * **Spec:** Build `AgentAdapter` (abstract) with concrete classes for Aider/ClaudeCode; map interactions via factory.
+  * **Tasks:**
+    - [x] [Task 3.2.1: Define IAgentAdapter Contract & Base Adapter](.agents/spec/task-3.2.1.md)
+    - [x] [Task 3.2.2: Implement AiderAdapter](.agents/spec/task-3.2.2.md)
+    - [x] [Task 3.2.3: Implement ClaudeCodeAdapter](.agents/spec/task-3.2.3.md)
+    - [x] [Task 3.2.4: Integrate Adapter Selection in SessionOrchestrator](.agents/spec/task-3.2.4.md)
+    - [x] [Task 3.2.FIX1: Audit and Fix PtySession Adapter Compatibility](.agents/spec/task-3.2.fix1.md)
+  * **DoD:** RepoBench launches specific agents via CLI arguments using adapter factory.
 * **[ ] Feature 3.3: Auto-Approval & Interaction Logic**
-  * **Spec:** Build `PromptHandler` to monitor PTY and inject auto-responses (e.g., 'y').
-  * **DoD:** Prompts for file edits are automatically approved without human intervention.
+  * **Spec:** Build `PromptHandler` to monitor PTY and inject auto-responses (e.g., 'y') using state-synchronized injection and rollback-capable safety layer.
+  * **Tasks:**
+    - [x] [Task 3.3.1: Define IPromptHandler and InteractionRule Schema](.agents/spec/task-3.3.1.md)
+    - [x] [Task 3.3.2: Implement PromptHandler Logic](.agents/spec/task-3.3.2.md)
+    - [x] [Task 3.3.3: Implement Response Injection & Synchronization](.agents/spec/task-3.3.3.md)
+    - [x] [Task 3.3.4: Integration & Verification](.agents/spec/task-3.3.4.md)
+    - [ ] [Task 3.3.5: Implement Rollback Mechanism](.agents/spec/task-3.3.5.md)
+  * **DoD:** Prompts for file edits are automatically approved without human intervention; system safely handles concurrency and rollbacks failures.
 * **[ ] Feature 3.4: Session Termination & Done Detection**
   * **Spec:** Scan stdout for completion signatures; implement session-level timeouts.
   * **DoD:** Orchestrator accurately terminates upon task completion or timeout.
