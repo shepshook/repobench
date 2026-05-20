@@ -197,14 +197,14 @@ describe('PtySession Integration', () => {
 
       // Order: write -> inject -> write
       await session.write('echo "First"\n');
-      await (session as any).injectResponse('Injected Middle');
+      await session.injectResponse('echo "Injected Middle"');
       await session.write('echo "Last"\n');
 
       await waitForText(session, 'Last');
 
       // Use screen state for ordering checks (normalized output)
-      const screenState = session.getScreenState();
-      const firstIdx = screenState.indexOf('First');
+       const screenState = session.getScreenState();
+       const firstIdx = screenState.indexOf('First');
       const midIdx = screenState.indexOf('Injected Middle');
       const lastIdx = screenState.indexOf('Last');
 
