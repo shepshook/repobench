@@ -65,5 +65,5 @@ const parsed: unknown = YAML.parse(fileContent);
 - `npm run typecheck` — must pass (0 errors)
 
 ## DoD
-- [ ] No lint errors in `session-orchestrator.ts`
-- [ ] No lint errors in `agent-config-loader.ts`
+- [x] No lint errors in `session-orchestrator.ts`
+- [x] No lint errors in `agent-config-loader.ts`

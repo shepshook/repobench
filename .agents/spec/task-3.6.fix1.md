@@ -39,6 +39,6 @@ Remove the redundant `args: config.cliArgs` parameter from `PtySession.create()`
 - `npm run lint` — must have 0 new errors in `session-orchestrator.ts`
 
 ## DoD
-- [ ] `SessionOrchestrator.createSession()` does not pass `config.cliArgs` to `PtySession.create()` args
-- [ ] CLI args are not duplicated in spawned process arguments
-- [ ] All existing tests pass for Feature 3.6 scope
+- [x] `SessionOrchestrator.createSession()` does not pass `config.cliArgs` to `PtySession.create()` args
+- [x] CLI args are not duplicated in spawned process arguments
+- [x] All existing tests pass for Feature 3.6 scope

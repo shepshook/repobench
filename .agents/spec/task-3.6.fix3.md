@@ -63,7 +63,7 @@ npm run typecheck && npm run test -- --run tests/services/session-orchestrator.t
 All 5 Feature 3.6-scope tests must pass (0 failures).
 
 ## DoD
-- [ ] `tests/services/session-orchestrator.test.ts` — all 4 failing tests pass
-- [ ] `tests/services/prompt-handler-integration.test.ts` — 1 failing test passes
-- [ ] `npm run typecheck` — 0 errors
-- [ ] No changes to implementation code (`.ts` files outside `tests/`)
+- [x] `tests/services/session-orchestrator.test.ts` — all 4 failing tests pass
+- [x] `tests/services/prompt-handler-integration.test.ts` — 1 failing test passes
+- [x] `npm run typecheck` — 0 errors
+- [x] No changes to implementation code (`.ts` files outside `tests/`)

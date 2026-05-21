@@ -46,7 +46,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
 
         session.onTimeout(() => {
             void session.close().catch(err => {
-                throw new Error(`Failed to close session on timeout: ${err instanceof Error ? err.message : err}`);
+                console.error(`Failed to close session on timeout: ${err instanceof Error ? err.message : err}`);
             });
         });
 

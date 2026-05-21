@@ -205,7 +205,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.6.FIX2: Fix Lint Errors in session-orchestrator.ts and agent-config-loader.ts](.agents/spec/task-3.6.fix2.md)
     - [x] [Task 3.6.FIX3: Fix Test Assertions Broken by FIX1/FIX2 Changes Round 1](.agents/spec/task-3.6.fix3.md)
     - [x] [Task 3.6.FIX4: Create agents.example.yaml Reference File](.agents/spec/task-3.6.fix4.md)
-    - [ ] [Task 3.6.FIX5: Fix Misaligned Test Names and Spec File Checkboxes Round 1](.agents/spec/task-3.6.fix5.md)
+    - [x] [Task 3.6.FIX5: Fix Misaligned Test Names and Spec File Checkboxes Round 1](.agents/spec/task-3.6.fix5.md)
   * **DoD:** Experiments are 100% reproducible via YAML config files.
 
 ---

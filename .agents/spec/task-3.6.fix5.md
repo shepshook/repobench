@@ -1,5 +1,9 @@
 # Task 3.6.FIX5: Fix Misaligned Test Names and Spec File Checkboxes in Feature 3.6
 
+## Audit Feedback Round 1
+
+The test runner fails due to an unhandled promise rejection in `src/core/services/session-orchestrator.ts` at line 49. The `throw new Error` inside `session.close().catch(...)` creates an unhandled promise rejection because of the `void` operator. Both completion and timeout error handling should use `console.error` to avoid crashing the event loop, as discussed in the spec.
+
 ## Description
 Two tests in `session-orchestrator.test.ts` have names that claim "should throw" but their assertions were changed in FIX2 to only check that `close()` was called (the `void` pattern means the `.catch()` throw is now an unhandled promise rejection, not a testable rejection). Additionally, DoD checkboxes in the FIX1/FIX2/FIX3 spec files were never flipped from `[ ]` to `[x]`.
 

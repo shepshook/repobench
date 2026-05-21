@@ -176,7 +176,7 @@ describe('SessionOrchestrator Integration', () => {
     expect(mockSession.close).toHaveBeenCalled();
   });
 
-  it('should throw a descriptive error when session.close fails during completion', async () => {
+  it('should attempt to close session on completion', async () => {
     const config = {
       agentId: 'test-agent',
       model: 'gpt-4',
@@ -232,7 +232,7 @@ describe('SessionOrchestrator Integration', () => {
     expect(mockSession.close).toHaveBeenCalled();
   });
 
-  it('should throw a descriptive error when session.close fails during timeout', async () => {
+  it('should attempt to close session on timeout', async () => {
     const config = {
       agentId: 'test-agent',
       model: 'gpt-4',
@@ -259,7 +259,73 @@ describe('SessionOrchestrator Integration', () => {
     expect(mockSession.close).toHaveBeenCalled();
   });
 
+  it('should log an error to console when session.close fails during completion', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockRejectedValue(new Error('Close failed')),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    mockDoneDetector.isDone.mockReturnValue(true);
+    const dataCallback = (mockSession.onData as any).mock.calls[0][0];
+    
+    dataCallback('Task completed.');
+    
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to close session on completion: Close failed'));
+    consoleSpy.mockRestore();
+  });
+
+  it('should log an error to console when session.close fails during timeout', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockRejectedValue(new Error('Close failed')),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    const timeoutCallback = (mockSession.onTimeout as any).mock.calls[0][0];
+    
+    timeoutCallback();
+    
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to close session on timeout: Close failed'));
+    consoleSpy.mockRestore();
+  });
+
   it('should not return a promise from onData callback', async () => {
+
     const config = {
       agentId: 'test-agent',
       model: 'gpt-4',
