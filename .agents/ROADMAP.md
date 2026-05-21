@@ -127,7 +127,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [ ] Epic 3: Interactive Agent Session Orchestration (The Session)
+## [x] Epic 3: Interactive Agent Session Orchestration (The Session)
 **Description:** Manage interactive CLI agent sessions using Pseudo-Terminals (PTY).
 **Metrics:** Session Stability (% completing without hanging), Metadata Accuracy.
 **Success Criteria:**
@@ -207,7 +207,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.6.FIX4: Create agents.example.yaml Reference File](.agents/spec/task-3.6.fix4.md)
     - [x] [Task 3.6.FIX5: Fix Misaligned Test Names and Spec File Checkboxes Round 1](.agents/spec/task-3.6.fix5.md)
    * **DoD:** Experiments are 100% reproducible via YAML config files.
-* **[ ] Feature 3.FIX1: Global Epic Integration & Alignment Round 1**
+* **[x] Feature 3.FIX1: Global Epic Integration & Alignment Round 1**
   * **Spec:** Resolve cross-feature boundary leak in PromptHandler pipeline; clean up redundant optional chaining and empty source directories.
   * **Tasks:**
         - [x] [Task 3.FIX1.1: Fix Double PromptHandler Invocation Leak](.agents/spec/task-3.fix1.1.md)
