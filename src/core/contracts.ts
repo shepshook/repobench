@@ -218,6 +218,25 @@ export interface SessionResult {
 
 // --- Judge Types ---
 
+export interface TestResults {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  duration: number;
+  passed: boolean;
+}
+
+export interface ComparisonResult {
+  status: 'improved' | 'regressed' | 'unchanged' | 'error';
+  diff: string;
+  summary: string;
+}
+
+export interface IRegressionTestRunner {
+  runTests(sandbox: ISandbox, command: string): Promise<TestResults>;
+  compareResults(pre: TestResults, post: TestResults): ComparisonResult;
+}
+
 export interface ICostParser {
   parse(logs: string): CostMetrics;
 }
