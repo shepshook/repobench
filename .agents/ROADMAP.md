@@ -228,7 +228,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Execute full `test_command` to compare passing tests before and after the fix.
   * **Tasks:**
     - [x] [Task 4.1.1: Design and Implement IRegressionTestRunner Interface](.agents/spec/task-4.1.1.md)
-    - [ ] [Task 4.1.2: Implement RegressionTestRunner Service](.agents/spec/task-4.1.2.md)
+    - [x] [Task 4.1.2: Implement RegressionTestRunner Service](.agents/spec/task-4.1.2.md)
     - [ ] [Task 4.1.3: Integrate RegressionTestRunner into Evaluator Pipeline](.agents/spec/task-4.1.3.md)
     - [ ] [Task 4.1.4: Add Regression Test Verification Suite](.agents/spec/task-4.1.4.md)
   * **DoD:** Fixes are marked failed if they introduce new test regressions.
