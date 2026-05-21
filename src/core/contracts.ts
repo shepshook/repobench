@@ -137,9 +137,13 @@ export interface ISandbox {
   ping(): Promise<boolean>;
 }
 
+export interface ISessionRepository {
+  saveCost(runId: string, metrics: CostMetrics): Promise<void>;
+}
+
 export interface ISessionOrchestrator {
   createSession(config: AgentConfig, sandbox: ISandbox): Promise<IPtySession>;
-  executeSession(config: AgentConfig, sandbox: ISandbox, buildCommand: string): Promise<{ success: boolean }>;
+  executeSession(config: AgentConfig, sandbox: ISandbox, buildCommand: string, runId?: string): Promise<{ success: boolean, cost: number }>;
 }
 
 import type { IAgentAdapter } from './contracts/agent-adapter';

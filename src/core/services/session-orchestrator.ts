@@ -1,14 +1,18 @@
 import { Sandbox } from '../../infrastructure/sandbox';
 import { PtySession } from '../../infrastructure/pty-session';
 import { AgentAdapterFactory } from './agent-adapter-factory';
-import { IPtySession, AgentConfig, IPromptHandler, ISessionOrchestrator, IDoneDetector } from '../contracts';
+import { IPtySession, AgentConfig, IPromptHandler, ISessionOrchestrator, IDoneDetector, ICostParser, ISessionRepository } from '../contracts';
 import { PromptHandler } from './prompt-handler';
 
 export class SessionOrchestrator implements ISessionOrchestrator {
-    constructor(private doneDetector: IDoneDetector = {
-        isDone: () => false,
-        setSignatures: () => {},
-    }) {}
+    constructor(
+        private doneDetector: IDoneDetector = {
+            isDone: () => false,
+            setSignatures: () => {},
+        },
+        private costParser?: ICostParser,
+        private sessionRepository?: ISessionRepository
+    ) {}
 
     async createSession(config: AgentConfig, sandbox: Sandbox): Promise<IPtySession> {
         await sandbox.createSnapshot();
@@ -50,12 +54,24 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         return session;
     }
 
-    async executeSession(config: AgentConfig, sandbox: Sandbox, buildCommand: string): Promise<{ success: boolean }> {
+    async executeSession(config: AgentConfig, sandbox: Sandbox, buildCommand: string, runId?: string): Promise<{ success: boolean, cost: number }> {
         const session = await this.createSession(config, sandbox);
+        let cost = 0;
         try {
             await session.waitForExit();
+            
+            if (this.costParser) {
+                const metrics = this.costParser.parse(session.getScreenState());
+                cost = metrics.cost;
+
+                if (runId && this.sessionRepository) {
+                    await this.sessionRepository.saveCost(runId, metrics);
+                }
+                console.log(`[Cost Summary]${runId ? ` Run: ${runId},` : ''} Total Tokens: ${metrics.totalTokens}, Cost: ${metrics.cost} ${metrics.currency}`);
+            }
+
             const success = await this.validateAndRollback(sandbox, buildCommand);
-            return { success };
+            return { success, cost };
         } finally {
             try {
                 await session.close();

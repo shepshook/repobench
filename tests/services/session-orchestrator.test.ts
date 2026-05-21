@@ -4,7 +4,7 @@ import { PtySession } from '../../src/infrastructure/pty-session';
 import { AgentAdapterFactory } from '../../src/core/services/agent-adapter-factory';
 import { Sandbox } from '../../src/infrastructure/sandbox';
 import { PromptHandler } from '../../src/core/services/prompt-handler';
-import { IDoneDetector } from '../../src/core/contracts';
+import { IDoneDetector, ICostParser } from '../../src/core/contracts';
 
 vi.mock('../../src/infrastructure/pty-session');
 vi.mock('../../src/core/services/agent-adapter-factory');
@@ -252,5 +252,140 @@ describe('SessionOrchestrator Integration', () => {
       .rejects.toThrow('Session crashed');
       
     expect(mockSession.close).toHaveBeenCalled();
+  });
+});
+
+describe('SessionOrchestrator Cost Integration', () => {
+  let orchestrator: SessionOrchestrator;
+  let mockCostParser: ICostParser;
+  let mockSandbox: Sandbox;
+  let mockDoneDetector: IDoneDetector;
+  let mockSessionRepository: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDoneDetector = {
+      isDone: vi.fn().mockReturnValue(false),
+      setSignatures: vi.fn(),
+    };
+    mockCostParser = {
+      parse: vi.fn().mockReturnValue({
+        promptTokens: 100,
+        completionTokens: 50,
+        totalTokens: 150,
+        cost: 0.01,
+        currency: 'USD',
+      }),
+    };
+    mockSessionRepository = {
+      saveCost: vi.fn().mockResolvedValue(undefined),
+    };
+
+    // Injecting mockDoneDetector and mockCostParser
+    // We use 'as any' because the current implementation might not support these in constructor yet
+    orchestrator = new SessionOrchestrator(mockDoneDetector, mockCostParser) as any;
+    // Injecting mock repository as well (expected behavior)
+    orchestrator.sessionRepository = mockSessionRepository;
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    mockSandbox = {
+      createSnapshot: vi.fn().mockResolvedValue(undefined),
+      restoreSnapshot: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn().mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+      id: 'mock-sandbox',
+      config: {},
+      getContainer: vi.fn().mockReturnValue({ id: 'mock-container' }),
+      registerSession: vi.fn(),
+      unregisterSession: vi.fn(),
+    } as unknown as Sandbox;
+    (AgentAdapterFactory.createAdapter as any).mockReturnValue({
+      interactionMap: new Map(),
+      getStartupCommand: () => 'agent-cli',
+    });
+  });
+
+  it('should accept runId in executeSession and associate costs with it', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+    const runId = 'test-run-uuid';
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn().mockReturnValue('Prompt tokens: 100, Completion tokens: 50, Cost: 0.01 USD'),
+      waitForExit: vi.fn().mockResolvedValue(0),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+
+    // This call is expected to fail if runId is not supported
+    const result = await orchestrator.executeSession(config, mockSandbox, 'npm test', runId);
+
+    expect(result.cost).toBe(0.01);
+    expect(mockSessionRepository.saveCost).toHaveBeenCalledWith(runId, expect.objectContaining({
+      cost: 0.01,
+    }));
+  });
+
+  it('should output a cost summary log after parsing metrics', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+    const runId = 'test-run-uuid';
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn().mockReturnValue('Prompt tokens: 100, Completion tokens: 50, Cost: 0.01 USD'),
+      waitForExit: vi.fn().mockResolvedValue(0),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+
+    await orchestrator.executeSession(config, mockSandbox, 'npm test', runId);
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('[Cost Summary] Run: test-run-uuid, Total Tokens: 150, Cost: 0.01 USD')
+    );
+  });
+
+  it('should parse costs from session logs and return them in the result', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn().mockReturnValue('Prompt tokens: 100, Completion tokens: 50, Cost: 0.01 USD'),
+      waitForExit: vi.fn().mockResolvedValue(0),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+
+    const result = await orchestrator.executeSession(config, mockSandbox, 'npm test');
+
+    expect(result.cost).toBe(0.01);
+    expect(mockCostParser.parse).toHaveBeenCalledWith(mockSession.getScreenState());
   });
 });
