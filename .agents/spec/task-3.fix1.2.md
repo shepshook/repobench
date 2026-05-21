@@ -1,6 +1,11 @@
 # Task 3.FIX1.2: Clean Up Redundant Optional Chaining & Structural Bounds
 
-## Audit Finding
+## Audit Feedback Round 1
+
+- Task 3.FIX1.2 has not been implemented.
+- `src/core/services/session-orchestrator.ts` line 35 still contains `session.onData?.((data) => {` instead of `session.onData((data) => {`.
+- The following empty directories still exist in `src/`: `judge/`, `repositories/`, `sandbox/`, `session/`.
+
 
 `SessionOrchestrator.createSession` uses redundant optional chaining on `session.onData?.()` at line 35 of `src/core/services/session-orchestrator.ts`. The `onData` method is a required member of `IPtySession` (defined in `src/core/contracts.ts:181`) — it is never optional. The `?.` operator masks potential interface mismatches and adds unnecessary complexity.
 

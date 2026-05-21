@@ -211,7 +211,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Resolve cross-feature boundary leak in PromptHandler pipeline; clean up redundant optional chaining and empty source directories.
   * **Tasks:**
         - [x] [Task 3.FIX1.1: Fix Double PromptHandler Invocation Leak](.agents/spec/task-3.fix1.1.md)
-    - [ ] [Task 3.FIX1.2: Clean Up Redundant Optional Chaining & Structural Bounds](.agents/spec/task-3.fix1.2.md)
+    - [x] [Task 3.FIX1.2: Clean Up Redundant Optional Chaining & Structural Bounds](.agents/spec/task-3.fix1.2.md)
   * **DoD:** PromptHandler invoked exactly once per data chunk; no double auto-response injection. `onData` call uses direct invocation without `?.`. Empty `src/` subdirectories cleaned or documented.
 
 ---

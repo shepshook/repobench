@@ -32,7 +32,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             this.doneDetector.setSignatures(config.completionSignatures);
         }
 
-            session.onData?.((data) => {
+            session.onData((data) => {
                 if (this.doneDetector.isDone(data)) {
                     void session.close().catch(err => {
                         console.error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);

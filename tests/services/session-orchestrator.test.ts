@@ -400,6 +400,28 @@ describe('SessionOrchestrator Integration', () => {
       
     expect(mockSession.close).toHaveBeenCalled();
   });
+
+  it('should throw TypeError when session.onData is missing to avoid masking interface mismatches', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+
+    await expect(orchestrator.createSession(config, mockSandbox))
+      .rejects.toThrow(TypeError);
+  });
 });
 
 describe('SessionOrchestrator Cost Integration', () => {
