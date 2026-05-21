@@ -237,7 +237,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.
   * **Tasks:**
         - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
-    - [ ] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
+        - [x] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
     - [ ] [Task 4.2.3: Implement SearchEfficiencyTracker Service](.agents/spec/task-4.2.3.md)
     - [ ] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
     - [ ] [Task 4.2.5: Add SearchEfficiencyTracker Verification Suite](.agents/spec/task-4.2.5.md)

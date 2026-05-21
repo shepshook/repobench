@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema } from '../../src/core/contracts';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker } from '../../src/core/contracts';
 
 describe('ValidationResultSchema', () => {
   it('should validate a correct ValidationResult object', () => {
@@ -157,5 +157,17 @@ describe('AgentConfigSchema', () => {
         // @ts-expect-error - testing runtime validation
         expect(() => AgentConfigSchema.parse(invalidConfig)).toThrow();
     });
+});
+
+describe('ISearchEfficiencyTracker', () => {
+  it('should be implementable by a mock class', () => {
+    class MockTracker implements ISearchEfficiencyTracker {
+      trackAccess(file: string): void { /* no-op */ }
+      trackModification(file: string): void { /* no-op */ }
+      getMetrics(): any { return { filesAccessed: 0, filesModified: 0, timeTakenMs: 0, tokensUsed: 0 }; }
+    }
+    const tracker: ISearchEfficiencyTracker = new MockTracker();
+    expect(tracker).toBeDefined();
+  });
 });
 

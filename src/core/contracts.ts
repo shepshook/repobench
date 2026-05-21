@@ -3,8 +3,10 @@ import { RepoBenchConfig } from './config';
 import { SANDBOX_APP_LABEL } from './constants';
 import { CostMetricsSchema } from './entities/cost-metrics';
 import type { CostMetrics } from './entities/cost-metrics';
+import { EfficiencyMetricsSchema } from './entities/search-efficiency';
+import type { EfficiencyMetrics } from './entities/search-efficiency';
 
-export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics };
+export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics, EfficiencyMetricsSchema, EfficiencyMetrics };
 
 /**
  * RepoBench Core Contracts
@@ -128,6 +130,19 @@ export interface IFileAccessTracker {
   getModifiedFiles(): string[];
   getAccessedFiles(): string[];
   getDeletedFiles(): string[];
+}
+
+/**
+ * Tracks file access and modification metrics for search efficiency.
+ *
+ * Definitions:
+ * - Files Accessed: The set of unique file paths that the agent read from the filesystem during the session.
+ * - Files Modified: The set of unique file paths that the agent wrote to or modified on the filesystem during the session.
+ */
+export interface ISearchEfficiencyTracker {
+  trackAccess(file: string): void;
+  trackModification(file: string): void;
+  getMetrics(): EfficiencyMetrics;
 }
 
 export interface ISandbox {
