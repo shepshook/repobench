@@ -51,6 +51,27 @@ describe('SessionOrchestrator Integration', () => {
     });
   });
 
+  it('should pass cliArgs from agent config to PtySession.create', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--model', 'gpt-4', '--temp', '0.7'],
+    };
+    
+    await orchestrator.createSession(config, mockSandbox);
+    
+    expect(PtySession.create).toHaveBeenCalledWith(
+      mockSandbox,
+      expect.anything(),
+      expect.objectContaining({
+        args: config.cliArgs,
+      }),
+      expect.anything()
+    );
+  });
+
   it('should call createSnapshot on the sandbox during session creation', async () => {
     const config = {
       agentId: 'test-agent',

@@ -34,20 +34,20 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             this.doneDetector.setSignatures(config.completionSignatures);
         }
 
-            session.onData?.((data) => {
-            if (this.doneDetector.isDone(data)) {
-                void session.close().catch(err => {
-                    throw new Error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
-                });
-            }
-            const response = promptHandler.handle(data);
-            if (response) {
-                void session.write(response + '\n');
-            }
-        });
+            session.onData?.(async (data) => {
+                if (this.doneDetector.isDone(data)) {
+                    await session.close().catch(err => {
+                        throw new Error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
+                    });
+                }
+                const response = promptHandler.handle(data);
+                if (response) {
+                    await session.write(response + '\n');
+                }
+            });
 
-        session.onTimeout(() => {
-            void session.close().catch(err => {
+        session.onTimeout(async () => {
+            await session.close().catch(err => {
                 throw new Error(`Failed to close session on timeout: ${err instanceof Error ? err.message : err}`);
             });
         });

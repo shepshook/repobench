@@ -13,6 +13,9 @@ export class AiderAdapter extends AgentAdapter {
     }
 
     getStartupCommand(): string {
-        return 'aider --no-git';
+        const baseCmd = 'aider --no-git';
+        return this.config?.cliArgs?.length 
+            ? `${baseCmd} ${this.config.cliArgs.join(' ')}` 
+            : baseCmd;
     }
 }

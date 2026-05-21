@@ -2,6 +2,8 @@ import { IAgentAdapter } from '../contracts/agent-adapter';
 import { AgentConfig } from '../contracts';
 
 export abstract class AgentAdapter implements IAgentAdapter {
+    protected config?: AgentConfig;
+
     constructor(
         public readonly name: string,
         public readonly interactionMap: Map<RegExp, string>
@@ -10,7 +12,7 @@ export abstract class AgentAdapter implements IAgentAdapter {
     abstract getStartupCommand(): string;
     
     configure(config: AgentConfig): void {
-        // Default implementation: do nothing
+        this.config = config;
     }
 }
 

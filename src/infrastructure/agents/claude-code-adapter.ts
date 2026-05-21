@@ -15,6 +15,9 @@ export class ClaudeCodeAdapter extends AgentAdapter {
     }
 
     getStartupCommand(): string {
-        return 'claude';
+        const baseCmd = 'claude';
+        return this.config?.cliArgs?.length 
+            ? `${baseCmd} ${this.config.cliArgs.join(' ')}` 
+            : baseCmd;
     }
 }
