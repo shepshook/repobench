@@ -3,11 +3,11 @@ import YAML from 'yaml';
 import { AgentConfig, AgentConfigSchema } from '../contracts';
 
 export class AgentConfigLoader {
-    constructor(private readonly configPath: string) {}
+    constructor(private readonly configPath: string = './agents.yaml') {}
 
     loadConfigs(): AgentConfig[] {
         if (!fs.existsSync(this.configPath)) {
-            throw new Error(`Could not find agents.yaml at ${this.configPath}`);
+            return [];
         }
 
         const fileContent = fs.readFileSync(this.configPath, 'utf8');
@@ -23,10 +23,14 @@ export class AgentConfigLoader {
         }
 
         if (!Array.isArray(parsed)) {
-            throw new Error('agents.yaml must contain a list of agent configurations');
+            if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).agents)) {
+                parsed = (parsed as Record<string, unknown>).agents as unknown[];
+            } else {
+                throw new Error('agents.yaml must contain a list of agent configurations or an object with an "agents" key');
+            }
         }
 
-        return parsed.map((config, index) => {
+        return (parsed as unknown[]).map((config, index) => {
             const result = AgentConfigSchema.safeParse(config);
             if (!result.success) {
                 const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');

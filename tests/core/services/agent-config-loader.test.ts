@@ -63,11 +63,6 @@ describe('AgentConfigLoader', () => {
         expect(() => loader.loadConfigs()).toThrow(/Invalid AgentConfig/);
     });
 
-    it('should throw an error if agents.yaml is missing', () => {
-        // configPath exists but file is not written
-        expect(() => loader.loadConfigs()).toThrow(/Could not find agents.yaml/);
-    });
-
     it('should return an empty array when agents.yaml is empty', () => {
         fs.writeFileSync(configPath, '');
 
@@ -85,5 +80,51 @@ describe('AgentConfigLoader', () => {
             expect(e).toBeInstanceOf(Error);
             expect(e.cause).toBeDefined();
         }
+    });
+
+    it('should support the "agents:" top-level key in agents.yaml', () => {
+        const yamlWithKey = `
+agents:
+  - agentId: 'keyed-agent'
+    model: 'gpt-4o'
+    temperature: 0.5
+    systemPrompt: 'Keyed'
+    cliArgs: []
+`;
+        fs.writeFileSync(configPath, yamlWithKey);
+
+        const configs = loader.loadConfigs();
+        expect(configs).toHaveLength(1);
+        expect(configs[0].agentId).toBe('keyed-agent');
+    });
+
+    it('should throw an error if agents.yaml is valid YAML but has an unsupported root structure', () => {
+        const invalidStructure = `
+key: value
+foo: bar
+`;
+        fs.writeFileSync(configPath, invalidStructure);
+
+        expect(() => loader.loadConfigs()).toThrow(/agents.yaml must contain a list of agent configurations or an object with an "agents" key/);
+    });
+
+    it('should load from default path ./agents.yaml when no path is provided', () => {
+        const defaultLoader = new AgentConfigLoader();
+        const configs = defaultLoader.loadConfigs();
+        expect(configs).toEqual([]);
+    });
+
+    it('should successfully load the example config file agents.example.yaml', () => {
+        const exampleLoader = new AgentConfigLoader('./agents.example.yaml');
+        const configs = exampleLoader.loadConfigs();
+        expect(configs.length).toBeGreaterThanOrEqual(2);
+        
+        // Verify at least one agent has all 7 fields
+        const fullAgent = configs.find(a => 
+            a.agentId && a.model && a.temperature !== undefined && 
+            a.systemPrompt && a.max_tokens !== undefined && 
+            a.cliArgs && a.completionSignatures
+        );
+        expect(fullAgent).toBeDefined();
     });
 });

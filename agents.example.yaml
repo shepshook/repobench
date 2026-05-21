@@ -1,0 +1,26 @@
+# Agent configuration for RepoBench interactive sessions
+# Each entry defines an agent that can be used with `repobench run`
+
+agents:
+  - agentId: aider
+    model: gpt-4o
+    temperature: 0.2
+    systemPrompt: |
+      You are an expert software engineer. Make minimal, targeted fixes.
+    max_tokens: 4096
+    cliArgs:
+      - --no-suggestions
+      - --yes
+    completionSignatures:
+      - pattern: "Task completed"
+        name: "Task Completed"
+      - pattern: "All tests pass"
+        name: "Tests Passed"
+
+  - agentId: claude-code
+    model: claude-sonnet-4
+    temperature: 0.1
+    systemPrompt: |
+      You are a careful engineer. Verify before applying changes.
+    cliArgs:
+      - --no-autoconfirm

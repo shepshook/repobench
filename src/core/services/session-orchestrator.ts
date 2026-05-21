@@ -35,7 +35,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             session.onData?.((data) => {
                 if (this.doneDetector.isDone(data)) {
                     void session.close().catch(err => {
-                        throw new Error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
+                        console.error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
                     });
                 }
                 const response = promptHandler.handle(data);
