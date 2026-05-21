@@ -1,12 +1,11 @@
 import fs from 'node:fs';
 import YAML from 'yaml';
-import { z } from 'zod';
 import { AgentConfig, AgentConfigSchema } from '../contracts';
 
 export class AgentConfigLoader {
     constructor(private readonly configPath: string) {}
 
-    async loadConfigs(): Promise<AgentConfig[]> {
+    loadConfigs(): AgentConfig[] {
         if (!fs.existsSync(this.configPath)) {
             throw new Error(`Could not find agents.yaml at ${this.configPath}`);
         }

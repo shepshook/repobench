@@ -20,7 +20,7 @@ describe('AgentConfigLoader', () => {
         fs.rmSync(tempDir, { recursive: true, force: true });
     });
 
-    it('should successfully load and parse a valid agents.yaml', async () => {
+    it('should successfully load and parse a valid agents.yaml', () => {
         const validYaml = `
 - agentId: 'claude-3-5-sonnet'
   model: 'claude-3-5-sonnet-20240620'
@@ -40,7 +40,7 @@ describe('AgentConfigLoader', () => {
 `;
         fs.writeFileSync(configPath, validYaml);
 
-        const configs = await loader.loadConfigs();
+        const configs = loader.loadConfigs();
         
         expect(configs).toHaveLength(2);
         expect(configs[0]).toMatchObject({
@@ -51,7 +51,7 @@ describe('AgentConfigLoader', () => {
         expect(configs[1].agentId).toBe('gpt-4o');
     });
 
-    it('should throw a validation error when agents.yaml contains invalid data', async () => {
+    it('should throw a validation error when agents.yaml contains invalid data', () => {
         const invalidYaml = `
 - agentId: 'invalid-agent'
   model: 'some-model'
@@ -60,24 +60,24 @@ describe('AgentConfigLoader', () => {
 `;
         fs.writeFileSync(configPath, invalidYaml);
 
-        await expect(loader.loadConfigs()).rejects.toThrow(/Invalid AgentConfig/);
+        expect(() => loader.loadConfigs()).toThrow(/Invalid AgentConfig/);
     });
 
-    it('should throw an error if agents.yaml is missing', async () => {
+    it('should throw an error if agents.yaml is missing', () => {
         // configPath exists but file is not written
-        await expect(loader.loadConfigs()).rejects.toThrow(/Could not find agents.yaml/);
+        expect(() => loader.loadConfigs()).toThrow(/Could not find agents.yaml/);
     });
 
-    it('should return an empty array when agents.yaml is empty', async () => {
+    it('should return an empty array when agents.yaml is empty', () => {
         fs.writeFileSync(configPath, '');
 
-        const configs = await loader.loadConfigs();
+        const configs = loader.loadConfigs();
         expect(configs).toEqual([]);
     });
 
-    it('should throw an error if agents.yaml is not a valid YAML file', async () => {
+    it('should throw an error if agents.yaml is not a valid YAML file', () => {
         fs.writeFileSync(configPath, 'this is not yaml : { [');
 
-        await expect(loader.loadConfigs()).rejects.toThrow();
+        expect(() => loader.loadConfigs()).toThrow();
     });
 });

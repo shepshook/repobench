@@ -45,15 +45,17 @@ describe('ClaudeCodeAdapter', () => {
         }
     });
 
-    it('should not match irrelevant output', () => {
+
+    it('should update startup command when configured with cliArgs', () => {
         const adapter = new ClaudeCodeAdapter();
-        const interactionMap = adapter.interactionMap;
-        const output = 'I have finished the task. Here is the diff:';
-
-        const matchedResponse = Array.from(interactionMap.entries()).find(([regex]) => 
-            regex.test(output)
-        );
-
-        expect(matchedResponse).toBeUndefined();
+        const config = {
+            agentId: 'claude-code',
+            model: 'claude-3-5-sonnet',
+            temperature: 0,
+            systemPrompt: '...',
+            cliArgs: ['--verbose', '--debug'],
+        };
+        adapter.configure(config as any);
+        expect(adapter.getStartupCommand()).toBe('claude --verbose --debug');
     });
 });

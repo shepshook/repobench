@@ -1,7 +1,7 @@
 import { Sandbox } from '../../infrastructure/sandbox';
 import { PtySession } from '../../infrastructure/pty-session';
 import { AgentAdapterFactory } from './agent-adapter-factory';
-import { IPtySession, AgentConfig, IPromptHandler, ISessionOrchestrator, IDoneDetector, ICostParser, ISessionRepository } from '../contracts';
+import { IPtySession, AgentConfig, ISessionOrchestrator, IDoneDetector, ICostParser, ISessionRepository } from '../contracts';
 import { PromptHandler } from './prompt-handler';
 
 export class SessionOrchestrator implements ISessionOrchestrator {
@@ -34,20 +34,20 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             this.doneDetector.setSignatures(config.completionSignatures);
         }
 
-        session.onData?.(async (data) => {
+            session.onData?.((data) => {
             if (this.doneDetector.isDone(data)) {
-                return session.close().catch(err => {
+                void session.close().catch(err => {
                     throw new Error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
                 });
             }
             const response = promptHandler.handle(data);
             if (response) {
-                session.write(response + '\n');
+                void session.write(response + '\n');
             }
         });
 
-        session.onTimeout(async () => {
-            return session.close().catch(err => {
+        session.onTimeout(() => {
+            void session.close().catch(err => {
                 throw new Error(`Failed to close session on timeout: ${err instanceof Error ? err.message : err}`);
             });
         });
@@ -78,7 +78,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
                 await session.close();
             } catch (err) {
                 // Cleanup failure should be logged, but not override the primary exception
-                console.error(`Session cleanup failed: ${err instanceof Error ? err.message : err}`);
+                console.error(`Session cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
             }
         }
     }

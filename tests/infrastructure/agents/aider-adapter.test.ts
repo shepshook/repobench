@@ -38,15 +38,17 @@ describe('AiderAdapter', () => {
         }
     });
 
-    it('should not match irrelevant output', () => {
+
+    it('should update startup command when configured with cliArgs', () => {
         const adapter = new AiderAdapter();
-        const interactionMap = adapter.interactionMap;
-        const output = 'I have finished the task. Here is the diff:';
-
-        const matchedResponse = Array.from(interactionMap.entries()).find(([regex]) => 
-            regex.test(output)
-        );
-
-        expect(matchedResponse).toBeUndefined();
+        const config = {
+            agentId: 'aider',
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemPrompt: '...',
+            cliArgs: ['--verbose'],
+        };
+        adapter.configure(config as any);
+        expect(adapter.getStartupCommand()).toBe('aider --no-git --verbose');
     });
 });

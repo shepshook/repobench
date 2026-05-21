@@ -195,11 +195,11 @@ This document serves as the central source of truth for the project's strategic 
         - [x] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
   * **DoD:** Output logs include precise financial cost per run.
 * **[ ] Feature 3.6: Agent Configuration Management**
-  * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters via `BatchRunner`.
+  * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters into `SessionOrchestrator`.
   * **Tasks:**
     - [x] [Task 3.6.1: Define Agent Configuration Schema](.agents/spec/task-3.6.1.md)
     - [x] [Task 3.6.2: Implement Agent Configuration Loader](.agents/spec/task-3.6.2.md)
-    - [ ] [Task 3.6.3: Integrate Configuration into BatchRunner](.agents/spec/task-3.6.3.md)
+    - [x] [Task 3.6.3: Integrate AgentConfig into SessionOrchestrator](.agents/spec/task-3.6.3.md)
     - [ ] [Task 3.6.4: Verification & Integration Testing](.agents/spec/task-3.6.4.md)
   * **DoD:** Experiments are 100% reproducible via YAML config files.
 
