@@ -11,5 +11,7 @@ Implement the `EScoreService` to calculate E-Scores based on the defined formula
     - Ensure `Latency > 0` (logarithm domain check).
     - Return a sane default or log a warning if calculation results in `NaN` or `Infinity`.
 
-## DoD
-- Service correctly implements the formula and handles edge cases.
+## Audit Feedback Round 1
+- The `EScoreService` fails to implement the formula specified in `ROADMAP.md` (Feature 4.3).
+- The `success` parameter is ignored in the calculation: `const eScore = (1 / (cost * logLatency)) * efficiencyMultiplier;` should be `const eScore = (success / (cost * logLatency)) * efficiencyMultiplier;`.
+- Please correct the implementation to include `success` in the formula.
