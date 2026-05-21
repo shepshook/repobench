@@ -124,18 +124,26 @@ export interface IVolumeManager {
   readonly simCacheRoot: string;
 }
 
+export interface IFileAccessTracker {
+  getModifiedFiles(): string[];
+  getAccessedFiles(): string[];
+  getDeletedFiles(): string[];
+}
+
 export interface ISandbox {
   readonly id: string;
   readonly config: SandboxConfig;
   init(): Promise<void>;
   destroy(): Promise<void>;
   execute(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }>;
+  runCommand(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }>;
   switchState(hash: string): Promise<void>;
   createSnapshot(): Promise<void>;
   restoreSnapshot(): Promise<void>;
   getFilesystemSnapshot(): Promise<string[]>;
   getCacheStats(): Promise<{ hits: number; misses: number }>;
   ping(): Promise<boolean>;
+  getFileAccessTracker(): IFileAccessTracker;
 }
 
 export interface ISessionRepository {

@@ -190,9 +190,9 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Build `CostParser` to extract token/cost data from agent outputs.
   * **Tasks:**
     - [x] [Task 3.5.1: Define CostParser Contract & Schema](.agents/spec/task-3.5.1.md)
-        - [x] [Task 3.5.2: Implement CostParser Service](.agents/spec/task-3.5.2.md)
+    - [x] [Task 3.5.2: Implement CostParser Service](.agents/spec/task-3.5.2.md)
     - [x] [Task 3.5.3: Integrate CostParser into SessionOrchestrator](.agents/spec/task-3.5.3.md)
-        - [x] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
+    - [x] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
   * **DoD:** Output logs include precise financial cost per run.
 * **[x] Feature 3.6: Agent Configuration Management**
   * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters into `SessionOrchestrator`.
@@ -224,7 +224,7 @@ This document serves as the central source of truth for the project's strategic 
 - [ ] Implement E-Score tracking.
 
 ### Features
-* **[ ] Feature 4.1: Full Regression Suite Execution**
+* **[x] Feature 4.1: Full Regression Suite Execution**
   * **Spec:** Execute full `test_command` to compare passing tests before and after the fix.
   * **Tasks:**
     - [x] [Task 4.1.1: Design and Implement IRegressionTestRunner Interface](.agents/spec/task-4.1.1.md)
@@ -235,6 +235,12 @@ This document serves as the central source of truth for the project's strategic 
    * **DoD:** Fixes are marked failed if they introduce new test regressions.
 * **[ ] Feature 4.2: Search Efficiency Tracker**
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.
+  * **Tasks:**
+        - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
+    - [ ] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
+    - [ ] [Task 4.2.3: Implement SearchEfficiencyTracker Service](.agents/spec/task-4.2.3.md)
+    - [ ] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
+    - [ ] [Task 4.2.5: Add SearchEfficiencyTracker Verification Suite](.agents/spec/task-4.2.5.md)
   * **DoD:** Reports include the agent's file-scanning efficiency metric.
 * **[ ] Feature 4.3: E-Score Implementation**
   * **Spec:** Implement formula: $$E\text{-Score} = \frac{\text{Success}}{\text{Cost} \times \log(\text{Latency})} \times \text{Efficiency\_Multiplier}$$

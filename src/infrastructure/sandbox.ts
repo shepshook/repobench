@@ -1,4 +1,4 @@
-import { ISandbox, SandboxConfig, IVolumeManager } from '../core/contracts';
+import { ISandbox, SandboxConfig, IVolumeManager, IFileAccessTracker } from '../core/contracts';
 import { z } from 'zod';
 import Docker from 'dockerode';
 import { exec } from 'child_process';
@@ -9,6 +9,36 @@ import { tmpdir } from 'os';
 import { VolumeManager, VolumeManagerError } from './volume-manager';
 import { PtySession } from './pty-session';
 import { DefaultAdapter } from '../core/services/base-agent-adapter';
+
+class FileAccessTracker implements IFileAccessTracker {
+  private modifiedFiles: Set<string> = new Set();
+  private accessedFiles: Set<string> = new Set();
+  private deletedFiles: Set<string> = new Set();
+
+  trackModification(file: string) {
+    this.modifiedFiles.add(file);
+  }
+
+  trackAccess(file: string) {
+    this.accessedFiles.add(file);
+  }
+
+  trackDeletion(file: string) {
+    this.deletedFiles.add(file);
+  }
+
+  getModifiedFiles(): string[] {
+    return Array.from(this.modifiedFiles);
+  }
+
+  getAccessedFiles(): string[] {
+    return Array.from(this.accessedFiles);
+  }
+
+  getDeletedFiles(): string[] {
+    return Array.from(this.deletedFiles);
+  }
+}
 
 const execAsync = promisify(exec);
 
@@ -50,6 +80,11 @@ export class Sandbox implements ISandbox {
   private currentHash: string | null = null;
   private volumeManager: IVolumeManager;
   private statsCounted = false;
+  private fileAccessTracker = new FileAccessTracker();
+
+  public getFileAccessTracker(): IFileAccessTracker {
+    return this.fileAccessTracker;
+  }
   // cacheHits and cacheMisses are now managed by volumeManager
   
   constructor(config: SandboxConfig, volumeManagerInstance?: IVolumeManager) {
@@ -320,7 +355,36 @@ export class Sandbox implements ISandbox {
    * For interactive TTY sessions (AI agents), use PtySession.create() directly. */
   async execute(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     if (!this.initialized) {
-      throw new Error('Sandbox not initialized');
+      await this.init();
+    }
+
+    // Enhanced tracking
+    const commands = command.split(/&&|\|\||\||;/);
+    for (const cmd of commands) {
+      const trimmedCmd = cmd.trim();
+      if (trimmedCmd.startsWith('touch ')) {
+        this.fileAccessTracker.trackModification(trimmedCmd.replace('touch ', '').trim());
+      } else if (trimmedCmd.startsWith('rm ')) {
+        this.fileAccessTracker.trackDeletion(trimmedCmd.replace('rm ', '').trim());
+      } else if (trimmedCmd.startsWith('cat ') || trimmedCmd.startsWith('ls ') || trimmedCmd.startsWith('grep ')) {
+        // Very basic: assume the last argument is the file
+        const parts = trimmedCmd.split(/\s+/);
+        if (parts.length > 1) {
+          // If it's grep, we need to be careful not to track the pattern
+          if (trimmedCmd.startsWith('grep ')) {
+             // Basic grep: grep pattern file.txt
+             if (parts.length > 2) {
+               this.fileAccessTracker.trackAccess(parts[parts.length - 1].trim());
+             }
+          } else {
+             this.fileAccessTracker.trackAccess(parts[parts.length - 1].trim());
+          }
+        }
+      } else if (trimmedCmd.includes(' > ') || trimmedCmd.includes(' >> ')) {
+        const parts = trimmedCmd.split(/\s+>\s+|\s+>>\s+/);
+        const target = parts[parts.length - 1].trim();
+        this.fileAccessTracker.trackModification(target);
+      }
     }
 
     if (this.isSimulation) {
@@ -332,6 +396,10 @@ export class Sandbox implements ISandbox {
       ? Object.entries({ ...this.config.envVars, ...options.env }).map(([k, v]) => `${k}=${v}`)
       : undefined;
     return this.runDockerCommand(command, envs, options?.timeout);
+  }
+
+  async runCommand(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    return this.execute(command, options);
   }
 
   private async runDockerCommand(command: string, envs?: string[], timeout?: number): Promise<{ stdout: string; stderr: string; exitCode: number }> {
