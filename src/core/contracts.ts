@@ -334,6 +334,7 @@ export interface EvaluationResult {
   message: string;
   efficiency?: EfficiencyMetrics;
   eScore: number;
+  semanticScore?: SemanticScore | null;
 }
 
 export interface IJudgeService {

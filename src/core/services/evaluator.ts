@@ -9,7 +9,9 @@ import {
   ISearchEfficiencyTracker,
   EfficiencyMetrics,
   IScorer,
-  ComparisonResult
+  ComparisonResult,
+  ISemanticJudge,
+  SemanticScore
 } from '../contracts';
 import { RegressionTestRunner } from './regression-test-runner';
 import { SearchEfficiencyTracker } from './search-efficiency-tracker';
@@ -20,7 +22,8 @@ export class Evaluator implements IEvaluator {
     private readonly sandbox: ISandbox,
     private readonly config: SandboxConfig,
     private readonly runner: IRegressionTestRunner = new RegressionTestRunner(),
-    private readonly scorer: IScorer = new EScoreService()
+    private readonly scorer: IScorer = new EScoreService(),
+    private readonly semanticJudge?: ISemanticJudge
   ) {}
 
   async evaluate(candidate: Candidate, cost?: number): Promise<EvaluationResult>;
@@ -76,6 +79,16 @@ export class Evaluator implements IEvaluator {
           efficiencyMultiplier: efficiency.efficiencyRatio ?? 1
       });
 
+      let semanticScore: SemanticScore | null = null;
+      if (this.semanticJudge && comparison) {
+        try {
+          semanticScore = await this.semanticJudge.judge(comparison.diff);
+        } catch (e) {
+          // Log error but don't fail the evaluation
+          console.error(`Semantic judge failed: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+
       return {
         candidateId: candidate.id,
         regressionStatus,
@@ -85,7 +98,8 @@ export class Evaluator implements IEvaluator {
         latency: Math.max(1, Date.now() - startTime),
         message: comparison.summary,
         efficiency,
-        eScore: eScore
+        eScore: eScore,
+        semanticScore
       };
     } catch (e) {
       return {
@@ -97,7 +111,8 @@ export class Evaluator implements IEvaluator {
         latency: Math.max(1, Date.now() - startTime),
         message: e instanceof Error ? e.message : String(e),
         efficiency: t.getMetrics(),
-        eScore: 0
+        eScore: 0,
+        semanticScore: null
       };
     }
   }
