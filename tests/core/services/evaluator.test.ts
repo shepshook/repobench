@@ -15,6 +15,7 @@ describe('Evaluator', () => {
   let mockSandbox: ISandbox;
   let mockRunner: IRegressionTestRunner;
   let mockConfig: SandboxConfig;
+  let mockScorer: IScorer;
 
   beforeEach(() => {
     mockSandbox = {
@@ -46,7 +47,11 @@ describe('Evaluator', () => {
       project: 'test-project',
     };
 
-    evaluator = new Evaluator(mockSandbox, mockConfig, mockRunner);
+    mockScorer = {
+      calculateEScore: vi.fn().mockReturnValue(0.5),
+    };
+
+    evaluator = new Evaluator(mockSandbox, mockConfig, mockRunner, mockScorer);
   });
 
   const mockCandidate: Candidate = {
@@ -210,5 +215,21 @@ describe('Evaluator', () => {
 
     expect(mockTracker.trackAccess).toHaveBeenCalledWith('accessed.ts');
     expect(mockTracker.trackModification).toHaveBeenCalledWith('modified.ts');
+  });
+
+  it('should pass the provided cost to the scorer', async () => {
+    const preResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };
+    const postResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };
+    (mockRunner.runTests as any).mockResolvedValueOnce(preResults).mockResolvedValueOnce(postResults);
+    (mockRunner.compareResults as any).mockReturnValue({ status: 'unchanged', diff: '', summary: '' });
+
+    const cost = 42;
+    await evaluator.evaluate(mockCandidate, cost);
+
+    expect(mockScorer.calculateEScore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cost: cost,
+      })
+    );
   });
 });

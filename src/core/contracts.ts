@@ -338,12 +338,13 @@ export interface EvaluationResult {
 }
 
 export interface IJudgeService {
-  runEvaluationPipeline(candidates: Candidate[]): Promise<EvaluationRunResult[]>;
+  runEvaluationPipeline(candidates: Candidate[], costMap?: Map<string, number>): Promise<EvaluationRunResult[]>;
 }
 
 export interface EvaluationRunResult {
   candidateId: string;
   result: EvaluationResult;
+  cost?: number;
 }
 
 export interface ISemanticJudge {

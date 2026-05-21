@@ -14,11 +14,15 @@ export class JudgeService implements IJudgeService {
     private readonly evaluator: IEvaluator,
   ) {}
 
-  async runEvaluationPipeline(candidates: Candidate[]): Promise<EvaluationRunResult[]> {
+  async runEvaluationPipeline(candidates: Candidate[], costMap?: Map<string, number>): Promise<EvaluationRunResult[]> {
     const results: EvaluationRunResult[] = [];
     for (const candidate of candidates) {
-      const result = await this.evaluator.evaluate(candidate);
-      results.push({ candidateId: candidate.id, result });
+      const cost = costMap?.get(candidate.id);
+      const result = await this.evaluator.evaluate(
+        candidate,
+        ...(cost !== undefined ? [cost] : [])
+      );
+      results.push({ candidateId: candidate.id, result, cost });
     }
     return results;
   }

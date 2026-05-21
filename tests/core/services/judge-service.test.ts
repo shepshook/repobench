@@ -66,6 +66,25 @@ describe('JudgeService', () => {
     expect(evaluator.evaluate).toHaveBeenCalledWith(mockCandidate);
   });
 
+  it('should pass cost data from costMap to evaluator', async () => {
+    const costMap = new Map<string, number>([['test-candidate-1', 123]]);
+    const mockResult: EvaluationResult = {
+      candidateId: 'test-candidate-1',
+      regressionStatus: 'clean',
+      comparison: null,
+      preTestResults: null,
+      postTestResults: null,
+      latency: 100,
+      message: 'No regressions detected.',
+    };
+
+    (evaluator.evaluate as any).mockResolvedValue(mockResult);
+
+    await judge.runEvaluationPipeline([mockCandidate], costMap);
+
+    expect(evaluator.evaluate).toHaveBeenCalledWith(mockCandidate, 123);
+  });
+
   it('should collect results for multiple candidates', async () => {
     const candidate2: Candidate = { ...mockCandidate, id: 'test-candidate-2' };
     (evaluator.evaluate as any)

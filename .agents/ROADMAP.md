@@ -220,8 +220,8 @@ This document serves as the central source of truth for the project's strategic 
 **Description:** Quantitative scoring of agent output via execution and regression testing.
 **Metrics:** Verification Accuracy (Correlation with human judgment), Scoring Variance.
 **Success Criteria:**
-- [ ] Binary verification and regression detection.
-- [ ] Implement E-Score tracking.
+- [x] Binary verification and regression detection.
+- [x] Implement E-Score tracking.
 
 ### Features
 * **[x] Feature 4.1: Full Regression Suite Execution**
@@ -251,7 +251,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.3.4: Verification & Test Suite](.agents/spec/task-4.3.4.md)
     - [x] [Task 4.3.FIX1: Fix contracts.test.ts Parse Error — Dangling `});` and Orphaned it() Calls](.agents/spec/task-4.3.fix1.md)
   * **DoD:** Every run generates a valid, comparable E-Score; edge cases (Cost/Latency) are handled.
-* **[ ] Feature 4.4: LLM-Based 'Semantic Judge'**
+* **[x] Feature 4.4: LLM-Based 'Semantic Judge'**
   * **Spec:** Call LLM to rate Correctness, Maintainability, and Idiomaticity (1-5).
   * **Tasks:**
     - [x] [Task 4.4.1: Define ISemanticJudge interface and SemanticScore schema](.agents/spec/task-4.4.1.md)
@@ -259,6 +259,14 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.4.3: Integrate SemanticJudge into EvaluatorPipeline](.agents/spec/task-4.4.3.md)
     - [x] [Task 4.4.4: Verification & Test Suite](.agents/spec/task-4.4.4.md)
   * **DoD:** Reports include nuanced semantic scores alongside binary results.
+* **[ ] Feature 4.FIX1: Global Epic Integration & Alignment Round 1**
+  * **Spec:** Resolve cross-module SessionOrchestrator→Evaluator cost-data boundary leak; mark implemented success criteria; remediate better-sqlite3 native binding; audit and fix system-wide lint regression root causes.
+  * **Tasks:**
+    - [x] [Task 4.FIX1.1: Wire SessionOrchestrator Cost Data into Evaluator Pipeline](.agents/spec/task-4.fix1.1.md)
+    - [ ] [Task 4.FIX1.2: Rebuild better-sqlite3 Native Bindings & Validate Persistence Layer](.agents/spec/task-4.fix1.2.md)
+    - [ ] [Task 4.FIX1.3: Remediate System-Wide Lint Regression — Infrastructure Files](.agents/spec/task-4.fix1.3.md)
+    - [ ] [Task 4.FIX1.4: Audit Cross-Module Boundary Leaks & Final Integration Verification](.agents/spec/task-4.fix1.4.md)
+  * **DoD:** Cost data flows from SessionOrchestrator through JudgeService into E-Score formula; persistence tests pass; lint ≤ tolerance threshold (no `any`-typed member access in core services); all 9 Epic 4 test files + integration tests pass end-to-end.
 
 ---
 
