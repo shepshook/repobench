@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PtySession } from '../../src/infrastructure/pty-session';
 import { Sandbox } from '../../src/infrastructure/sandbox';
 import { AiderAdapter } from '../../src/infrastructure/agents/aider-adapter';
+import { ClaudeCodeAdapter } from '../../src/infrastructure/agents/claude-code-adapter';
 import { DefaultAdapter } from '../../src/core/services/base-agent-adapter';
 import { Worker } from 'node:worker_threads';
 
@@ -86,6 +87,24 @@ describe('PtySession Configuration Integration', () => {
     
     expect(verboseCount).toBe(1);
     expect(debugCount).toBe(1);
+  });
+
+  it('should not duplicate cliArgs when using ClaudeCodeAdapter', async () => {
+    const adapter = new ClaudeCodeAdapter();
+    const config = {
+      cliArgs: ['--verbose', '--debug'],
+    };
+    adapter.configure(config as any);
+
+    const sendRequestSpy = vi.spyOn(PtySession.prototype, 'sendRequest' as any);
+
+    await PtySession.create(mockSandbox, adapter, { args: config.cliArgs });
+
+    const spawnRequest = sendRequestSpy.mock.calls.find(call => call[0] === 'spawn');
+    const args = spawnRequest![1].options.args;
+
+    expect(args.filter(arg => arg === '--verbose').length).toBe(1);
+    expect(args.filter(arg => arg === '--debug').length).toBe(1);
   });
 
   it('should correctly apply cliArgs when using DefaultAdapter', async () => {

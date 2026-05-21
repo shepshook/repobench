@@ -201,6 +201,8 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.6.2: Implement Agent Configuration Loader](.agents/spec/task-3.6.2.md)
     - [x] [Task 3.6.3: Integrate AgentConfig into SessionOrchestrator](.agents/spec/task-3.6.3.md)
     - [x] [Task 3.6.4: Verification & Integration Testing](.agents/spec/task-3.6.4.md)
+    - [x] [Task 3.6.FIX1: Fix cliArgs Duplication in PtySession Integration](.agents/spec/task-3.6.fix1.md)
+    - [ ] [Task 3.6.FIX2: Fix Lint Errors in session-orchestrator.ts and agent-config-loader.ts](.agents/spec/task-3.6.fix2.md)
   * **DoD:** Experiments are 100% reproducible via YAML config files.
 
 ---

@@ -232,7 +232,7 @@ export class PtySession implements IPtySession {
     
     const actualName = (finalOptions as any)?.name || name;
     const actualArgs = (finalOptions as any)?.args 
-        ? [...(actualName === name ? baseArgs : []), ...(finalOptions as any).args] 
+        ? [...(actualName === name ? baseArgs : []), ...((finalOptions as any).args.filter((arg: string) => !baseArgs.includes(arg)))] 
         : baseArgs;
     
     console.log(`[PtySession] Spawning with name: ${actualName}, args: ${JSON.stringify(actualArgs)}`);

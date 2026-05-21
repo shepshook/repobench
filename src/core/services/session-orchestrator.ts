@@ -26,9 +26,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         }));
         promptHandler.setRules(rules);
 
-        const session = await PtySession.create(sandbox, adapter, {
-            args: config.cliArgs
-        }, promptHandler);
+        const session = await PtySession.create(sandbox, adapter, {}, promptHandler);
 
         if (config.completionSignatures) {
             this.doneDetector.setSignatures(config.completionSignatures);
