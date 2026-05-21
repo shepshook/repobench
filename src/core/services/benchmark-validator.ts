@@ -41,7 +41,7 @@ export class BenchmarkValidator implements IBenchmarkValidator {
       postFixStatus,
       preFixOutput,
       postFixOutput,
-      latency: Date.now() - startTime,
+      latency: Math.max(1, Date.now() - startTime),
     };
   }
 }

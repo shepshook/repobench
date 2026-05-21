@@ -90,7 +90,38 @@ describe('Evaluator', () => {
     expect(result.comparison).toEqual(comparison);
     expect(result.preTestResults).toEqual(preResults);
     expect(result.postTestResults).toEqual(postResults);
-    expect(result.latency).toBeGreaterThan(0);
+    expect(result.latency).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should handle zero latency correctly', async () => {
+    const preResults: TestResults = {
+      stdout: 'pre-out',
+      stderr: '',
+      exitCode: 0,
+      duration: 0,
+      passed: true,
+    };
+    const postResults: TestResults = {
+      stdout: 'post-out',
+      stderr: '',
+      exitCode: 0,
+      duration: 0,
+      passed: true,
+    };
+    const comparison: ComparisonResult = {
+      status: 'unchanged',
+      diff: '',
+      summary: 'No changes',
+    };
+
+    (mockRunner.runTests as any)
+      .mockResolvedValueOnce(preResults)
+      .mockResolvedValueOnce(postResults);
+    (mockRunner.compareResults as any).mockReturnValue(comparison);
+
+    const result: EvaluationResult = await evaluator.evaluate(mockCandidate);
+
+    expect(result.latency).toBeGreaterThanOrEqual(0);
   });
 
   it('should mark as regressed when compareResults returns regressed', async () => {

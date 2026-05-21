@@ -231,7 +231,8 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.1.2: Implement RegressionTestRunner Service](.agents/spec/task-4.1.2.md)
     - [x] [Task 4.1.3: Integrate RegressionTestRunner into Evaluator Pipeline](.agents/spec/task-4.1.3.md)
     - [x] [Task 4.1.4: Add Regression Test Verification Suite](.agents/spec/task-4.1.4.md)
-  * **DoD:** Fixes are marked failed if they introduce new test regressions.
+    - [x] [Task 4.1.FIX1: Fix Evaluator Test Latency Assertion Round 1](.agents/spec/task-4.1.fix1.md)
+   * **DoD:** Fixes are marked failed if they introduce new test regressions.
 * **[ ] Feature 4.2: Search Efficiency Tracker**
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.
   * **DoD:** Reports include the agent's file-scanning efficiency metric.

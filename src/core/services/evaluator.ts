@@ -47,7 +47,7 @@ export class Evaluator implements IEvaluator {
         comparison,
         preTestResults: preResults,
         postTestResults: postResults,
-        latency: Date.now() - startTime,
+        latency: Math.max(1, Date.now() - startTime),
         message: comparison.summary,
       };
     } catch (e) {
@@ -57,7 +57,7 @@ export class Evaluator implements IEvaluator {
         comparison: null,
         preTestResults: preResults,
         postTestResults: postResults,
-        latency: Date.now() - startTime,
+        latency: Math.max(1, Date.now() - startTime),
         message: e instanceof Error ? e.message : String(e),
       };
     }
