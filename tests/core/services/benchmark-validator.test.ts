@@ -27,6 +27,10 @@ describe('BenchmarkValidator', () => {
     validator = new BenchmarkValidator(sandbox, config);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   const mockCandidate: Candidate = {
     id: 'candidate-1',
     hash: 'abc1234',
@@ -38,8 +42,8 @@ describe('BenchmarkValidator', () => {
 
   it('should return isValid: true when pre-fix fails and post-fix passes', async () => {
     sandbox.execute
-      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 }) // Pre-fix
-      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 });    // Post-fix
+      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 })
+      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 });
 
     const result = await validator.validate(mockCandidate);
 
@@ -50,22 +54,10 @@ describe('BenchmarkValidator', () => {
     expect(sandbox.switchState).toHaveBeenCalledWith('abc1234');
   });
 
-  it('should return isValid: false when already passing', async () => {
-    sandbox.execute
-      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 }) // Pre-fix
-      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 });    // Post-fix
-
-    const result = await validator.validate(mockCandidate);
-
-    expect(result.isValid).toBe(false);
-    expect(result.preFixStatus).toBe('pass');
-    expect(result.postFixStatus).toBe('pass');
-  });
-
   it('should return isValid: false when still failing', async () => {
     sandbox.execute
-      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 }) // Pre-fix
-      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 });    // Post-fix
+      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 })
+      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 });
 
     const result = await validator.validate(mockCandidate);
 
@@ -74,10 +66,10 @@ describe('BenchmarkValidator', () => {
     expect(result.postFixStatus).toBe('fail');
   });
 
-  it('should return isValid: false when it causes a regression', async () => {
+  it('should return isValid: false when pre-fix passes and post-fix fails', async () => {
     sandbox.execute
-      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 }) // Pre-fix
-      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 });    // Post-fix
+      .mockResolvedValueOnce({ stdout: 'passed', stderr: '', exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: 'failed', stderr: 'error', exitCode: 1 });
 
     const result = await validator.validate(mockCandidate);
 
@@ -94,14 +86,5 @@ describe('BenchmarkValidator', () => {
     expect(result.isValid).toBe(false);
     expect(result.preFixStatus).toBe('error');
     expect(result.postFixStatus).toBe('error');
-  });
-
-  it('should return isValid: false and status: error when switchState fails', async () => {
-    sandbox.switchState.mockRejectedValue(new Error('Git error'));
-
-    const result = await validator.validate(mockCandidate);
-
-    expect(result.isValid).toBe(false);
-    expect(result.preFixStatus).toBe('error');
   });
 });

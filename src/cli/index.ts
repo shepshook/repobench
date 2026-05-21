@@ -2,6 +2,7 @@ import { initDatabase } from '../infrastructure/persistence/database.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { JsonlDatasetExporter } from '../infrastructure/jsonl-dataset-exporter.js';
 import { JsonlDatasetImporter } from '../infrastructure/jsonl-dataset-importer.js';
+import { registerEvaluateCommand } from './evaluate.js';
 console.log('DEBUG: CLI starting');
 
 import { Command } from 'commander';
@@ -48,6 +49,8 @@ program
       process.exit(1);
     }
   });
+
+registerEvaluateCommand(program);
 
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);

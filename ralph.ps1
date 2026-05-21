@@ -90,11 +90,11 @@ while ($Iteration -le $MaxIterations) {
 
                 # 1. Test Architect
                 Write-Host "       > TEST_ARCHITECT generating test assertions..." -ForegroundColor Magenta
-                opencode run -m ${FreeTierModel} "You are the TEST_ARCHITECT. Read @.agents\spec\task-${TaskID}.md and @.agents\ARCHITECTURE.md and follow the described testing principles. Review the existing tests before adding new. Write failing integration or unit tests in the tests/ directory for this task if they don't introduce overlap with existing tests. Do NOT touch files in src/. EXIT when done."
+                opencode run -m ${MiddleTierModel} "You are the TEST_ARCHITECT. Read @.agents\spec\task-${TaskID}.md and @.agents\ARCHITECTURE.md and follow the described testing principles. Review the existing tests before adding new. Write failing integration or unit tests in the tests/ directory for this task if they don't introduce overlap with existing tests. Do NOT touch files in src/. EXIT when done."
 
                 # 2. Implementer — MUST address all review feedback
                 Write-Host "       > IMPLEMENTER writing functional logic..." -ForegroundColor Magenta
-                opencode run -m ${FreeTierModel} "You are the IMPLEMENTER. Read @.agents\spec\task-${TaskID}.md (pay CLOSE attention to ALL '## Audit Feedback Round' and '## ESCALATION' sections — fix every unresolved issue), @.agents\ARCHITECTURE.md, and the new tests. Modify files in src/ to make the tests pass. Do NOT touch the test files. EXIT when done."
+                opencode run -m ${MiddleTierModel} "You are the IMPLEMENTER. Read @.agents\spec\task-${TaskID}.md (pay CLOSE attention to ALL '## Audit Feedback Round' and '## ESCALATION' sections — fix every unresolved issue), @.agents\ARCHITECTURE.md, and the new tests. Modify files in src/ to make the tests pass. Do NOT touch the test files. EXIT when done."
 
                 # 3. Task Reviewer
                 Write-Host "       > CRITICAL_REVIEWER verifying code compliance..." -ForegroundColor Magenta

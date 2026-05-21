@@ -210,7 +210,7 @@ This document serves as the central source of truth for the project's strategic 
 * **[x] Feature 3.FIX1: Global Epic Integration & Alignment Round 1**
   * **Spec:** Resolve cross-feature boundary leak in PromptHandler pipeline; clean up redundant optional chaining and empty source directories.
   * **Tasks:**
-        - [x] [Task 3.FIX1.1: Fix Double PromptHandler Invocation Leak](.agents/spec/task-3.fix1.1.md)
+    - [x] [Task 3.FIX1.1: Fix Double PromptHandler Invocation Leak](.agents/spec/task-3.fix1.1.md)
     - [x] [Task 3.FIX1.2: Clean Up Redundant Optional Chaining & Structural Bounds](.agents/spec/task-3.fix1.2.md)
   * **DoD:** PromptHandler invoked exactly once per data chunk; no double auto-response injection. `onData` call uses direct invocation without `?.`. Empty `src/` subdirectories cleaned or documented.
 
@@ -229,8 +229,8 @@ This document serves as the central source of truth for the project's strategic 
   * **Tasks:**
     - [x] [Task 4.1.1: Design and Implement IRegressionTestRunner Interface](.agents/spec/task-4.1.1.md)
     - [x] [Task 4.1.2: Implement RegressionTestRunner Service](.agents/spec/task-4.1.2.md)
-    - [ ] [Task 4.1.3: Integrate RegressionTestRunner into Evaluator Pipeline](.agents/spec/task-4.1.3.md)
-    - [ ] [Task 4.1.4: Add Regression Test Verification Suite](.agents/spec/task-4.1.4.md)
+    - [x] [Task 4.1.3: Integrate RegressionTestRunner into Evaluator Pipeline](.agents/spec/task-4.1.3.md)
+    - [x] [Task 4.1.4: Add Regression Test Verification Suite](.agents/spec/task-4.1.4.md)
   * **DoD:** Fixes are marked failed if they introduce new test regressions.
 * **[ ] Feature 4.2: Search Efficiency Tracker**
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.

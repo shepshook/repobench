@@ -271,14 +271,38 @@ export interface IBenchmarkService {
 }
 
 export interface EvalMetrics {
-
+  
   regressions: string[]; // List of tests that started passing and then failed
   fixes: string[]; // List of tests that started failing and then passed
   totalTests: number;
   binarySuccess: boolean; // Pre-Fail && Post-Pass
 }
 
+export interface IEvaluator {
+  evaluate(candidate: Candidate): Promise<EvaluationResult>;
+}
+
+export interface EvaluationResult {
+  candidateId: string;
+  regressionStatus: 'clean' | 'regressed' | 'error';
+  comparison: ComparisonResult | null;
+  preTestResults: TestResults | null;
+  postTestResults: TestResults | null;
+  latency: number;
+  message: string;
+}
+
+export interface IJudgeService {
+  runEvaluationPipeline(candidates: Candidate[]): Promise<EvaluationRunResult[]>;
+}
+
+export interface EvaluationRunResult {
+  candidateId: string;
+  result: EvaluationResult;
+}
+
 export interface SemanticScore {
+
   correctness: number; // 1-5
   maintainability: number; // 1-5
   idiomaticity: number; // 1-5

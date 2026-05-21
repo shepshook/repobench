@@ -3,19 +3,19 @@ import { ISandbox, IBenchmarkValidator, Candidate, ValidationResult } from '../c
 export class BenchmarkValidator implements IBenchmarkValidator {
   constructor(
     private readonly sandbox: ISandbox,
-    private readonly config: any
+    private readonly config: any,
   ) {}
 
   async validate(candidate: Candidate): Promise<ValidationResult> {
     const startTime = Date.now();
-    let preFixStatus: ValidationResult['preFixStatus'] = 'error';
-    let postFixStatus: ValidationResult['postFixStatus'] = 'error';
     let preFixOutput = '';
     let postFixOutput = '';
+    let preFixStatus: ValidationResult['preFixStatus'] = 'error';
+    let postFixStatus: ValidationResult['postFixStatus'] = 'error';
 
     try {
       await this.sandbox.switchState(candidate.hash + '^');
-      const preResult = await this.sandbox.execute(this.config.mining.testCommand);
+      const preResult = await this.sandbox.execute(this.config.mining.testCommand, { timeout: 300_000 });
       preFixOutput = preResult.stdout + preResult.stderr;
       preFixStatus = preResult.exitCode === 0 ? 'pass' : 'fail';
     } catch (e) {
@@ -25,7 +25,7 @@ export class BenchmarkValidator implements IBenchmarkValidator {
 
     try {
       await this.sandbox.switchState(candidate.hash);
-      const postResult = await this.sandbox.execute(this.config.mining.testCommand);
+      const postResult = await this.sandbox.execute(this.config.mining.testCommand, { timeout: 300_000 });
       postFixOutput = postResult.stdout + postResult.stderr;
       postFixStatus = postResult.exitCode === 0 ? 'pass' : 'fail';
     } catch (e) {
@@ -33,15 +33,15 @@ export class BenchmarkValidator implements IBenchmarkValidator {
       postFixOutput = e instanceof Error ? e.message : String(e);
     }
 
-    const endTime = Date.now();
+    const isValid = preFixStatus === 'fail' && postFixStatus === 'pass';
 
     return {
-      isValid: preFixStatus === 'fail' && postFixStatus === 'pass',
+      isValid,
       preFixStatus,
       postFixStatus,
       preFixOutput,
       postFixOutput,
-      latency: endTime - startTime,
+      latency: Date.now() - startTime,
     };
   }
 }
