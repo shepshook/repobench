@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { RepoBenchConfig } from './config';
 import { SANDBOX_APP_LABEL } from './constants';
-import { CostMetricsSchema, CostMetrics } from './entities/cost-metrics';
+import { CostMetricsSchema } from './entities/cost-metrics';
+import type { CostMetrics } from './entities/cost-metrics';
 
 export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics };
 

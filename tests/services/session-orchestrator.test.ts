@@ -388,4 +388,37 @@ describe('SessionOrchestrator Cost Integration', () => {
     expect(result.cost).toBe(0.01);
     expect(mockCostParser.parse).toHaveBeenCalledWith(mockSession.getScreenState());
   });
+
+  it('should correctly integrate with a real CostParser to extract costs from session state', async () => {
+    const { CostParser } = await import('../../src/core/services/cost-parser');
+    const realCostParser = new CostParser();
+    const orchestratorWithRealParser = new SessionOrchestrator(mockDoneDetector, realCostParser) as any;
+    orchestratorWithRealParser.sessionRepository = mockSessionRepository;
+
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+      getScreenState: vi.fn().mockReturnValue('Total tokens used: 168 (123 prompt, 45 completion). Cost: $0.012'),
+      waitForExit: vi.fn().mockResolvedValue(0),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+
+    const result = await orchestratorWithRealParser.executeSession(config, mockSandbox, 'npm test');
+
+    expect(result.cost).toBe(0.012);
+    expect(mockSessionRepository.saveCost).toHaveBeenCalledWith(undefined, expect.objectContaining({
+      cost: 0.012,
+    }));
+  });
 });

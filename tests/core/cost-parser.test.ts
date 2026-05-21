@@ -89,4 +89,32 @@ describe('CostParser', () => {
       currency: 'USD',
     });
   });
+
+  it('should handle partial output with only prompt tokens', () => {
+    const logs = 'Prompt tokens: 100, Completion tokens: missing, Cost: missing';
+    const result = parser.parse(logs);
+    expect(result.promptTokens).toBe(100);
+    expect(result.completionTokens).toBe(0);
+    expect(result.cost).toBe(0);
+  });
+
+  it('should handle partial output with only cost', () => {
+    const logs = 'Cost: 0.05 USD';
+    const result = parser.parse(logs);
+    expect(result.promptTokens).toBe(0);
+    expect(result.completionTokens).toBe(0);
+    expect(result.cost).toBe(0.05);
+  });
+
+  it('should handle malformed numeric values gracefully', () => {
+    const logs = 'Prompt tokens: abc, Completion tokens: def, Cost: ghi USD';
+    const result = parser.parse(logs);
+    expect(result).toEqual({
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      cost: 0,
+      currency: 'USD',
+    });
+  });
 });

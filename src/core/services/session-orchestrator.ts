@@ -64,8 +64,8 @@ export class SessionOrchestrator implements ISessionOrchestrator {
                 const metrics = this.costParser.parse(session.getScreenState());
                 cost = metrics.cost;
 
-                if (runId && this.sessionRepository) {
-                    await this.sessionRepository.saveCost(runId, metrics);
+                if (this.sessionRepository) {
+                    await this.sessionRepository.saveCost(runId!, metrics);
                 }
                 console.log(`[Cost Summary]${runId ? ` Run: ${runId},` : ''} Total Tokens: ${metrics.totalTokens}, Cost: ${metrics.cost} ${metrics.currency}`);
             }

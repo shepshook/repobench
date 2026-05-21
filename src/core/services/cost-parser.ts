@@ -1,53 +1,45 @@
 import { ICostParser, CostMetrics } from '../contracts';
 
 export class CostParser implements ICostParser {
-  private readonly patterns = [
-    {
-      // Standard format: "Prompt tokens: 123, Completion tokens: 45, Cost: 0.012 USD"
-      regex: /Prompt tokens:\s*(\d+),\s*Completion tokens:\s*(\d+),\s*Cost:\s*([\d.]+)\s*([A-Z]{3})/gi,
-      map: (match: string[]) => ({
-        promptTokens: parseInt(match[1], 10),
-        completionTokens: parseInt(match[2], 10),
-        totalTokens: parseInt(match[1], 10) + parseInt(match[2], 10),
-        cost: parseFloat(match[3]),
-        currency: match[4],
-      }),
-    },
-    {
-      // Alternative format: "Total tokens used: 168 (123 prompt, 45 completion). Cost: $0.012"
-      regex: /Total tokens used:\s*(\d+)\s*\((\d+)\s*prompt,\s*(\d+)\s*completion\)\.\s*Cost:\s*\$?([\d.]+)/gi,
-      map: (match: string[]) => ({
-        promptTokens: parseInt(match[2], 10),
-        completionTokens: parseInt(match[3], 10),
-        totalTokens: parseInt(match[1], 10),
-        cost: parseFloat(match[4]),
-        currency: 'USD', // Default for $ symbol or this format
-      }),
-    },
-  ];
-
   parse(logs: string): CostMetrics {
-    let lastMetrics: CostMetrics | null = null;
-
-    for (const { regex, map } of this.patterns) {
-      let match;
-      // Reset regex lastIndex because of 'g' flag
-      regex.lastIndex = 0;
-      while ((match = regex.exec(logs)) !== null) {
-        lastMetrics = map(match);
-      }
-    }
-
-    if (lastMetrics) {
-      return lastMetrics;
-    }
-
-    return {
+    const metrics: CostMetrics = {
       promptTokens: 0,
       completionTokens: 0,
       totalTokens: 0,
       cost: 0,
       currency: 'USD',
     };
+
+    const patterns = [
+      { regex: /Prompt tokens:\s*(\d+)/gi, key: 'promptTokens' as const, type: 'int' },
+      { regex: /Completion tokens:\s*(\d+)/gi, key: 'completionTokens' as const, type: 'int' },
+      { regex: /Total tokens used:\s*(\d+)/gi, key: 'totalTokens' as const, type: 'int' },
+      { regex: /(\d+)\s*prompt/gi, key: 'promptTokens' as const, type: 'int' },
+      { regex: /(\d+)\s*completion/gi, key: 'completionTokens' as const, type: 'int' },
+      { regex: /Cost:\s*\$?([\d.]+)/gi, key: 'cost' as const, type: 'float' },
+      { regex: /Cost:\s*[\d.]+\s*([A-Z]{3})/gi, key: 'currency' as const, type: 'string' },
+    ];
+
+    for (const { regex, key, type } of patterns) {
+      let match;
+      regex.lastIndex = 0;
+      while ((match = regex.exec(logs)) !== null) {
+        const value = match[1];
+        if (type === 'int') {
+          (metrics as any)[key] = parseInt(value, 10);
+        } else if (type === 'float') {
+          (metrics as any)[key] = parseFloat(value);
+        } else {
+          (metrics as any)[key] = value;
+        }
+      }
+    }
+
+    // Recalculate total if missing and prompt/completion are present
+    if (metrics.totalTokens === 0 && (metrics.promptTokens > 0 || metrics.completionTokens > 0)) {
+      metrics.totalTokens = metrics.promptTokens + metrics.completionTokens;
+    }
+
+    return metrics;
   }
 }
