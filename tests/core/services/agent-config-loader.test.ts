@@ -78,6 +78,12 @@ describe('AgentConfigLoader', () => {
     it('should throw an error if agents.yaml is not a valid YAML file', () => {
         fs.writeFileSync(configPath, 'this is not yaml : { [');
 
-        expect(() => loader.loadConfigs()).toThrow();
+        try {
+            loader.loadConfigs();
+            expect.fail('Should have thrown an error');
+        } catch (e: any) {
+            expect(e).toBeInstanceOf(Error);
+            expect(e.cause).toBeDefined();
+        }
     });
 });

@@ -15,11 +15,11 @@ export class AgentConfigLoader {
             return [];
         }
 
-        let parsed;
+        let parsed: unknown;
         try {
             parsed = YAML.parse(fileContent);
         } catch (e) {
-            throw new Error(`Failed to parse agents.yaml: ${e instanceof Error ? e.message : String(e)}`);
+            throw new Error(`Failed to parse agents.yaml: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
         }
 
         if (!Array.isArray(parsed)) {

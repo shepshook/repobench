@@ -259,6 +259,56 @@ describe('SessionOrchestrator Integration', () => {
     await expect(timeoutCallback()).rejects.toThrow('Failed to close session on timeout: Close failed');
   });
 
+  it('should not return a promise from onData callback', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    await orchestrator.createSession(config, mockSandbox);
+
+    const dataCallback = (mockSession.onData as any).mock.calls[0][0];
+    const result = dataCallback('some data');
+    expect(result).not.toBeInstanceOf(Promise);
+  });
+
+  it('should not return a promise from onTimeout callback', async () => {
+    const config = {
+      agentId: 'test-agent',
+      model: 'gpt-4',
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful assistant',
+      cliArgs: ['--verbose'],
+    };
+
+    const mockSession = {
+      onData: vi.fn(),
+      onTimeout: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn(),
+      getScreenState: vi.fn(),
+    };
+
+    (PtySession.create as any).mockResolvedValue(mockSession);
+    await orchestrator.createSession(config, mockSandbox);
+
+    const timeoutCallback = (mockSession.onTimeout as any).mock.calls[0][0];
+    const result = timeoutCallback();
+    expect(result).not.toBeInstanceOf(Promise);
+  });
+
   it('should ensure robust cleanup of sandbox and session on failure', async () => {
     const config = {
       agentId: 'test-agent',
