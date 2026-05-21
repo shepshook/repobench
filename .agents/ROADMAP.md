@@ -263,7 +263,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Resolve cross-module SessionOrchestrator→Evaluator cost-data boundary leak; mark implemented success criteria; remediate better-sqlite3 native binding; audit and fix system-wide lint regression root causes.
   * **Tasks:**
     - [x] [Task 4.FIX1.1: Wire SessionOrchestrator Cost Data into Evaluator Pipeline](.agents/spec/task-4.fix1.1.md)
-    - [ ] [Task 4.FIX1.2: Rebuild better-sqlite3 Native Bindings & Validate Persistence Layer](.agents/spec/task-4.fix1.2.md)
+    - [x] [Task 4.FIX1.2: Rebuild better-sqlite3 Native Bindings & Validate Persistence Layer](.agents/spec/task-4.fix1.2.md)
     - [ ] [Task 4.FIX1.3: Remediate System-Wide Lint Regression — Infrastructure Files](.agents/spec/task-4.fix1.3.md)
     - [ ] [Task 4.FIX1.4: Audit Cross-Module Boundary Leaks & Final Integration Verification](.agents/spec/task-4.fix1.4.md)
   * **DoD:** Cost data flows from SessionOrchestrator through JudgeService into E-Score formula; persistence tests pass; lint ≤ tolerance threshold (no `any`-typed member access in core services); all 9 Epic 4 test files + integration tests pass end-to-end.
