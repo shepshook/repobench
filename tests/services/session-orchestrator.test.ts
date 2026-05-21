@@ -39,6 +39,7 @@ describe('SessionOrchestrator Integration', () => {
     (AgentAdapterFactory.createAdapter as any).mockReturnValue({
       interactionMap: new Map(),
       getStartupCommand: () => 'agent-cli',
+      configure: vi.fn(),
     });
     (PtySession.create as any).mockResolvedValue({
       onData: vi.fn(),
@@ -59,8 +60,16 @@ describe('SessionOrchestrator Integration', () => {
       cliArgs: ['--verbose'],
     };
     
+    const mockAdapter = {
+      interactionMap: new Map(),
+      getStartupCommand: () => 'agent-cli',
+      configure: vi.fn(),
+    };
+    (AgentAdapterFactory.createAdapter as any).mockReturnValue(mockAdapter);
+
     await orchestrator.createSession(config, mockSandbox);
     expect(mockSandbox.createSnapshot).toHaveBeenCalled();
+    expect(mockAdapter.configure).toHaveBeenCalledWith(config);
   });
 
   it('should integrate PromptHandler during session creation to process PTY output', async () => {
@@ -82,8 +91,11 @@ describe('SessionOrchestrator Integration', () => {
 
     (PtySession.create as any).mockResolvedValue(mockSession);
     (AgentAdapterFactory.createAdapter as any).mockReturnValue({
-      interactionMap: new Map([['Confirm\\? \\[y/n\\]', 'y']]),
+      interactionMap: new Map([
+        [/Confirm\? \[y\/n\]/, 'y']
+      ]),
       getStartupCommand: () => 'agent-cli',
+      configure: vi.fn(),
     });
 
     const session = await orchestrator.createSession(config, mockSandbox);
@@ -91,8 +103,6 @@ describe('SessionOrchestrator Integration', () => {
     expect(mockSession.onData).toHaveBeenCalled();
     
     const dataCallback = (mockSession.onData as any).mock.calls[0][0];
-    const promptHandler = new PromptHandler();
-    promptHandler.setRules([{ pattern: 'Confirm\\? \\[y/n\\]', response: 'y' }]);
     
     dataCallback('Confirm? [y/n]');
     expect(mockSession.write).toHaveBeenCalledWith('y\n');
@@ -302,6 +312,7 @@ describe('SessionOrchestrator Cost Integration', () => {
     (AgentAdapterFactory.createAdapter as any).mockReturnValue({
       interactionMap: new Map(),
       getStartupCommand: () => 'agent-cli',
+      configure: vi.fn(),
     });
   });
 

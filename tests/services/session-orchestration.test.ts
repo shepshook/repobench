@@ -37,6 +37,7 @@ describe('Session Orchestration Integration', () => {
     (AgentAdapterFactory.createAdapter as any).mockReturnValue({
       interactionMap: new Map(),
       getStartupCommand: () => 'agent-cli',
+      configure: vi.fn(),
     });
   });
 

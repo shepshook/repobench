@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema } from '../../src/core/contracts';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema } from '../../src/core/contracts';
 
 describe('ValidationResultSchema', () => {
   it('should validate a correct ValidationResult object', () => {
@@ -97,28 +97,65 @@ describe('CompletionSignature', () => {
 });
 
 describe('CompletionSignatureSchema', () => {
-  it('should validate a correct CompletionSignature object', () => {
-    const validSignature = {
-      pattern: 'Finished',
-      name: 'basic',
-    };
-    expect(() => CompletionSignatureSchema.parse(validSignature)).not.toThrow();
-  });
+    it('should validate a correct CompletionSignature object', () => {
+        const validSignature = {
+            pattern: 'Finished',
+            name: 'basic',
+        };
+        expect(() => CompletionSignatureSchema.parse(validSignature)).not.toThrow();
+    });
 
-  it('should throw an error for missing required fields', () => {
-    const invalidSignature = {
-      pattern: 'Finished',
-    };
-    // @ts-expect-error - testing runtime validation
-    expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
-  });
+    it('should throw an error for missing required fields', () => {
+        const invalidSignature = {
+            pattern: 'Finished',
+        };
+        // @ts-expect-error - testing runtime validation
+        expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
+    });
 
-  it('should throw an error for invalid types', () => {
-    const invalidSignature = {
-      pattern: 123,
-      name: 'basic',
-    };
-    // @ts-expect-error - testing runtime validation
-    expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
-  });
+    it('should throw an error for invalid types', () => {
+        const invalidSignature = {
+            pattern: 123,
+            name: 'basic',
+        };
+        // @ts-expect-error - testing runtime validation
+        expect(() => CompletionSignatureSchema.parse(invalidSignature)).toThrow();
+    });
 });
+
+describe('AgentConfigSchema', () => {
+    it('should validate a correct AgentConfig object', () => {
+        const validConfig = {
+            agentId: 'test-agent',
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemPrompt: 'You are a helpful assistant',
+            cliArgs: ['--verbose'],
+            max_tokens: 1000,
+            completionSignatures: [{ pattern: 'Done', name: 'completion' }],
+        };
+        expect(() => AgentConfigSchema.parse(validConfig)).not.toThrow();
+    });
+
+    it('should throw an error for missing required fields', () => {
+        const invalidConfig = {
+            agentId: 'test-agent',
+            // missing model, temperature, etc.
+        };
+        // @ts-expect-error - testing runtime validation
+        expect(() => AgentConfigSchema.parse(invalidConfig)).toThrow();
+    });
+
+    it('should throw an error for invalid temperature', () => {
+        const invalidConfig = {
+            agentId: 'test-agent',
+            model: 'gpt-4',
+            temperature: 2.5, // max 2
+            systemPrompt: '...',
+            cliArgs: [],
+        };
+        // @ts-expect-error - testing runtime validation
+        expect(() => AgentConfigSchema.parse(invalidConfig)).toThrow();
+    });
+});
+

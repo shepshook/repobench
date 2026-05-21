@@ -186,7 +186,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.4.4: Integrate DoneDetector and timeout management into SessionOrchestrator](.agents/spec/task-3.4.4.md)
     - [x] [Task 3.4.FIX1: Audit IPtySession Mock Alignment Round 1](.agents/spec/task-3.4.fix1.md)
   * **DoD:** Orchestrator accurately terminates upon task completion or timeout.
-* **[ ] Feature 3.5: Token & Cost Telemetry Scraper**
+* **[x] Feature 3.5: Token & Cost Telemetry Scraper**
   * **Spec:** Build `CostParser` to extract token/cost data from agent outputs.
   * **Tasks:**
     - [x] [Task 3.5.1: Define CostParser Contract & Schema](.agents/spec/task-3.5.1.md)
@@ -196,6 +196,11 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Output logs include precise financial cost per run.
 * **[ ] Feature 3.6: Agent Configuration Management**
   * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters via `BatchRunner`.
+  * **Tasks:**
+    - [x] [Task 3.6.1: Define Agent Configuration Schema](.agents/spec/task-3.6.1.md)
+    - [ ] [Task 3.6.2: Implement Agent Configuration Loader](.agents/spec/task-3.6.2.md)
+    - [ ] [Task 3.6.3: Integrate Configuration into BatchRunner](.agents/spec/task-3.6.3.md)
+    - [ ] [Task 3.6.4: Verification & Integration Testing](.agents/spec/task-3.6.4.md)
   * **DoD:** Experiments are 100% reproducible via YAML config files.
 
 ---

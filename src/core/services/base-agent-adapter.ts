@@ -1,4 +1,5 @@
 import { IAgentAdapter } from '../contracts/agent-adapter';
+import { AgentConfig } from '../contracts';
 
 export abstract class AgentAdapter implements IAgentAdapter {
     constructor(
@@ -7,6 +8,10 @@ export abstract class AgentAdapter implements IAgentAdapter {
     ) {}
 
     abstract getStartupCommand(): string;
+    
+    configure(config: AgentConfig): void {
+        // Default implementation: do nothing
+    }
 }
 
 export class DefaultAdapter extends AgentAdapter {
@@ -19,6 +24,12 @@ export class DefaultAdapter extends AgentAdapter {
 
     getStartupCommand(): string {
         return this._startupCmd;
+    }
+
+    configure(config: AgentConfig): void {
+        this._startupCmd = config.cliArgs.length > 0 
+            ? `${this._startupCmd} ${config.cliArgs.join(' ')}`
+            : this._startupCmd;
     }
 }
 

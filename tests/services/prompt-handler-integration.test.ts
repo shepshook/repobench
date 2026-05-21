@@ -49,6 +49,7 @@ describe('PromptHandler Orchestrator Integration', () => {
       interactionMap: new Map([
         ['Prompt:', 'yes'],
       ]),
+      configure: vi.fn(),
     };
     (AgentAdapterFactory.createAdapter as any).mockReturnValue(mockAdapter);
 
@@ -68,6 +69,7 @@ describe('PromptHandler Orchestrator Integration', () => {
       interactionMap: new Map([
         ['[', 'yes'], // Invalid regex
       ]),
+      configure: vi.fn(),
     };
     (AgentAdapterFactory.createAdapter as any).mockReturnValue(mockAdapter);
 

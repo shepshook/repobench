@@ -4,6 +4,7 @@ import { ClaudeCodeAdapter } from '../../../src/infrastructure/agents/claude-cod
 import { AiderAdapter } from '../../../src/infrastructure/agents/aider-adapter';
 import { DefaultAdapter } from '../../../src/core/services/base-agent-adapter';
 import { AgentAdapter } from '../../../src/core/services/base-agent-adapter';
+import { AgentConfig } from '../../../src/core/contracts';
 
 class MockCustomAdapter extends AgentAdapter {
     getStartupCommand(): string {
@@ -40,5 +41,50 @@ describe('AgentAdapterFactory', () => {
         const adapter = AgentAdapterFactory.createAdapter(agentId);
         expect(adapter).toBeInstanceOf(MockCustomAdapter);
         expect(adapter.getStartupCommand()).toBe('custom-cmd');
+    });
+
+    it('should return ClaudeCodeAdapter when provided with a valid AgentConfig', () => {
+        const config: AgentConfig = {
+            agentId: 'claude-code',
+            model: 'claude-3-5-sonnet',
+            temperature: 0,
+            systemPrompt: 'You are a helpful assistant',
+            cliArgs: [],
+        };
+        const adapter = AgentAdapterFactory.createAdapter(config);
+        expect(adapter).toBeInstanceOf(ClaudeCodeAdapter);
+    });
+
+    it('should throw validation error when provided with an invalid AgentConfig', () => {
+        const invalidConfig = {
+            agentId: 'invalid-agent',
+            // missing other required fields
+        };
+        expect(() => AgentAdapterFactory.createAdapter(invalidConfig as any)).toThrow();
+    });
+
+    it('should return DefaultAdapter when provided with a valid AgentConfig but unknown name', () => {
+        const config: AgentConfig = {
+            agentId: 'unknown-agent',
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemPrompt: 'You are a helpful assistant',
+            cliArgs: [],
+        };
+        const adapter = AgentAdapterFactory.createAdapter(config);
+        expect(adapter).toBeInstanceOf(DefaultAdapter);
+    });
+
+    it('should update startup command in DefaultAdapter when configured with cliArgs', () => {
+        const adapter = new DefaultAdapter('test', 'sh');
+        const config: AgentConfig = {
+            agentId: 'test',
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemPrompt: '...',
+            cliArgs: ['-v', '--debug'],
+        };
+        adapter.configure(config);
+        expect(adapter.getStartupCommand()).toBe('sh -v --debug');
     });
 });

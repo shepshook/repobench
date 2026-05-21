@@ -16,7 +16,8 @@ export class SessionOrchestrator implements ISessionOrchestrator {
 
     async createSession(config: AgentConfig, sandbox: Sandbox): Promise<IPtySession> {
         await sandbox.createSnapshot();
-        const adapter = AgentAdapterFactory.createAdapter(config.agentId);
+        const adapter = AgentAdapterFactory.createAdapter(config);
+        adapter.configure(config);
         
         const promptHandler = new PromptHandler();
         const rules = Array.from(adapter.interactionMap).map(([pattern, response]) => ({
