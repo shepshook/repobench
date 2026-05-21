@@ -142,6 +142,8 @@ export interface IFileAccessTracker {
 export interface ISearchEfficiencyTracker {
   trackAccess(file: string): void;
   trackModification(file: string): void;
+  updateTimeTaken(ms: number): void;
+  updateTokensUsed(count: number): void;
   getMetrics(): EfficiencyMetrics;
 }
 

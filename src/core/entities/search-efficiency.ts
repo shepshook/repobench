@@ -12,6 +12,7 @@ export const EfficiencyMetricsSchema = z.object({
   filesModified: z.number().int().nonnegative(),
   timeTakenMs: z.number().int().nonnegative(),
   tokensUsed: z.number().int().nonnegative(),
+  efficiencyRatio: z.number().nonnegative().optional(),
 });
 
 export type EfficiencyMetrics = z.infer<typeof EfficiencyMetricsSchema>;

@@ -11,32 +11,22 @@ import { ISearchEfficiencyTracker, EfficiencyMetrics } from '../../src/core/cont
  * the missing functionality.
  */
 
+import { SearchEfficiencyTracker } from '../../src/core/services/search-efficiency-tracker';
+
 describe('ISearchEfficiencyTracker Implementation Requirements', () => {
   it('should correctly track and count accessed files', () => {
-    // This test will fail to compile if ISearchEfficiencyTracker is not
-    // implemented, or it will fail at runtime if the implementation
-    // is incomplete or incorrect according to the definitions.
-    
-    // As per the requirement, we need to enforce that 'Files Accessed' 
-    // are tracked.
-    
-    const mockTracker: ISearchEfficiencyTracker = {
-      trackAccess: (file: string) => { /* logic missing */ },
-      trackModification: (file: string) => { /* logic missing */ },
-      getMetrics: (): EfficiencyMetrics => {
-        return {
-          filesAccessed: 0, // Should be tracking based on definitions
-          filesModified: 0,
-          timeTakenMs: 0,
-          tokensUsed: 0,
-        };
-      }
-    };
+    const mockTracker = new SearchEfficiencyTracker();
     
     mockTracker.trackAccess('src/main.ts');
+    mockTracker.trackModification('src/main.ts');
     const metrics = mockTracker.getMetrics();
     
-    // Expectation: 1 file accessed
+    // Expectation: 1 file accessed, 1 modified
     expect(metrics.filesAccessed).toBe(1);
-  });
+    expect(metrics.filesModified).toBe(1);
+    
+    // Efficiency Ratio: Accessed / Modified (1 / 1 = 1)
+    expect(metrics.efficiencyRatio).toBe(1);
+});
+
 });
