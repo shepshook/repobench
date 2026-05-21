@@ -315,6 +315,7 @@ export interface EvaluationResult {
   postTestResults: TestResults | null;
   latency: number;
   message: string;
+  efficiency?: EfficiencyMetrics;
 }
 
 export interface IJudgeService {

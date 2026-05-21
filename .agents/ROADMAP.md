@@ -239,7 +239,7 @@ This document serves as the central source of truth for the project's strategic 
         - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
         - [x] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
     - [x] [Task 4.2.3: Implement SearchEfficiencyTracker Service](.agents/spec/task-4.2.3.md)
-    - [ ] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
+    - [x] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
     - [ ] [Task 4.2.5: Add SearchEfficiencyTracker Verification Suite](.agents/spec/task-4.2.5.md)
   * **DoD:** Reports include the agent's file-scanning efficiency metric.
 * **[ ] Feature 4.3: E-Score Implementation**

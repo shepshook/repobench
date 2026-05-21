@@ -29,6 +29,11 @@ describe('Evaluator', () => {
       getFilesystemSnapshot: vi.fn().mockResolvedValue([]),
       getCacheStats: vi.fn().mockResolvedValue({ hits: 0, misses: 0 }),
       ping: vi.fn().mockResolvedValue(true),
+      getFileAccessTracker: vi.fn().mockReturnValue({
+        getModifiedFiles: vi.fn().mockReturnValue([]),
+        getAccessedFiles: vi.fn().mockReturnValue([]),
+        getDeletedFiles: vi.fn().mockReturnValue([]),
+      }),
     };
 
     mockRunner = {
@@ -179,5 +184,31 @@ describe('Evaluator', () => {
     expect(mockSandbox.switchState).toHaveBeenNthCalledWith(2, 'post-hash');
     expect(mockRunner.runTests).toHaveBeenNthCalledWith(2, mockSandbox, 'npm test');
     expect(mockRunner.compareResults).toHaveBeenCalledWith(preResults, postResults);
+  });
+
+  it('should track file access and modification metrics', async () => {
+    const mockTracker: ISearchEfficiencyTracker = {
+      trackAccess: vi.fn(),
+      trackModification: vi.fn(),
+      updateTimeTaken: vi.fn(),
+      updateTokensUsed: vi.fn(),
+      getMetrics: vi.fn().mockReturnValue({ filesAccessed: 1, filesModified: 1, timeTaken: 100, tokensUsed: 10 }),
+    };
+
+    (mockSandbox.getFileAccessTracker as any).mockReturnValue({
+      getModifiedFiles: vi.fn().mockReturnValue(['modified.ts']),
+      getAccessedFiles: vi.fn().mockReturnValue(['accessed.ts']),
+      getDeletedFiles: vi.fn().mockReturnValue([]),
+    });
+
+    const preResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };
+    const postResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };
+    (mockRunner.runTests as any).mockResolvedValueOnce(preResults).mockResolvedValueOnce(postResults);
+    (mockRunner.compareResults as any).mockReturnValue({ status: 'unchanged', diff: '', summary: '' });
+
+    await evaluator.evaluate(mockCandidate, mockTracker);
+
+    expect(mockTracker.trackAccess).toHaveBeenCalledWith('accessed.ts');
+    expect(mockTracker.trackModification).toHaveBeenCalledWith('modified.ts');
   });
 });
