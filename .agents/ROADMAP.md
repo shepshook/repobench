@@ -257,7 +257,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.4.1: Define ISemanticJudge interface and SemanticScore schema](.agents/spec/task-4.4.1.md)
         - [x] [Task 4.4.2: Implement LLMSemanticJudge service](.agents/spec/task-4.4.2.md)
     - [x] [Task 4.4.3: Integrate SemanticJudge into EvaluatorPipeline](.agents/spec/task-4.4.3.md)
-    - [ ] [Task 4.4.4: Verification & Test Suite](.agents/spec/task-4.4.4.md)
+    - [x] [Task 4.4.4: Verification & Test Suite](.agents/spec/task-4.4.4.md)
   * **DoD:** Reports include nuanced semantic scores alongside binary results.
 
 ---

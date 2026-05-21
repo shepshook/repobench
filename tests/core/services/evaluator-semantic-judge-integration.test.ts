@@ -49,11 +49,12 @@ describe('EvaluatorPipeline Semantic Judge Integration', () => {
 
     mockSemanticJudge = {
       judge: vi.fn().mockResolvedValue({
-        score: 0.8,
-        reasoning: 'Looks good',
-        isCorrect: true
+        correctness: 4,
+        maintainability: 4,
+        idiomaticity: 4
       }),
     };
+
 
     // This will fail because the current Evaluator constructor doesn't accept the semantic judge
     evaluator = new Evaluator(mockSandbox, mockConfig, mockRunner, undefined, mockSemanticJudge);
@@ -84,6 +85,7 @@ describe('EvaluatorPipeline Semantic Judge Integration', () => {
 
     expect(mockSemanticJudge.judge).toHaveBeenCalled();
     expect(result).toHaveProperty('semanticScore');
-    expect(result.semanticScore.score).toBe(0.8);
+    expect(result.semanticScore.correctness).toBe(4);
+
   });
 });
