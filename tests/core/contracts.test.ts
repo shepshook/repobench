@@ -13,27 +13,6 @@ describe('ValidationResultSchema', () => {
     };
     expect(() => ValidationResultSchema.parse(validResult)).not.toThrow();
   });
-});
-
-describe('IScorer', () => {
-  it('should be implementable by a mock class and calculate E-Score correctly', () => {
-    class MockScorer implements IScorer {
-      calculateEScore(data: {
-        success: number;
-        cost: number;
-        latency: number;
-        efficiencyMultiplier: number;
-      }): number {
-        return (data.success / (data.cost * Math.log(data.latency))) * data.efficiencyMultiplier;
-      }
-    }
-    const scorer: IScorer = new MockScorer();
-    const eScore = scorer.calculateEScore({ success: 1, cost: 10, latency: 100, efficiencyMultiplier: 1 });
-    // E-Score = 1 / (10 * Math.log(100)) * 1 = 1 / (10 * 4.605) = 1 / 46.05 = 0.0217
-    expect(eScore).toBeCloseTo(0.0217);
-  });
-});
-
 
   it('should throw an error for invalid enum values in preFixStatus', () => {
     const invalidResult = {
@@ -59,6 +38,38 @@ describe('IScorer', () => {
     };
     // @ts-expect-error - testing runtime validation
     expect(() => ValidationResultSchema.parse(invalidResult)).toThrow();
+  });
+
+  it('should throw an error for invalid types in ValidationResult', () => {
+    const invalidResult = {
+      isValid: "true", // invalid type
+      preFixStatus: 'fail',
+      postFixStatus: 'pass',
+      preFixOutput: '...',
+      postFixOutput: '...',
+      latency: 100,
+    };
+    // @ts-expect-error - testing runtime validation
+    expect(() => ValidationResultSchema.parse(invalidResult)).toThrow();
+  });
+});
+
+describe('IScorer', () => {
+  it('should be implementable by a mock class and calculate E-Score correctly', () => {
+    class MockScorer implements IScorer {
+      calculateEScore(data: {
+        success: number;
+        cost: number;
+        latency: number;
+        efficiencyMultiplier: number;
+      }): number {
+        return (data.success / (data.cost * Math.log(data.latency))) * data.efficiencyMultiplier;
+      }
+    }
+    const scorer: IScorer = new MockScorer();
+    const eScore = scorer.calculateEScore({ success: 1, cost: 10, latency: 100, efficiencyMultiplier: 1 });
+    // E-Score = 1 / (10 * Math.log(100)) * 1 = 1 / (10 * 4.605) = 1 / 46.05 = 0.0217
+    expect(eScore).toBeCloseTo(0.0217);
   });
 });
 
