@@ -241,7 +241,22 @@ export interface SessionResult {
   logPath: string;
 }
 
-// --- Judge Types ---
+export interface IScorer {
+  calculateEScore(data: {
+    success: number;
+    cost: number;
+    latency: number;
+    efficiencyMultiplier: number;
+  }): number;
+}
+
+export type EScoreFormula = (data: {
+  success: number;
+  cost: number;
+  latency: number;
+  efficiencyMultiplier: number;
+}) => number;
+
 
 export interface TestResults {
   stdout: string;

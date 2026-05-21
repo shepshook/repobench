@@ -233,7 +233,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.1.4: Add Regression Test Verification Suite](.agents/spec/task-4.1.4.md)
     - [x] [Task 4.1.FIX1: Fix Evaluator Test Latency Assertion Round 1](.agents/spec/task-4.1.fix1.md)
    * **DoD:** Fixes are marked failed if they introduce new test regressions.
-* **[ ] Feature 4.2: Search Efficiency Tracker**
+* **[x] Feature 4.2: Search Efficiency Tracker**
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.
   * **Tasks:**
         - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
@@ -244,7 +244,12 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Reports include the agent's file-scanning efficiency metric.
 * **[ ] Feature 4.3: E-Score Implementation**
   * **Spec:** Implement formula: $$E\text{-Score} = \frac{\text{Success}}{\text{Cost} \times \log(\text{Latency})} \times \text{Efficiency\_Multiplier}$$
-  * **DoD:** Every run generates a valid, comparable E-Score.
+  * **Tasks:**
+    - [x] [Task 4.3.1: Define IScorer Interface and E-Score Formula Contract](.agents/spec/task-4.3.1.md)
+    - [ ] [Task 4.3.2: Implement EScoreService](.agents/spec/task-4.3.2.md)
+    - [ ] [Task 4.3.3: Integration into EvaluatorPipeline](.agents/spec/task-4.3.3.md)
+    - [ ] [Task 4.3.4: Verification & Test Suite](.agents/spec/task-4.3.4.md)
+  * **DoD:** Every run generates a valid, comparable E-Score; edge cases (Cost/Latency) are handled.
 * **[ ] Feature 4.4: LLM-Based 'Semantic Judge'**
   * **Spec:** Call LLM to rate Correctness, Maintainability, and Idiomaticity (1-5).
   * **DoD:** Reports include nuanced semantic scores alongside binary results.
