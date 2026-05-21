@@ -22,7 +22,7 @@ export class EScoreService implements IScorer {
             return 0;
         }
 
-        const eScore = (data.success / (cost * logLatency)) * efficiencyMultiplier;
+        const eScore = (data.success / (cost * logLatency)) * (efficiencyMultiplier || 1);
 
         // Return sane default if NaN or Infinity
         if (isNaN(eScore) || !isFinite(eScore)) {

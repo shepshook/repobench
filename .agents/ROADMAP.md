@@ -247,7 +247,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Tasks:**
     - [x] [Task 4.3.1: Define IScorer Interface and E-Score Formula Contract](.agents/spec/task-4.3.1.md)
     - [x] [Task 4.3.2: Implement EScoreService](.agents/spec/task-4.3.2.md)
-    - [ ] [Task 4.3.3: Integration into EvaluatorPipeline](.agents/spec/task-4.3.3.md)
+    - [x] [Task 4.3.3: Integration into EvaluatorPipeline](.agents/spec/task-4.3.3.md)
     - [ ] [Task 4.3.4: Verification & Test Suite](.agents/spec/task-4.3.4.md)
   * **DoD:** Every run generates a valid, comparable E-Score; edge cases (Cost/Latency) are handled.
 * **[ ] Feature 4.4: LLM-Based 'Semantic Judge'**

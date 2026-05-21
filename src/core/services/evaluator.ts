@@ -7,25 +7,41 @@ import {
   EvaluationResult, 
   TestResults,
   ISearchEfficiencyTracker,
-  EfficiencyMetrics
+  EfficiencyMetrics,
+  IScorer,
+  ComparisonResult
 } from '../contracts';
 import { RegressionTestRunner } from './regression-test-runner';
 import { SearchEfficiencyTracker } from './search-efficiency-tracker';
+import { EScoreService } from './e-score-service';
 
 export class Evaluator implements IEvaluator {
   constructor(
     private readonly sandbox: ISandbox,
     private readonly config: SandboxConfig,
-    private readonly runner: IRegressionTestRunner = new RegressionTestRunner()
+    private readonly runner: IRegressionTestRunner = new RegressionTestRunner(),
+    private readonly scorer: IScorer = new EScoreService()
   ) {}
 
-  async evaluate(candidate: Candidate): Promise<EvaluationResult>;
-  async evaluate(candidate: Candidate, tracker: ISearchEfficiencyTracker): Promise<EvaluationResult>;
-  async evaluate(candidate: Candidate, tracker?: ISearchEfficiencyTracker): Promise<EvaluationResult> {
+  async evaluate(candidate: Candidate, cost?: number): Promise<EvaluationResult>;
+  async evaluate(candidate: Candidate, tracker: ISearchEfficiencyTracker, cost?: number): Promise<EvaluationResult>;
+  async evaluate(candidate: Candidate, trackerOrCost?: ISearchEfficiencyTracker | number, cost?: number): Promise<EvaluationResult> {
     const startTime = Date.now();
-    const t = tracker || new SearchEfficiencyTracker();
+    let tracker: ISearchEfficiencyTracker;
+    let actualCost: number = 0;
+
+    if (typeof trackerOrCost === 'number') {
+        tracker = new SearchEfficiencyTracker();
+        actualCost = trackerOrCost;
+    } else {
+        tracker = trackerOrCost || new SearchEfficiencyTracker();
+        actualCost = cost || 1;
+    }
+    const t = tracker;
     let preResults: TestResults | null = null;
     let postResults: TestResults | null = null;
+    let comparison: ComparisonResult | null = null;
+    let regressionStatus: 'clean' | 'regressed' | 'error' = 'error';
 
     try {
       if (!candidate.preFixHash) {
@@ -49,8 +65,16 @@ export class Evaluator implements IEvaluator {
       accessTracker.getModifiedFiles().forEach(f => t.trackModification(f));
       t.updateTimeTaken(Math.max(1, Date.now() - startTime));
 
-      const comparison = this.runner.compareResults(preResults, postResults);
-      const regressionStatus = comparison.status === 'regressed' ? 'regressed' : 'clean';
+      comparison = this.runner.compareResults(preResults, postResults);
+      regressionStatus = comparison.status === 'regressed' ? 'regressed' : 'clean';
+
+      const efficiency = t.getMetrics();
+      const eScore: number = this.scorer.calculateEScore({
+          success: regressionStatus === 'clean' ? 1 : 0,
+          cost: actualCost,
+          latency: Math.max(2, Date.now() - startTime),
+          efficiencyMultiplier: efficiency.efficiencyRatio ?? 1
+      });
 
       return {
         candidateId: candidate.id,
@@ -60,7 +84,8 @@ export class Evaluator implements IEvaluator {
         postTestResults: postResults,
         latency: Math.max(1, Date.now() - startTime),
         message: comparison.summary,
-        efficiency: t.getMetrics(),
+        efficiency,
+        eScore: eScore
       };
     } catch (e) {
       return {
@@ -72,6 +97,7 @@ export class Evaluator implements IEvaluator {
         latency: Math.max(1, Date.now() - startTime),
         message: e instanceof Error ? e.message : String(e),
         efficiency: t.getMetrics(),
+        eScore: 0
       };
     }
   }

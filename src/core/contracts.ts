@@ -319,7 +319,7 @@ export interface EvalMetrics {
 }
 
 export interface IEvaluator {
-  evaluate(candidate: Candidate): Promise<EvaluationResult>;
+  evaluate(candidate: Candidate, cost?: number): Promise<EvaluationResult>;
 }
 
 export interface EvaluationResult {
@@ -331,6 +331,7 @@ export interface EvaluationResult {
   latency: number;
   message: string;
   efficiency?: EfficiencyMetrics;
+  eScore: number;
 }
 
 export interface IJudgeService {
