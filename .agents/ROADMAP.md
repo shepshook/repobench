@@ -203,6 +203,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.6.4: Verification & Integration Testing](.agents/spec/task-3.6.4.md)
     - [x] [Task 3.6.FIX1: Fix cliArgs Duplication in PtySession Integration](.agents/spec/task-3.6.fix1.md)
     - [x] [Task 3.6.FIX2: Fix Lint Errors in session-orchestrator.ts and agent-config-loader.ts](.agents/spec/task-3.6.fix2.md)
+    - [x] [Task 3.6.FIX3: Fix Test Assertions Broken by FIX1/FIX2 Changes Round 1](.agents/spec/task-3.6.fix3.md)
   * **DoD:** Experiments are 100% reproducible via YAML config files.
 
 ---

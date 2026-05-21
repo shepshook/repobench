@@ -58,7 +58,7 @@ describe('PromptHandler Orchestrator Integration', () => {
     expect(PtySession.create).toHaveBeenCalledWith(
       mockSandbox,
       mockAdapter,
-      { args: mockConfig.cliArgs },
+      {},
       expect.any(Object) // This should be the PromptHandler
     );
     expect(session).toBeDefined();
