@@ -19,13 +19,13 @@ Define a Zod schema to represent the configuration for agents, including hyper-p
 - Add `configure(config: AgentConfig): void` to `IAgentAdapter` interface.
 
 ## DoD
-- [ ] Single canonical `AgentConfig` schema exists in `contracts.ts` only.
-- [ ] `AgentAdapterFactory.createAdapter` validates `AgentConfig` via unified schema and rejects invalid configs with descriptive error.
-- [ ] Adapters receive configuration via `configure(config)` and can customize startup command / args per config.
-- [ ] `SessionOrchestrator` passes full `AgentConfig` to factory and adapter.
-- [ ] No imports reference `src/core/entities/agent-config`.
-- [ ] All existing tests pass (`npm run typecheck && npm run test`).
-- [ ] Redundant `agent-adapter-factory-unified.test.ts` removed (tests cover unified behavior in `agent-adapter-factory.test.ts`).
+- [x] Single canonical `AgentConfig` schema exists in `contracts.ts` only.
+- [x] `AgentAdapterFactory.createAdapter` validates `AgentConfig` via unified schema and rejects invalid configs with descriptive error.
+- [x] Adapters receive configuration via `configure(config)` and can customize startup command / args per config.
+- [x] `SessionOrchestrator` passes full `AgentConfig` to factory and adapter.
+- [x] No imports reference `src/core/entities/agent-config`.
+- [x] All existing tests pass (`npm run typecheck && npm run test`).
+- [x] Redundant `agent-adapter-factory-unified.test.ts` removed (tests cover unified behavior in `agent-adapter-factory.test.ts`).
 
 ## Audit Feedback Round 2
 - Task failed review.

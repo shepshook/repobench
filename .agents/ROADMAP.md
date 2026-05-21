@@ -194,7 +194,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.5.3: Integrate CostParser into SessionOrchestrator](.agents/spec/task-3.5.3.md)
         - [x] [Task 3.5.4: Verification & Regression Testing](.agents/spec/task-3.5.4.md)
   * **DoD:** Output logs include precise financial cost per run.
-* **[ ] Feature 3.6: Agent Configuration Management**
+* **[x] Feature 3.6: Agent Configuration Management**
   * **Spec:** Define `agents.yaml` schema (Zod); load hyper-parameters into `SessionOrchestrator`.
   * **Tasks:**
     - [x] [Task 3.6.1: Define Agent Configuration Schema](.agents/spec/task-3.6.1.md)
@@ -206,7 +206,13 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 3.6.FIX3: Fix Test Assertions Broken by FIX1/FIX2 Changes Round 1](.agents/spec/task-3.6.fix3.md)
     - [x] [Task 3.6.FIX4: Create agents.example.yaml Reference File](.agents/spec/task-3.6.fix4.md)
     - [x] [Task 3.6.FIX5: Fix Misaligned Test Names and Spec File Checkboxes Round 1](.agents/spec/task-3.6.fix5.md)
-  * **DoD:** Experiments are 100% reproducible via YAML config files.
+   * **DoD:** Experiments are 100% reproducible via YAML config files.
+* **[ ] Feature 3.FIX1: Global Epic Integration & Alignment Round 1**
+  * **Spec:** Resolve cross-feature boundary leak in PromptHandler pipeline; clean up redundant optional chaining and empty source directories.
+  * **Tasks:**
+        - [x] [Task 3.FIX1.1: Fix Double PromptHandler Invocation Leak](.agents/spec/task-3.fix1.1.md)
+    - [ ] [Task 3.FIX1.2: Clean Up Redundant Optional Chaining & Structural Bounds](.agents/spec/task-3.fix1.2.md)
+  * **DoD:** PromptHandler invoked exactly once per data chunk; no double auto-response injection. `onData` call uses direct invocation without `?.`. Empty `src/` subdirectories cleaned or documented.
 
 ---
 

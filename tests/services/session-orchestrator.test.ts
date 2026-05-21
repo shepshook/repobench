@@ -91,7 +91,7 @@ describe('SessionOrchestrator Integration', () => {
     expect(mockAdapter.configure).toHaveBeenCalledWith(config);
   });
 
-  it('should integrate PromptHandler during session creation to process PTY output', async () => {
+  it('should provide PromptHandler to PtySession during session creation', async () => {
     const config = {
       agentId: 'test-agent',
       model: 'gpt-4',
@@ -117,14 +117,14 @@ describe('SessionOrchestrator Integration', () => {
       configure: vi.fn(),
     });
 
-    const session = await orchestrator.createSession(config, mockSandbox);
+    await orchestrator.createSession(config, mockSandbox);
 
-    expect(mockSession.onData).toHaveBeenCalled();
-    
-    const dataCallback = (mockSession.onData as any).mock.calls[0][0];
-    
-    dataCallback('Confirm? [y/n]');
-    expect(mockSession.write).toHaveBeenCalledWith('y\n');
+    expect(PtySession.create).toHaveBeenCalledWith(
+      mockSandbox,
+      expect.anything(),
+      expect.objectContaining({}),
+      expect.any(PromptHandler)
+    );
   });
 
   it('should configure DoneDetector with signatures from agent config during session creation', async () => {

@@ -38,10 +38,6 @@ export class SessionOrchestrator implements ISessionOrchestrator {
                         console.error(`Failed to close session on completion: ${err instanceof Error ? err.message : err}`);
                     });
                 }
-                const response = promptHandler.handle(data);
-                if (response) {
-                    void session.write(response + '\n');
-                }
             });
 
         session.onTimeout(() => {

@@ -1,4 +1,4 @@
-# Task 3.6.3: Integrate Configuration into BatchRunner
+# Task 3.6.3: Integrate AgentConfig into SessionOrchestrator
 
 ## Description
 Update the `BatchRunner` to utilize the `AgentConfigLoader` and pass relevant configurations to the agent adapters during session orchestration.

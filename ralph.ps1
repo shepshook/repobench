@@ -57,7 +57,7 @@ while ($Iteration -le $MaxIterations) {
         Write-Host "🏛️ Active Epic Layer: Epic ${EpicID}" -ForegroundColor Cyan
 
         # --- STEP 2: ISOLATE THE FIRST OPEN FEATURE INSIDE THIS EPIC ---
-        if ($EpicBlock -match '(?s)(\*\s*\[ \]\s*Feature\s+(\d+\.\d+(\.\w+)?):.*?)(\*\s*\[|##|\z)') {
+        if ($EpicBlock -match '(?s)(\*\s*\[ \]\s*Feature\s+(\d+\.\w+(\.\w+)*):.*?)(\*\s*\[|##|\z)') {
             $FeatureBlock = $Matches[1]
             $FeatureID = $Matches[2]
             
