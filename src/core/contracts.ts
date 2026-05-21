@@ -5,8 +5,10 @@ import { CostMetricsSchema } from './entities/cost-metrics';
 import type { CostMetrics } from './entities/cost-metrics';
 import { EfficiencyMetricsSchema } from './entities/search-efficiency';
 import type { EfficiencyMetrics } from './entities/search-efficiency';
+import { SemanticScoreSchema } from './entities/evaluation-results';
+import type { SemanticScore } from './entities/evaluation-results';
 
-export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics, EfficiencyMetricsSchema, EfficiencyMetrics };
+export { SANDBOX_APP_LABEL, CostMetricsSchema, CostMetrics, EfficiencyMetricsSchema, EfficiencyMetrics, SemanticScoreSchema, SemanticScore };
 
 /**
  * RepoBench Core Contracts
@@ -343,12 +345,8 @@ export interface EvaluationRunResult {
   result: EvaluationResult;
 }
 
-export interface SemanticScore {
-
-  correctness: number; // 1-5
-  maintainability: number; // 1-5
-  idiomaticity: number; // 1-5
-  reasoning: string;
+export interface ISemanticJudge {
+  judge(code: string): Promise<SemanticScore>;
 }
 
 // --- Leaderboard Types ---

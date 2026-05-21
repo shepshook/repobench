@@ -1,5 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer } from '../../src/core/contracts';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer, ISemanticJudge } from '../../src/core/contracts';
+
+describe('ISemanticJudge', () => {
+  it('should be implementable by a mock class', () => {
+    class MockJudge implements ISemanticJudge {
+      async judge(code: string): Promise<any> {
+        return {
+          correctness: 5,
+          maintainability: 5,
+          idiomaticity: 5,
+        };
+      }
+    }
+    const judge: ISemanticJudge = new MockJudge();
+    expect(judge).toBeDefined();
+  });
+});
 
 describe('ValidationResultSchema', () => {
   it('should validate a correct ValidationResult object', () => {
@@ -190,4 +206,3 @@ describe('ISearchEfficiencyTracker', () => {
     expect(tracker).toBeDefined();
   });
 });
-

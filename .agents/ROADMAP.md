@@ -242,7 +242,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
     - [x] [Task 4.2.5: Add SearchEfficiencyTracker Verification Suite](.agents/spec/task-4.2.5.md)
   * **DoD:** Reports include the agent's file-scanning efficiency metric.
-* **[ ] Feature 4.3: E-Score Implementation**
+* **[x] Feature 4.3: E-Score Implementation**
   * **Spec:** Implement formula: $$E\text{-Score} = \frac{\text{Success}}{\text{Cost} \times \log(\text{Latency})} \times \text{Efficiency\_Multiplier}$$
   * **Tasks:**
     - [x] [Task 4.3.1: Define IScorer Interface and E-Score Formula Contract](.agents/spec/task-4.3.1.md)
@@ -253,6 +253,11 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Every run generates a valid, comparable E-Score; edge cases (Cost/Latency) are handled.
 * **[ ] Feature 4.4: LLM-Based 'Semantic Judge'**
   * **Spec:** Call LLM to rate Correctness, Maintainability, and Idiomaticity (1-5).
+  * **Tasks:**
+    - [x] [Task 4.4.1: Define ISemanticJudge interface and SemanticScore schema](.agents/spec/task-4.4.1.md)
+    - [ ] [Task 4.4.2: Implement LLMSemanticJudge service](.agents/spec/task-4.4.2.md)
+    - [ ] [Task 4.4.3: Integrate SemanticJudge into EvaluatorPipeline](.agents/spec/task-4.4.3.md)
+    - [ ] [Task 4.4.4: Verification & Test Suite](.agents/spec/task-4.4.4.md)
   * **DoD:** Reports include nuanced semantic scores alongside binary results.
 
 ---
