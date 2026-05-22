@@ -89,7 +89,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Tasks:**
     - [x] [Task 1.FIX1.1: Mark Epic 1 Success Criteria as Completed](.agents/spec/task-1.fix1.1.md)
     - [x] [Task 1.FIX1.2: Add Error Logging to Silent Catch Blocks in Epic 1 Services](.agents/spec/task-1.fix1.2.md)
-    - [ ] [Task 1.FIX1.3: Log Skipped Candidates in JSONL Exporter](.agents/spec/task-1.fix1.3.md)
+    - [x] [Task 1.FIX1.3: Log Skipped Candidates in JSONL Exporter](.agents/spec/task-1.fix1.3.md)
   * **DoD:** All 4 success criteria marked `[x]`; no empty catch blocks remain in Epic 1 source files; skipped export candidates produce a warning; typecheck + lint + full test suite pass.
 
 ---

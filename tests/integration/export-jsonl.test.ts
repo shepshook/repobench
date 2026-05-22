@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JsonlDatasetExporter } from '../../src/infrastructure/jsonl-dataset-exporter';
 import { CandidateRepository } from '../../src/core/repositories/candidate-repository';
 import { reinitDatabase } from '../../src/infrastructure/persistence/database';
@@ -179,5 +179,176 @@ describe('JsonlDatasetExporter Integration', () => {
     const lines = content.split('\n').filter(l => l.trim());
 
     expect(lines).toHaveLength(0);
+  });
+
+  describe('warning on skipped candidates', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    afterEach(() => {
+      warnSpy.mockClear();
+    });
+
+    afterAll(() => {
+      warnSpy.mockRestore();
+    });
+
+    it('should warn when curated candidate is missing preFixHash', async () => {
+      const id = generateValidUuid();
+      repo.save({
+        id,
+        hash: generateValidHash(),
+        message: 'curated no preFixHash',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.9, reasoning: 'OK', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+        postFixHash: generateValidHash(),
+      });
+
+      await exporter.export(tempFile);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Skipping candidate ${id}`),
+      );
+    });
+
+    it('should warn when curated candidate is missing postFixHash', async () => {
+      const id = generateValidUuid();
+      repo.save({
+        id,
+        hash: generateValidHash(),
+        message: 'curated no postFixHash',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.9, reasoning: 'OK', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+        preFixHash: generateValidHash(),
+      });
+
+      await exporter.export(tempFile);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Skipping candidate ${id}`),
+      );
+    });
+
+    it('should warn when curated candidate is missing both preFixHash and postFixHash', async () => {
+      const id = generateValidUuid();
+      repo.save({
+        id,
+        hash: generateValidHash(),
+        message: 'curated no hashes',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.9, reasoning: 'OK', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+      });
+
+      await exporter.export(tempFile);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Skipping candidate ${id}`),
+      );
+    });
+
+    it('should include validation error reason in warning', async () => {
+      const id = generateValidUuid();
+      repo.save({
+        id,
+        hash: generateValidHash(),
+        message: 'curated no hashes',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.9, reasoning: 'OK', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+      });
+
+      await exporter.export(tempFile);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('preFixHash'),
+      );
+    });
+
+    it('should still export valid candidates alongside skipped ones', async () => {
+      const validId = generateValidUuid();
+      const skippedId = generateValidUuid();
+      const hash = generateValidHash();
+      repo.save({
+        id: validId,
+        hash,
+        message: 'valid candidate',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.95, reasoning: 'Good', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+        preFixHash: generateValidHash(),
+        postFixHash: generateValidHash(),
+      });
+      repo.save({
+        id: skippedId,
+        hash: generateValidHash(),
+        message: 'skipped candidate',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.95, reasoning: 'Good', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+      });
+
+      await exporter.export(tempFile);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Skipping candidate ${skippedId}`),
+      );
+
+      const content = await fs.readFile(tempFile, 'utf-8');
+      const lines = content.split('\n').filter(l => l.trim());
+      expect(lines).toHaveLength(1);
+      expect(JSON.parse(lines[0]).metadata.candidateId).toBe(validId);
+    });
+
+    it('should return count of only successfully exported candidates', async () => {
+      const validId = generateValidUuid();
+      repo.save({
+        id: validId,
+        hash: generateValidHash(),
+        message: 'valid',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.95, reasoning: 'Good', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+        preFixHash: generateValidHash(),
+        postFixHash: generateValidHash(),
+      });
+      repo.save({
+        id: generateValidUuid(),
+        hash: generateValidHash(),
+        message: 'skipped',
+        files: [],
+        status: 'curated' as const,
+        created_at: new Date(),
+        curation: { score: 0.95, reasoning: 'Good', isApproved: true },
+        repositoryUrl: 'https://github.com/user/repo',
+        repositoryName: 'user/repo',
+      });
+
+      const count = await exporter.export(tempFile);
+
+      expect(count).toBe(1);
+    });
   });
 });
