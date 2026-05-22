@@ -26,7 +26,7 @@ describe('ROADMAP.md Epic 1 Success Criteria (Task 1.FIX1.1)', () => {
     expect(content).toContain('- [x] Export candidates to structured format.');
   });
 
-  it('should NOT modify Feature 1.FIX1 status (still pending)', () => {
-    expect(content).toContain('* **[ ] Feature 1.FIX1: Global Epic Integration & Alignment Round 1**');
+  it('should mark Feature 1.FIX1 as completed', () => {
+    expect(content).toContain('* **[x] Feature 1.FIX1: Global Epic Integration & Alignment Round 1**');
   });
 });
