@@ -506,6 +506,31 @@ export const CandidateExportSchema = z.object({
 
 export type CandidateExport = z.infer<typeof CandidateExportSchema>;
 
+// --- Failure Artifact Exporter Types ---
+
+export const FailureArtifactSchema = z.object({
+  runId: z.string().uuid(),
+  candidateId: z.string().uuid(),
+  agentId: z.string(),
+  regressionStatus: z.enum(['clean', 'regressed', 'error']),
+  diffPatchPath: z.string(),
+  sessionLogPath: z.string(),
+  groundTruthPath: z.string(),
+  exportedAt: z.date(),
+});
+
+export type FailureArtifact = z.infer<typeof FailureArtifactSchema>;
+
+export const FailureArtifactExporterOptions = z.object({
+  outputDir: z.string().default('exports'),
+  runId: z.string().uuid(),
+});
+
+export interface IFailureArtifactExporter {
+  exportForRun(runId: string, options?: { outputDir?: string }): Promise<FailureArtifact>;
+  exportAllFailures(options?: { outputDir?: string }): Promise<FailureArtifact[]>;
+}
+
 // --- Batch Runner Types ---
 
 export const BatchConfigSchema = z.object({

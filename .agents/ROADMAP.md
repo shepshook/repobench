@@ -298,7 +298,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.2.FIX2: Fix BatchContractsTest Incorrect Assertions](.agents/spec/task-5.2.fix2.md)
     - [x] [Task 5.2.FIX3: Fix batch-runner-di.test.ts Mock Exec Not Invoking Tasks](.agents/spec/task-5.2.fix3.md)
   * **DoD:** `repobench run-all` processes candidates across multiple agents seamlessly. All Feature 5.2 tests pass (batch-runner, batch-contracts, worker-pool, batch-progress-reporter, run-all-cli).
-* **[ ] Feature 5.3: CLI Leaderboard View**
+* **[x] Feature 5.3: CLI Leaderboard View**
   * **Spec:** Build `report` command to query SQLite and aggregate metrics (Avg E-Score, Success Rate).
   * **Tasks:**
     - [x] [Task 5.3.1: Define Leaderboard Query Contract & Options Schema](.agents/spec/task-5.3.1.md)
@@ -308,4 +308,9 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Terminal renders a sorted, ranked table of agent performance.
 * **[ ] Feature 5.4: Failure Artifact Exporter**
   * **Spec:** Export `diff.patch`, `session.log`, and ground truth fix to `exports/<run_id>/`.
+  * **Tasks:**
+    - [x] [Task 5.4.1: Define FailureArtifact Contracts & IFailureArtifactExporter Interface](.agents/spec/task-5.4.1.md)
+    - [ ] [Task 5.4.2: Implement FailureArtifactExporter Service](.agents/spec/task-5.4.2.md)
+    - [ ] [Task 5.4.3: Integrate FailureArtifactExporter into Evaluation Pipeline](.agents/spec/task-5.4.3.md)
+    - [ ] [Task 5.4.4: CLI Integration (`repobench export-failures`)](.agents/spec/task-5.4.4.md)
   * **DoD:** Developers can pull failure states locally for IDE inspection.
