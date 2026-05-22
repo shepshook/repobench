@@ -283,7 +283,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Tasks:**
     - [x] [Task 5.1.1: Define RunResult Entity & Repository Interface](.agents/spec/task-5.1.1.md)
     - [x] [Task 5.1.2: SQLite Schema for Run Results](.agents/spec/task-5.1.2.md)
-    - [ ] [Task 5.1.3: Implement RunResultRepository & Tests](.agents/spec/task-5.1.3.md)
+    - [x] [Task 5.1.3: Implement RunResultRepository & Tests](.agents/spec/task-5.1.3.md)
     - [ ] [Task 5.1.4: Integration into Evaluation Pipeline](.agents/spec/task-5.1.4.md)
   * **DoD:** 100% of runs persist safely to the local DB.
 * **[ ] Feature 5.2: Multi-Agent Batch Runner**
