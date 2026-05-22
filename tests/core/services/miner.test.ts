@@ -179,4 +179,35 @@ describe('GitMiner Pipeline Integration', () => {
       preFixHash: undefined,
     }));
   });
+
+  it('should warn when parent commit hash retrieval fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const mockCommits = [{ hash: 'orphan001', message: 'orphan commit' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.raw = vi.fn().mockRejectedValue(new Error('fatal: bad revision'));
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not resolve parent commit for orphan001'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('fatal: bad revision'));
+    warnSpy.mockRestore();
+  });
+
+  it('should warn when remote origin URL retrieval fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockGit.getConfig = vi.fn().mockRejectedValue(new Error('Not a git repository'));
+
+    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not determine remote origin URL'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Not a git repository'));
+    warnSpy.mockRestore();
+  });
 });

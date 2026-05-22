@@ -153,6 +153,7 @@ describe('CLI: repobench evaluate', () => {
     await program.parseAsync(['node', 'repobench', 'evaluate']);
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not load repobench.yaml'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('YAML parse error'));
 
     const sandboxConfig = vi.mocked(Sandbox).mock.calls[0][0];
     expect(sandboxConfig.buildCommand).toBeUndefined();
