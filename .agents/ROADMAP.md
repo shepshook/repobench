@@ -314,7 +314,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.4.3: Integrate FailureArtifactExporter into Evaluation Pipeline](.agents/spec/task-5.4.3.md)
     - [x] [Task 5.4.4: CLI Integration (`repobench export-failures`)](.agents/spec/task-5.4.4.md)
   * **DoD:** Developers can pull failure states locally for IDE inspection.
-* **[ ] Feature 5.FIX1: Global Epic Integration & Alignment Round 1**
+* **[x] Feature 5.FIX1: Global Epic Integration & Alignment Round 1**
   * **Spec:** Resolve cross-module structural integrity gaps: wire missing `implements` clause on `FailureArtifactExporter`, remediate error swallowing in `judge-service.ts` and `batch-runner.ts`, restore failure-artifact wiring in `run-all` batch CLI, consolidate sandbox lifecycle in batch-runner, and replace static-instance anti-pattern in `RunResultRepository`.
   * **Tasks:**
     - [x] [Task 5.FIX1.1: Wire Missing IFailureArtifactExporter Implementation & Reconcile RegressionStatus Enum](.agents/spec/task-5.fix1.1.md)
@@ -322,5 +322,12 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.FIX1.3: Remove Sandbox Destroy Error Swallow in BatchRunnerService](.agents/spec/task-5.fix1.3.md)
     - [x] [Task 5.FIX1.4: Wire FailureArtifactExporter into Run-All CLI & Unify Sandbox Lifecycle](.agents/spec/task-5.fix1.4.md)
     - [x] [Task 5.FIX1.5: Replace RunResultRepository Static Instance Anti-Pattern with DI](.agents/spec/task-5.fix1.5.md)
-        - [x] [Task 5.FIX1.6: Global Regression Verification — Run-All CLI, Judge Persistence & Boundary Audit](.agents/spec/task-5.fix1.6.md)
+    - [x] [Task 5.FIX1.6: Global Regression Verification — Run-All CLI, Judge Persistence & Boundary Audit](.agents/spec/task-5.fix1.6.md)
   * **DoD:** `FailureArtifactExporter` formally implements its contract; `judge-service.ts` aggregates and surfaces persistence/export errors to the caller; `batch-runner.ts` logs sandbox teardown failures; `run-all` CLI exports failure artifacts identically to `evaluate`; `RunResultRepository` receives its DB via constructor injection; all Epic 5 integration tests pass (run-all-cli, report-cli, export-failures-cli, judge-persistence, full-pipeline, boundary-audit).
+* **[ ] Feature 5.FIX2: Global Epic Integration & Alignment Round 2**
+  * **Spec:** Resolve remaining structural integrity gaps uncovered by Epic 5 closure audit: inject DB via constructor into `RunResultRepository` (Task 5.FIX1.5 DoD was not actually met), add error logging to three empty `catch { }` blocks in `FailureArtifactExporter` (violates ARCHITECTURE.md §4.3), and fix `SessionOrchestrator` concrete import boundary leak (`Sandbox`/`PtySession` instead of `ISandbox`/`IPtySession`).
+  * **Tasks:**
+        - [x] [Task 5.FIX2.1: Epic Audit — Inject DB via Constructor into RunResultRepository Round 2](.agents/spec/task-5.fix2.1.md)
+    - [ ] [Task 5.FIX2.2: Epic Audit — Remediate Silent Error Swallowing in FailureArtifactExporter Round 2](.agents/spec/task-5.fix2.2.md)
+    - [ ] [Task 5.FIX2.3: Epic Audit — Fix SessionOrchestrator Concrete Import Boundary Leak Round 2](.agents/spec/task-5.fix2.3.md)
+  * **DoD:** `RunResultRepository` receives `IDatabase` via constructor (no module-level global import); all three `catch` blocks in `failure-artifact-exporter.ts` log the original error before writing fallback content; `session-orchestrator.ts` depends only on `ISandbox` and `IPtySession` from `contracts.ts`; typecheck + lint + full test suite pass.

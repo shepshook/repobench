@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command } from 'commander';
 import { registerReportCommand } from '../../src/cli/report';
 import { RunResultRepository } from '../../src/core/repositories/run-result-repository';
-import { reinitDatabase } from '../../src/infrastructure/persistence/database';
+import { reinitDatabase, db } from '../../src/infrastructure/persistence/database';
 import * as databaseModule from '../../src/infrastructure/persistence/database';
 import type { RunResult } from '../../src/core/contracts';
 import { generateValidUuid } from '../helpers/dataset';
@@ -41,7 +41,7 @@ describe('CLI: repobench report', () => {
     tempDbPath = path.join(os.tmpdir(), `report-cli-test-db-${Date.now()}-${Math.random()}.db`);
     reinitDatabase(tempDbPath);
 
-    repository = new RunResultRepository();
+    repository = new RunResultRepository(db);
 
     program = new Command();
     registerReportCommand(program);
@@ -200,8 +200,8 @@ describe('CLI: repobench report', () => {
 
     it('should not rely on static instance tracking when unrelated repos exist', async () => {
       // Create unrelated repos before seeding (simulating other operations)
-      const unrelated1 = new RunResultRepository();
-      const unrelated2 = new RunResultRepository();
+      const unrelated1 = new RunResultRepository(db);
+      const unrelated2 = new RunResultRepository(db);
 
       // Seed data through a specific repo
       repository.save(seedRunResult({ agentId: 'target-agent', metrics: { success: true, cost: 1, latency: 10, eScore: 0.5 } }));

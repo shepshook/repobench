@@ -1,25 +1,38 @@
-import { db } from '../../infrastructure/persistence/database';
-import { IRunResultRepository, RunResult } from '../contracts';
+import { IRunResultRepository, RunResult, IDatabase } from '../contracts';
+
+type PreparedStmt<T> = {
+  get(...params: unknown[]): T | undefined;
+  all(...params: unknown[]): T[];
+  run(...params: unknown[]): { changes: number; lastInsertRowid: number };
+};
 
 export class RunResultRepository implements IRunResultRepository {
-  private saveStmt = db.prepare(`
-    INSERT INTO runs (run_id, agent_id, candidate_id, success, cost, latency, e_score, timestamp, log_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(run_id) DO UPDATE SET
-      agent_id = excluded.agent_id,
-      candidate_id = excluded.candidate_id,
-      success = excluded.success,
-      cost = excluded.cost,
-      latency = excluded.latency,
-      e_score = excluded.e_score,
-      timestamp = excluded.timestamp,
-      log_path = excluded.log_path
-  `);
+  private saveStmt: PreparedStmt<Record<string, unknown>>;
+  private getByIdStmt: PreparedStmt<Record<string, unknown>>;
+  private getAllStmt: PreparedStmt<Record<string, unknown>>;
+  private getByAgentIdStmt: PreparedStmt<Record<string, unknown>>;
+  private getByCandidateIdStmt: PreparedStmt<Record<string, unknown>>;
 
-  private getByIdStmt = db.prepare(`SELECT * FROM runs WHERE run_id = ?`);
-  private getAllStmt = db.prepare(`SELECT * FROM runs`);
-  private getByAgentIdStmt = db.prepare(`SELECT * FROM runs WHERE agent_id = ?`);
-  private getByCandidateIdStmt = db.prepare(`SELECT * FROM runs WHERE candidate_id = ?`);
+  constructor(database: IDatabase) {
+    this.saveStmt = database.prepare<Record<string, unknown>>(`
+      INSERT INTO runs (run_id, agent_id, candidate_id, success, cost, latency, e_score, timestamp, log_path)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(run_id) DO UPDATE SET
+        agent_id = excluded.agent_id,
+        candidate_id = excluded.candidate_id,
+        success = excluded.success,
+        cost = excluded.cost,
+        latency = excluded.latency,
+        e_score = excluded.e_score,
+        timestamp = excluded.timestamp,
+        log_path = excluded.log_path
+    `);
+
+    this.getByIdStmt = database.prepare<Record<string, unknown>>(`SELECT * FROM runs WHERE run_id = ?`);
+    this.getAllStmt = database.prepare<Record<string, unknown>>(`SELECT * FROM runs`);
+    this.getByAgentIdStmt = database.prepare<Record<string, unknown>>(`SELECT * FROM runs WHERE agent_id = ?`);
+    this.getByCandidateIdStmt = database.prepare<Record<string, unknown>>(`SELECT * FROM runs WHERE candidate_id = ?`);
+  }
 
   private mapToEntity = (row: Record<string, unknown>): RunResult => {
     return {

@@ -8,6 +8,7 @@ import {
 import { BatchRunnerService } from '../core/services/batch-runner';
 import { AgentConfigLoader } from '../core/services/agent-config-loader';
 import { initDatabase } from '../infrastructure/database';
+import { db } from '../infrastructure/persistence/database';
 import { CandidateRepository } from '../core/repositories/candidate-repository';
 import { RunResultRepository } from '../core/repositories/run-result-repository';
 import { Sandbox } from '../infrastructure/sandbox';
@@ -78,7 +79,7 @@ export function registerRunAllCommand(program: Command): void {
         initDatabase();
 
         const candidateRepo = new CandidateRepository();
-        const runResultRepo = new RunResultRepository();
+        const runResultRepo = new RunResultRepository(db);
         const sandboxConfig: SandboxConfig = { project: options.project };
         
         const reporter = new BatchProgressReporter();

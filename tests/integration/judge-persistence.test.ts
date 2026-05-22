@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JudgeService } from '../../src/core/services/judge-service';
 import { RunResultRepository } from '../../src/core/repositories/run-result-repository';
 import { ISandbox, SandboxConfig, Candidate, IEvaluator, EvaluationResult } from '../../src/core/contracts';
-import { reinitDatabase } from '../../src/infrastructure/persistence/database';
+import { reinitDatabase, db } from '../../src/infrastructure/persistence/database';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
@@ -17,9 +17,9 @@ describe('Judge Persistence Integration', () => {
 
   beforeEach(async () => {
     tempDbPath = path.join(os.tmpdir(), `judge-persist-test-db-${Date.now()}-${Math.random()}.db`);
-    await reinitDatabase(tempDbPath);
+    await     reinitDatabase(tempDbPath);
     
-    repository = new RunResultRepository();
+    repository = new RunResultRepository(db);
     
     sandbox = {
       id: 'test-sandbox',

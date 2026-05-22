@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { initDatabase } from '../infrastructure/persistence/database.js';
+import { initDatabase, db } from '../infrastructure/persistence/database.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { LeaderboardReporter } from '../core/services/leaderboard-reporter.js';
 import { TerminalReportRenderer } from '../core/services/report-renderer.js';
@@ -23,7 +23,7 @@ export function registerReportCommand(program: Command): void {
     }) => {
       try {
         initDatabase();
-        const repository = new RunResultRepository();
+        const repository = new RunResultRepository(db);
         const reporter = new LeaderboardReporter(repository);
         const renderer = new TerminalReportRenderer();
 

@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
-import { initDatabase } from '../infrastructure/persistence/database.js';
+import { initDatabase, db } from '../infrastructure/persistence/database.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { Sandbox } from '../infrastructure/sandbox.js';
@@ -30,7 +30,7 @@ export function registerEvaluateCommand(program: Command): void {
       try {
         initDatabase();
         const repo = new CandidateRepository();
-        const runResultRepo = new RunResultRepository();
+        const runResultRepo = new RunResultRepository(db);
         const allCandidates = repo.getAll();
         const candidates = allCandidates.filter(c => c.status === 'validated');
 

@@ -442,6 +442,15 @@ export const RunResultSchema = z.object({
 
 export type RunResult = z.infer<typeof RunResultSchema>;
 
+export interface IDatabase {
+  prepare<T>(sql: string): {
+    get(...params: unknown[]): T | undefined;
+    all(...params: unknown[]): T[];
+    run(...params: unknown[]): { changes: number; lastInsertRowid: number };
+  };
+  run(sql: string, ...params: unknown[]): { changes: number; lastInsertRowid: number };
+}
+
 export interface IRunResultRepository {
   save(run: RunResult): void;
   getById(runId: string): RunResult | undefined;

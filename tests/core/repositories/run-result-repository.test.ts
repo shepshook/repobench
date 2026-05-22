@@ -1,6 +1,6 @@
 import { RunResultRepository } from '../../../src/core/repositories/run-result-repository';
-import { reinitDatabase } from '../../../src/infrastructure/persistence/database';
-import { RunResult } from '../../../src/core/contracts';
+import { reinitDatabase, db } from '../../../src/infrastructure/persistence/database';
+import { RunResult, IDatabase } from '../../../src/core/contracts';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { generateValidUuid } from '../../helpers/dataset';
 import path from 'node:path';
@@ -13,8 +13,8 @@ describe('RunResultRepository', () => {
 
   beforeEach(async () => {
     tempDbPath = path.join(os.tmpdir(), `run-result-repo-test-db-${Date.now()}-${Math.random()}.db`);
-    await reinitDatabase(tempDbPath);
-    repository = new RunResultRepository();
+    await     reinitDatabase(tempDbPath);
+    repository = new RunResultRepository(db);
   });
 
   afterEach(async () => {
@@ -116,14 +116,32 @@ describe('RunResultRepository', () => {
 
     it('should not maintain a static instances array', () => {
       // Create multiple instances; after the fix there should be no static array
-      const repo1 = new RunResultRepository();
-      const repo2 = new RunResultRepository();
+      const repo1 = new RunResultRepository(db);
+      const repo2 = new RunResultRepository(db);
       expect(repo1).toBeInstanceOf(RunResultRepository);
       expect(repo2).toBeInstanceOf(RunResultRepository);
       // Both instances share the same db — no static tracking needed
       const run = createValidRunResult();
       repo1.save(run);
       expect(repo2.getAll()).toHaveLength(1);
+    });
+
+    it('should use injected database mock and call prepare on construction', () => {
+      const prepareMock = vi.fn().mockReturnValue({
+        get: vi.fn(),
+        all: vi.fn(),
+        run: vi.fn(),
+      });
+      const mockDb: IDatabase = {
+        prepare: prepareMock,
+        run: vi.fn(),
+      };
+
+      new RunResultRepository(mockDb);
+
+      expect(prepareMock).toHaveBeenCalled();
+      expect(prepareMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO runs'));
+      expect(prepareMock).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM runs'));
     });
   });
 });

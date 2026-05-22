@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { initDatabase } from '../infrastructure/database.js';
+import { db } from '../infrastructure/persistence/database.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter.js';
@@ -14,7 +15,7 @@ export function registerExportFailuresCommand(program: Command): void {
       try {
         initDatabase();
         const candidateRepo = new CandidateRepository();
-        const runResultRepo = new RunResultRepository();
+        const runResultRepo = new RunResultRepository(db);
         const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo);
 
         const exportOpts = { outputDir: options.outputDir };
