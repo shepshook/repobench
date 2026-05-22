@@ -3,6 +3,7 @@ import { CandidateRepository } from '../core/repositories/candidate-repository.j
 import { JsonlDatasetExporter } from '../infrastructure/jsonl-dataset-exporter.js';
 import { JsonlDatasetImporter } from '../infrastructure/jsonl-dataset-importer.js';
 import { registerEvaluateCommand } from './evaluate.js';
+import { registerRunAllCommand } from './run-all.js';
 console.log('DEBUG: CLI starting');
 
 import { Command } from 'commander';
@@ -57,6 +58,7 @@ program
   });
 
 registerEvaluateCommand(program);
+registerRunAllCommand(program);
 
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);

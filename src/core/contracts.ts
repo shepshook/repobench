@@ -480,9 +480,9 @@ export type CandidateExport = z.infer<typeof CandidateExportSchema>;
 
 export const BatchConfigSchema = z.object({
   agentIds: z.array(z.string()).min(1),
-  candidateIds: z.array(z.string().uuid()).optional(),
+  candidateIds: z.array(z.string()).optional(),
   concurrency: z.number().int().min(1).max(10).default(2),
-  timeoutPerRun: z.number().int().min(60_000).default(300_000),
+  timeoutPerRun: z.number().int().default(300_000),
   dryRun: z.boolean().default(false),
 });
 

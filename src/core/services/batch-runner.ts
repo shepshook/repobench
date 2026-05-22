@@ -52,6 +52,7 @@ export class BatchRunnerService implements IBatchRunner {
     private readonly judgeServiceFactory: (agentId: string) => IJudgeService,
     private readonly sandboxFactory: () => ISandbox,
     private readonly candidateRepository: ICandidateRepository,
+    private readonly agentConfigs: AgentConfig[],
     private readonly config: BatchConfig,
     private readonly reporter?: IProgressReporter,
   ) {}
@@ -92,20 +93,17 @@ export class BatchRunnerService implements IBatchRunner {
               sandbox = this.sandboxFactory();
               await sandbox.init();
 
-              const orchestrator = this.sessionOrchestratorFactory(agentId);
-              const judge = this.judgeServiceFactory(agentId);
+               const orchestrator = this.sessionOrchestratorFactory(agentId);
+               const judge = this.judgeServiceFactory(agentId);
 
-              const dummyAgentConfig: AgentConfig = { 
-                agentId, 
-                model: 'gpt-4', 
-                temperature: 0, 
-                systemPrompt: '', 
-                cliArgs: [] 
-              };
-              
-              const { cost } = await orchestrator.executeSession(dummyAgentConfig, sandbox, '');
-              
-              const costMap = new Map<string, number>();
+               const agentConfig = this.agentConfigs.find(a => a.agentId === agentId);
+               if (!agentConfig) {
+                 throw new Error(`Agent configuration not found for ${agentId}`);
+               }
+               
+               const { cost } = await orchestrator.executeSession(agentConfig, sandbox, '');
+               
+               const costMap = new Map<string, number>();
               costMap.set(candidate.id, cost);
 
               const evalResults = await judge.runEvaluationPipeline([candidate], agentId, costMap);
