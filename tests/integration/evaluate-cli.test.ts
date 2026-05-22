@@ -5,11 +5,13 @@ import { CandidateRepository } from '../../src/core/repositories/candidate-repos
 import { Sandbox } from '../../src/infrastructure/sandbox';
 import { Evaluator } from '../../src/core/services/evaluator';
 import { JudgeService } from '../../src/core/services/judge-service';
+import { loadConfig } from '../../src/core/config';
 
 vi.mock('../../src/core/repositories/candidate-repository');
 vi.mock('../../src/infrastructure/sandbox');
 vi.mock('../../src/core/services/evaluator');
 vi.mock('../../src/core/services/judge-service');
+vi.mock('../../src/core/config');
 
 describe('CLI: repobench evaluate', () => {
   let program: Command;
@@ -90,5 +92,56 @@ describe('CLI: repobench evaluate', () => {
 
     consoleErrorSpy.mockRestore();
     exitSpy.mockRestore();
+  });
+
+  it('should populate SandboxConfig buildCommand testCommand baseImage and envVars from repobench.yaml', async () => {
+    vi.mocked(loadConfig).mockResolvedValue({
+      mining: { keywords: ['fix'], exclude_paths: [] },
+      sandbox: {
+        buildCommand: 'npm ci',
+        testCommand: 'npm test',
+        baseImage: 'node:20-alpine',
+        envVars: { NODE_ENV: 'test' },
+      },
+    });
+
+    const mockCandidates = [{ id: 'cand-1', status: 'validated' }];
+    (CandidateRepository.prototype.getAll as any).mockReturnValue(mockCandidates);
+    (JudgeService.prototype.runEvaluationPipeline as any).mockResolvedValue([]);
+    (Sandbox.prototype.init as any).mockResolvedValue(undefined);
+    (Sandbox.prototype.destroy as any).mockResolvedValue(undefined);
+
+    await program.parseAsync(['node', 'repobench', 'evaluate']);
+
+    const sandboxConfig = vi.mocked(Sandbox).mock.calls[0][0];
+    expect(sandboxConfig.buildCommand).toBe('npm ci');
+    expect(sandboxConfig.testCommand).toBe('npm test');
+    expect(sandboxConfig.baseImage).toBe('node:20-alpine');
+    expect(sandboxConfig.envVars).toEqual({ NODE_ENV: 'test' });
+    expect(sandboxConfig.project).toBe('default');
+  });
+
+  it('should warn and fall back to defaults when repobench.yaml loading fails', async () => {
+    vi.mocked(loadConfig).mockRejectedValue(new Error('YAML parse error'));
+
+    const mockCandidates = [{ id: 'cand-1', status: 'validated' }];
+    (CandidateRepository.prototype.getAll as any).mockReturnValue(mockCandidates);
+    (JudgeService.prototype.runEvaluationPipeline as any).mockResolvedValue([]);
+    (Sandbox.prototype.init as any).mockResolvedValue(undefined);
+    (Sandbox.prototype.destroy as any).mockResolvedValue(undefined);
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await program.parseAsync(['node', 'repobench', 'evaluate']);
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not load repobench.yaml'));
+
+    const sandboxConfig = vi.mocked(Sandbox).mock.calls[0][0];
+    expect(sandboxConfig.buildCommand).toBeUndefined();
+    expect(sandboxConfig.testCommand).toBeUndefined();
+    expect(sandboxConfig.baseImage).toBeUndefined();
+    expect(sandboxConfig.envVars).toBeUndefined();
+
+    warnSpy.mockRestore();
   });
 });

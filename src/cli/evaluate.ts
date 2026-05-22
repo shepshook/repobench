@@ -9,6 +9,7 @@ import { SandboxConfig } from '../core/contracts.js';
 import { Evaluator } from '../core/services/evaluator.js';
 import { JudgeService } from '../core/services/judge-service.js';
 import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter.js';
+import { loadConfig, RepoBenchConfig } from '../core/config.js';
 
 export function registerEvaluateCommand(program: Command): void {
   program
@@ -29,6 +30,13 @@ export function registerEvaluateCommand(program: Command): void {
       };
       try {
         initDatabase();
+        let loadedConfig: RepoBenchConfig | undefined;
+        try {
+          loadedConfig = await loadConfig('repobench.yaml');
+        } catch {
+          console.warn('Warning: Could not load repobench.yaml, using defaults for sandbox config');
+        }
+
         const repo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);
         const allCandidates = repo.getAll();
@@ -51,7 +59,13 @@ export function registerEvaluateCommand(program: Command): void {
           console.warn('Warning: No cost data provided. Using default cost of 1 for all candidates.');
         }
 
-        const sandboxConfig: SandboxConfig = { project: opts.project };
+        const sandboxConfig: SandboxConfig = {
+          project: opts.project,
+          buildCommand: loadedConfig?.sandbox?.buildCommand,
+          testCommand: loadedConfig?.sandbox?.testCommand,
+          baseImage: loadedConfig?.sandbox?.baseImage,
+          envVars: loadedConfig?.sandbox?.envVars,
+        };
         const sandbox = new Sandbox(sandboxConfig);
         await sandbox.init();
 

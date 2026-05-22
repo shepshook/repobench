@@ -5,6 +5,8 @@ vi.mock('../../src/core/repositories/candidate-repository');
 vi.mock('../../src/core/repositories/run-result-repository');
 vi.mock('../../src/infrastructure/database');
 vi.mock('../../src/core/services/agent-config-loader');
+vi.mock('../../src/core/config');
+vi.mock('../../src/infrastructure/sandbox');
 
 interface BatchRunnerCtorArgs {
   workerPool: unknown;
@@ -47,6 +49,8 @@ vi.mock('../../src/core/services/batch-runner', () => {
 
 import { registerRunAllCommand } from '../../src/cli/run-all';
 import { AgentConfigLoader } from '../../src/core/services/agent-config-loader';
+import { loadConfig } from '../../src/core/config';
+import { Sandbox } from '../../src/infrastructure/sandbox';
 
 describe('run-all CLI wiring (FIX1.4)', () => {
   let program: Command;
@@ -156,5 +160,67 @@ describe('run-all CLI wiring (FIX1.4)', () => {
     expect(result[0]).toHaveProperty('result');
     expect(result[0].result).toHaveProperty('regressionStatus');
     expect(result[0].result).toHaveProperty('eScore');
+  });
+
+  it('should populate SandboxConfig from repobench.yaml sandbox section in run-all', async () => {
+    vi.mocked(loadConfig).mockResolvedValue({
+      mining: { keywords: ['fix'], exclude_paths: [] },
+      sandbox: {
+        buildCommand: 'npm ci',
+        testCommand: 'npm test',
+        baseImage: 'node:20-alpine',
+        envVars: { NODE_ENV: 'test' },
+      },
+    });
+
+    (AgentConfigLoader.prototype.loadConfigs as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
+      { agentId: 'test-agent', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] },
+    ]);
+
+    try {
+      await program.parseAsync(['node', 'repobench', 'run-all', '--agents', 'test-agent']);
+    } catch (e) {
+      // process.exit mock throws
+    }
+
+    expect(capturedArgs).not.toBeNull();
+    const factory = capturedArgs!.sandboxFactory as () => unknown;
+    factory();
+
+    const sandboxConfig = vi.mocked(Sandbox).mock.calls[0][0];
+    expect(sandboxConfig.buildCommand).toBe('npm ci');
+    expect(sandboxConfig.testCommand).toBe('npm test');
+    expect(sandboxConfig.baseImage).toBe('node:20-alpine');
+    expect(sandboxConfig.envVars).toEqual({ NODE_ENV: 'test' });
+    expect(sandboxConfig.project).toBe('default');
+  });
+
+  it('should warn and fall back to defaults when repobench.yaml loading fails in run-all', async () => {
+    vi.mocked(loadConfig).mockRejectedValue(new Error('YAML parse error'));
+
+    (AgentConfigLoader.prototype.loadConfigs as unknown as ReturnType<typeof vi.fn>).mockReturnValue([
+      { agentId: 'test-agent', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] },
+    ]);
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      await program.parseAsync(['node', 'repobench', 'run-all', '--agents', 'test-agent']);
+    } catch (e) {
+      // process.exit mock throws
+    }
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not load repobench.yaml'));
+
+    const factory = capturedArgs!.sandboxFactory as () => unknown;
+    factory();
+
+    const sandboxConfig = vi.mocked(Sandbox).mock.calls[0][0];
+    expect(sandboxConfig.buildCommand).toBeUndefined();
+    expect(sandboxConfig.testCommand).toBeUndefined();
+    expect(sandboxConfig.baseImage).toBeUndefined();
+    expect(sandboxConfig.envVars).toBeUndefined();
+
+    warnSpy.mockRestore();
   });
 });

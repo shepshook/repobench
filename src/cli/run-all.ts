@@ -18,6 +18,7 @@ import { FailureArtifactExporter } from '../infrastructure/failure-artifact-expo
 import { SessionOrchestrator } from '../core/services/session-orchestrator';
 import { WorkerPool } from '../infrastructure/services/worker-pool';
 import { BatchProgressReporter } from '../core/services/batch-progress-reporter';
+import { loadConfig, RepoBenchConfig } from '../core/config';
 
 export function registerRunAllCommand(program: Command): void {
   program
@@ -78,9 +79,22 @@ export function registerRunAllCommand(program: Command): void {
 
         initDatabase();
 
+        let loadedConfig: RepoBenchConfig | undefined;
+        try {
+          loadedConfig = await loadConfig('repobench.yaml');
+        } catch {
+          console.warn('Warning: Could not load repobench.yaml, using defaults for sandbox config');
+        }
+
         const candidateRepo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);
-        const sandboxConfig: SandboxConfig = { project: options.project };
+        const sandboxConfig: SandboxConfig = {
+          project: options.project ?? 'default',
+          buildCommand: loadedConfig?.sandbox?.buildCommand,
+          testCommand: loadedConfig?.sandbox?.testCommand,
+          baseImage: loadedConfig?.sandbox?.baseImage,
+          envVars: loadedConfig?.sandbox?.envVars,
+        };
         
         const reporter = new BatchProgressReporter();
         const workerPool = new WorkerPool(config.concurrency);
