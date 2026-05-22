@@ -38,7 +38,8 @@ export class FailureArtifactExporter implements IFailureArtifactExporter {
         await this.sandbox.switchState(candidate.preFixHash);
         const result = await this.sandbox.execute('git diff');
         await fs.writeFile(diffPatchPath, result.stdout, 'utf8');
-      } catch {
+      } catch (err) {
+        console.warn(`[FailureArtifactExporter]`, `Failed to generate diff.patch for run ${runId}: ${err instanceof Error ? err.message : String(err)}`);
         if (candidate.postFixHash) {
           await fs.writeFile(diffPatchPath, `Diff unavailable. Pre: ${candidate.preFixHash}, Post: ${candidate.postFixHash}`, 'utf8');
         } else {
@@ -56,7 +57,8 @@ export class FailureArtifactExporter implements IFailureArtifactExporter {
     if (run.logPath) {
       try {
         await fs.copyFile(run.logPath, sessionLogPath);
-      } catch {
+      } catch (err) {
+        console.warn(`[FailureArtifactExporter]`, `Failed to copy session log for run ${runId}: ${err instanceof Error ? err.message : String(err)}`);
         await fs.writeFile(sessionLogPath, JSON.stringify({
           runId: run.runId,
           agentId: run.agentId,
@@ -82,7 +84,8 @@ export class FailureArtifactExporter implements IFailureArtifactExporter {
       try {
         const result = await this.sandbox.runCommand(`git diff ${candidate.preFixHash} ${candidate.postFixHash}`);
         await fs.writeFile(groundTruthPath, result.stdout, 'utf8');
-      } catch {
+      } catch (err) {
+        console.warn(`[FailureArtifactExporter]`, `Failed to generate ground-truth.diff for run ${runId}: ${err instanceof Error ? err.message : String(err)}`);
         await fs.writeFile(groundTruthPath, `Ground truth diff unavailable. Pre: ${candidate.preFixHash}, Post: ${candidate.postFixHash}`, 'utf8');
       }
     } else if (candidate?.preFixHash && candidate?.postFixHash) {

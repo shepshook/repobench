@@ -328,6 +328,6 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Resolve remaining structural integrity gaps uncovered by Epic 5 closure audit: inject DB via constructor into `RunResultRepository` (Task 5.FIX1.5 DoD was not actually met), add error logging to three empty `catch { }` blocks in `FailureArtifactExporter` (violates ARCHITECTURE.md §4.3), and fix `SessionOrchestrator` concrete import boundary leak (`Sandbox`/`PtySession` instead of `ISandbox`/`IPtySession`).
   * **Tasks:**
         - [x] [Task 5.FIX2.1: Epic Audit — Inject DB via Constructor into RunResultRepository Round 2](.agents/spec/task-5.fix2.1.md)
-    - [ ] [Task 5.FIX2.2: Epic Audit — Remediate Silent Error Swallowing in FailureArtifactExporter Round 2](.agents/spec/task-5.fix2.2.md)
+    - [x] [Task 5.FIX2.2: Epic Audit — Remediate Silent Error Swallowing in FailureArtifactExporter Round 2](.agents/spec/task-5.fix2.2.md)
     - [ ] [Task 5.FIX2.3: Epic Audit — Fix SessionOrchestrator Concrete Import Boundary Leak Round 2](.agents/spec/task-5.fix2.3.md)
   * **DoD:** `RunResultRepository` receives `IDatabase` via constructor (no module-level global import); all three `catch` blocks in `failure-artifact-exporter.ts` log the original error before writing fallback content; `session-orchestrator.ts` depends only on `ISandbox` and `IPtySession` from `contracts.ts`; typecheck + lint + full test suite pass.

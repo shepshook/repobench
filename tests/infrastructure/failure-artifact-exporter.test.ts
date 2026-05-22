@@ -361,6 +361,127 @@ describe('FailureArtifactExporter', () => {
       expect(artifact.runId).toBe(run.runId);
     });
 
+    it('logs warning when sandbox.execute fails for diff.patch', async () => {
+      const candidate = createMockCandidate();
+      const run = createMockRunResult({
+        runId: validUuid(),
+        candidateId: candidate.id,
+      });
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        sandbox = createMockSandbox({
+          execute: vi.fn().mockRejectedValue(new Error('git diff failed')),
+          switchState: vi.fn().mockResolvedValue(undefined),
+          runCommand: vi.fn().mockResolvedValue({ stdout: 'diff', stderr: '', exitCode: 0 }),
+        });
+
+        runResultRepo = createMockRunResultRepo([run]);
+        candidateRepo = createMockCandidateRepo([candidate]);
+
+        const { FailureArtifactExporter } = await import('../../src/infrastructure/failure-artifact-exporter');
+        const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo, sandbox);
+
+        await exporter.exportForRun(run.runId, { outputDir: tmpDir });
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[FailureArtifactExporter]'),
+          expect.stringContaining('Failed to generate diff.patch'),
+        );
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.stringContaining('git diff failed'),
+        );
+
+        const diffPath = path.join(tmpDir, run.runId, 'diff.patch');
+        const diffContent = await fs.readFile(diffPath, 'utf8');
+        expect(diffContent).toContain(candidate.preFixHash!);
+        expect(diffContent).toContain(candidate.postFixHash!);
+      } finally {
+        consoleWarnSpy.mockRestore();
+      }
+    });
+
+    it('logs warning when session.log copy fails', async () => {
+      const candidate = createMockCandidate();
+      const nonExistentLogPath = path.join(tmpDir, 'nonexistent', 'session.log');
+      const run = createMockRunResult({
+        runId: validUuid(),
+        candidateId: candidate.id,
+        logPath: nonExistentLogPath,
+      });
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        sandbox = createMockSandbox({
+          execute: vi.fn().mockResolvedValue({ stdout: 'diff', stderr: '', exitCode: 0 }),
+          switchState: vi.fn().mockResolvedValue(undefined),
+          runCommand: vi.fn().mockResolvedValue({ stdout: 'diff', stderr: '', exitCode: 0 }),
+        });
+
+        runResultRepo = createMockRunResultRepo([run]);
+        candidateRepo = createMockCandidateRepo([candidate]);
+
+        const { FailureArtifactExporter } = await import('../../src/infrastructure/failure-artifact-exporter');
+        const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo, sandbox);
+
+        await exporter.exportForRun(run.runId, { outputDir: tmpDir });
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[FailureArtifactExporter]'),
+          expect.stringContaining('Failed to copy session log'),
+        );
+
+        const sessionLogPath = path.join(tmpDir, run.runId, 'session.log');
+        const logContent = await fs.readFile(sessionLogPath, 'utf8');
+        expect(logContent).toContain(run.runId);
+        expect(logContent).toContain('source log not found');
+      } finally {
+        consoleWarnSpy.mockRestore();
+      }
+    });
+
+    it('logs warning when sandbox.runCommand fails for ground-truth.diff', async () => {
+      const candidate = createMockCandidate();
+      const run = createMockRunResult({
+        runId: validUuid(),
+        candidateId: candidate.id,
+      });
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        sandbox = createMockSandbox({
+          execute: vi.fn().mockResolvedValue({ stdout: 'diff', stderr: '', exitCode: 0 }),
+          switchState: vi.fn().mockResolvedValue(undefined),
+          runCommand: vi.fn().mockRejectedValue(new Error('ground truth diff failed')),
+        });
+
+        runResultRepo = createMockRunResultRepo([run]);
+        candidateRepo = createMockCandidateRepo([candidate]);
+
+        const { FailureArtifactExporter } = await import('../../src/infrastructure/failure-artifact-exporter');
+        const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo, sandbox);
+
+        await exporter.exportForRun(run.runId, { outputDir: tmpDir });
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[FailureArtifactExporter]'),
+          expect.stringContaining('Failed to generate ground-truth.diff'),
+        );
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.stringContaining('ground truth diff failed'),
+        );
+
+        const groundTruthPath = path.join(tmpDir, run.runId, 'ground-truth.diff');
+        const groundTruthContent = await fs.readFile(groundTruthPath, 'utf8');
+        expect(groundTruthContent).toContain(candidate.preFixHash!);
+        expect(groundTruthContent).toContain(candidate.postFixHash!);
+      } finally {
+        consoleWarnSpy.mockRestore();
+      }
+    });
+
     it('should support custom outputDir', async () => {
       const candidate = createMockCandidate();
       const run = createMockRunResult({
