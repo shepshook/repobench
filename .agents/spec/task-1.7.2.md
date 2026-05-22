@@ -55,3 +55,7 @@ The `repobench.yaml` will be used to mine candidates from this repository and ev
 5. Build command is `npm ci`.
 6. Test command is `npm test`.
 7. Base image is `node:20-alpine`.
+
+## Audit Feedback Round 1
+- **Status:** FAIL
+- **Feedback:** The `repobench.yaml` configuration file successfully meets all spec requirements and parses correctly via `loadConfig()`. However, the project's required regression test suite (`npm test`) failed in `tests/infrastructure/pty-sync.test.ts`. Per `ARCHITECTURE.md` section 7.4, all tests must pass before a task can be marked complete. Please investigate the cause of the `pty-sync.test.ts` failure and ensure it is not a regression.

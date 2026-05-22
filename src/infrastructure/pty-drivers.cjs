@@ -80,24 +80,38 @@ class SimulationDriver extends PtyDriver {
     }
 
     async executeCommand(commandLine) {
+        const shellOpMatch = commandLine.match(/^(.*?)\s*(&&|\|\||;)\s*(.*)$/);
+        if (shellOpMatch) {
+            const [, first, , rest] = shellOpMatch;
+            const firstResult = this.executeSingle(first.trim());
+            if (firstResult.output !== undefined && this.dataCallback && firstResult.output) {
+                this.dataCallback(new TextEncoder().encode(firstResult.output));
+            }
+            if (shellOpMatch[2] === '&&' && firstResult.exitCode !== 0) return;
+            if (shellOpMatch[2] === '||' && firstResult.exitCode === 0) return;
+            return this.executeCommand(rest.trim());
+        }
+
+        const { output } = this.executeSingle(commandLine.trim());
+        if (this.dataCallback && output) {
+            this.dataCallback(new TextEncoder().encode(output));
+        }
+    }
+
+    executeSingle(commandLine) {
         const parts = commandLine.trim().split(/\s+/);
         const cmd = parts[0];
         const args = parts.slice(1);
 
-        let output = '';
         const handler = SimulationDriver.commandRegistry[cmd];
         if (handler) {
             const result = handler(args, this);
             if (result !== undefined) {
-                output = result;
+                return { output: result, exitCode: 0 };
             }
-        } else {
-            output = commandLine + '\n';
+            return { output: '', exitCode: 0 };
         }
-
-        if (this.dataCallback && output) {
-            this.dataCallback(new TextEncoder().encode(output));
-        }
+        return { output: commandLine + '\n', exitCode: 0 };
     }
 
     async close() {
@@ -150,6 +164,7 @@ SimulationDriver.commandRegistry = {
 
         return children.sort().join('\n') + (children.length > 0 ? '\n' : '');
     },
+    'sleep': () => '',
     'dir': (args, driver) => {
         return SimulationDriver.commandRegistry['ls'](args, driver);
     },

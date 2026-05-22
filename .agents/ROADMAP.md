@@ -78,7 +78,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Register the standalone `mine` CLI command into the main `repobench` CLI and create a `repobench.yaml` configuration file for target repositories.
   * **Tasks:**
     - [x] [Task 1.7.1: Register mine command in main CLI](.agents/spec/task-1.7.1.md)
-    - [ ] [Task 1.7.2: Create repobench.yaml for target repository](.agents/spec/task-1.7.2.md)
+    - [x] [Task 1.7.2: Create repobench.yaml for target repository](.agents/spec/task-1.7.2.md)
   * **DoD:** `repobench mine --help` works; `repobench mine -r <path>` discovers candidates; target repo has a valid `repobench.yaml` with mining keywords, build/test commands, and base image.
 
 ---

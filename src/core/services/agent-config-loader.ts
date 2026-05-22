@@ -3,10 +3,10 @@ import YAML from 'yaml';
 import { AgentConfig, AgentConfigSchema } from '../contracts';
 
 export class AgentConfigLoader {
-    constructor(private readonly configPath: string = './agents.yaml') {}
+    constructor(private readonly configPath?: string) {}
 
     loadConfigs(): AgentConfig[] {
-        if (!fs.existsSync(this.configPath)) {
+        if (!this.configPath || !fs.existsSync(this.configPath)) {
             return [];
         }
 

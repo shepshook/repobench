@@ -45,7 +45,7 @@ export function registerRunAllCommand(program: Command): void {
         const agentIds = options.agents.split(',');
         const candidateIds = options.candidateIds ? options.candidateIds.split(',') : [];
         
-        const loader = new AgentConfigLoader();
+        const loader = new AgentConfigLoader('./agents.yaml');
         const allAgents = loader.loadConfigs();
         const agents = Array.isArray(allAgents) ? allAgents.filter(a => agentIds.includes(a.agentId)) : [];
 

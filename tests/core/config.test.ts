@@ -128,4 +128,137 @@ sandbox:
       cachePaths: ['/root/.npm', 'node_modules'],
     });
   });
+
+  it('should throw when YAML has invalid syntax', async () => {
+    const invalidYaml = `
+mining:
+  keywords: [fix
+  exclude_paths: []
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(invalidYaml);
+
+    await expect(loadConfig('repobench.yaml')).rejects.toThrow();
+  });
+
+  it('should throw when YAML file is empty (null parsed)', async () => {
+    vi.mocked(fs.readFile).mockResolvedValue('');
+
+    await expect(loadConfig('repobench.yaml')).rejects.toThrow();
+  });
+
+  it('should re-throw non-ENOENT filesystem errors', async () => {
+    const permissionError = new Error('EACCES: permission denied');
+    (permissionError as any).code = 'EACCES';
+    vi.mocked(fs.readFile).mockRejectedValue(permissionError);
+
+    await expect(loadConfig('repobench.yaml')).rejects.toThrow('EACCES');
+  });
+
+  it('should default to repobench.yaml when no path is given', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix']
+  exclude_paths: []
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig();
+
+    expect(config.mining.keywords).toEqual(['fix']);
+    expect(vi.mocked(fs.readFile)).toHaveBeenCalledWith('repobench.yaml', 'utf8');
+  });
+
+  it('should load a config with the curation section', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix', 'bug']
+  exclude_paths: ['node_modules/']
+curation:
+  prompt: 'Evaluate this fix for correctness and style'
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig('repobench.yaml');
+
+    expect(config.curation).toBeDefined();
+    expect(config.curation!.prompt).toBe('Evaluate this fix for correctness and style');
+    expect(config.mining.keywords).toEqual(['fix', 'bug']);
+  });
+
+  it('should load a config with mining.limit', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix', 'bug']
+  exclude_paths: ['node_modules/']
+  limit: 50
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig('repobench.yaml');
+
+    expect(config.mining.limit).toBe(50);
+  });
+
+  it('should reject invalid ISO datetime in mining.since', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix']
+  exclude_paths: []
+  since: 'not-a-datetime'
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    await expect(loadConfig('repobench.yaml')).rejects.toThrow();
+  });
+
+  it('should accept extra unknown fields in YAML without throwing', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix']
+  exclude_paths: []
+unknown_field: 'should-not-break'
+extra:
+  nested: value
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig('repobench.yaml');
+
+    expect(config.mining.keywords).toEqual(['fix']);
+  });
+
+  it('should load a config with all sections fully populated', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['fix', 'bug', 'error']
+  exclude_paths: ['node_modules/', '.git/', 'dist/']
+  since: '2025-01-01T00:00:00Z'
+  limit: 100
+curation:
+  prompt: 'Evaluate this fix'
+sandbox:
+  build_command: 'npm ci'
+  test_command: 'npm test'
+  base_image: 'node:20-alpine'
+  env_vars:
+    NODE_ENV: 'test'
+  cache_paths: ['/root/.npm', 'node_modules']
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig('repobench.yaml');
+
+    expect(config.mining.keywords).toEqual(['fix', 'bug', 'error']);
+    expect(config.mining.exclude_paths).toEqual(['node_modules/', '.git/', 'dist/']);
+    expect(config.mining.since).toBe('2025-01-01T00:00:00Z');
+    expect(config.mining.limit).toBe(100);
+    expect(config.curation).toBeDefined();
+    expect(config.curation!.prompt).toBe('Evaluate this fix');
+    expect(config.sandbox).toBeDefined();
+    expect(config.sandbox!.buildCommand).toBe('npm ci');
+    expect(config.sandbox!.testCommand).toBe('npm test');
+    expect(config.sandbox!.baseImage).toBe('node:20-alpine');
+    expect(config.sandbox!.envVars).toEqual({ NODE_ENV: 'test' });
+    expect(config.sandbox!.cachePaths).toEqual(['/root/.npm', 'node_modules']);
+  });
 });

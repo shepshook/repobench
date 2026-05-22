@@ -28,7 +28,7 @@ export class AnsiProcessor {
     return screen.toString().split('\n').map(line => line.trimEnd()).join('\n').trim();
   }
 
-  public static normalize(data: string, keepAnsi: boolean = false, writtenCommands: string[] = []): string {
+  public static normalize(data: string, keepAnsi: boolean = false, _writtenCommands: string[] = []): string {
     const processed = data.replace(/\r/g, '');
     
     const lines = processed.split('\n');
@@ -41,15 +41,8 @@ export class AnsiProcessor {
       const strippedL = this.processAnsi(l, false).trim();
       if (strippedL === '') return l;
       
-      for (const cmd of writtenCommands) {
-        if (!cmd) continue;
-        const normalizedCmd = this.processAnsi(cmd, false).replace(/\r/g, '').trim();
-        if (strippedL === normalizedCmd) {
-          return null;
-        }
-      }
       return l;
-    }).filter(line => line !== null);
+    });
     
     const result = filteredLines.join('\n');
     return this.processAnsi(result, keepAnsi).trim();

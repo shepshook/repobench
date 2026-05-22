@@ -84,6 +84,7 @@ export class SimulationDriver extends PtyDriver {
       
       return children.sort().join('\n') + (children.length > 0 ? '\n' : '');
     },
+    'sleep': () => '',
     'dir': (args, driver) => {
       // On Windows 'dir' is similar to 'ls' but formatted differently. 
       // For simplicity in simulation, we'll make it similar to ls.
@@ -145,25 +146,39 @@ export class SimulationDriver extends PtyDriver {
   }
 
   private executeCommand(commandLine: string): Promise<void> {
-    const parts = commandLine.trim().split(/\s+/);
-    const cmd = parts[0];
-    const args = parts.slice(1);
-
-    let output = '';
-    const handler = SimulationDriver.commandRegistry[cmd];
-    if (handler) {
-      const result = handler(args, this);
-      if (result !== undefined) {
-        output = result;
+    const shellOpMatch = commandLine.match(/^(.*?)\s*(&&|\|\||;)\s*(.*)$/);
+    if (shellOpMatch) {
+      const [, first, , rest] = shellOpMatch;
+      const firstResult = this.executeSingle(first.trim());
+      if (firstResult.output !== undefined && this.dataCallback && firstResult.output) {
+        this.dataCallback(new TextEncoder().encode(firstResult.output));
       }
-    } else {
-      output = commandLine + '\n';
+      if (shellOpMatch[2] === '&&' && firstResult.exitCode !== 0) return Promise.resolve();
+      if (shellOpMatch[2] === '||' && firstResult.exitCode === 0) return Promise.resolve();
+      return this.executeCommand(rest.trim());
     }
 
+    const { output } = this.executeSingle(commandLine.trim());
     if (this.dataCallback && output) {
       this.dataCallback(new TextEncoder().encode(output));
     }
     return Promise.resolve();
+  }
+
+  private executeSingle(commandLine: string): { output: string; exitCode: number } {
+    const parts = commandLine.trim().split(/\s+/);
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    const handler = SimulationDriver.commandRegistry[cmd];
+    if (handler) {
+      const result = handler(args, this);
+      if (result !== undefined) {
+        return { output: result, exitCode: 0 };
+      }
+      return { output: '', exitCode: 0 };
+    }
+    return { output: commandLine + '\n', exitCode: 0 };
   }
 
   public close(): Promise<void> {
