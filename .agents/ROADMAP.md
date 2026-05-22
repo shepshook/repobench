@@ -310,7 +310,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Export `diff.patch`, `session.log`, and ground truth fix to `exports/<run_id>/`.
   * **Tasks:**
     - [x] [Task 5.4.1: Define FailureArtifact Contracts & IFailureArtifactExporter Interface](.agents/spec/task-5.4.1.md)
-    - [ ] [Task 5.4.2: Implement FailureArtifactExporter Service](.agents/spec/task-5.4.2.md)
+    - [x] [Task 5.4.2: Implement FailureArtifactExporter Service](.agents/spec/task-5.4.2.md)
     - [ ] [Task 5.4.3: Integrate FailureArtifactExporter into Evaluation Pipeline](.agents/spec/task-5.4.3.md)
     - [ ] [Task 5.4.4: CLI Integration (`repobench export-failures`)](.agents/spec/task-5.4.4.md)
   * **DoD:** Developers can pull failure states locally for IDE inspection.
