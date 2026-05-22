@@ -7,7 +7,6 @@ import {
   EvaluationResult, 
   TestResults,
   ISearchEfficiencyTracker,
-  EfficiencyMetrics,
   IScorer,
   ComparisonResult,
   ISemanticJudge,
@@ -31,7 +30,7 @@ export class Evaluator implements IEvaluator {
   async evaluate(candidate: Candidate, trackerOrCost?: ISearchEfficiencyTracker | number, cost?: number): Promise<EvaluationResult> {
     const startTime = Date.now();
     let tracker: ISearchEfficiencyTracker;
-    let actualCost: number = 0;
+    let actualCost: number;
 
     if (typeof trackerOrCost === 'number') {
         tracker = new SearchEfficiencyTracker();
@@ -43,8 +42,8 @@ export class Evaluator implements IEvaluator {
     const t = tracker;
     let preResults: TestResults | null = null;
     let postResults: TestResults | null = null;
-    let comparison: ComparisonResult | null = null;
-    let regressionStatus: 'clean' | 'regressed' | 'error' = 'error';
+    let comparison: ComparisonResult | null;
+    let regressionStatus: 'clean' | 'regressed' | 'error';
 
     try {
       if (!candidate.preFixHash) {

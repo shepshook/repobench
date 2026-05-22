@@ -29,7 +29,7 @@ export class AnsiProcessor {
   }
 
   public static normalize(data: string, keepAnsi: boolean = false, writtenCommands: string[] = []): string {
-    let processed = data.replace(/\r/g, '');
+    const processed = data.replace(/\r/g, '');
     
     const lines = processed.split('\n');
     const filteredLines = lines.map(line => {
@@ -51,7 +51,7 @@ export class AnsiProcessor {
       return l;
     }).filter(line => line !== null);
     
-    let result = filteredLines.join('\n');
+    const result = filteredLines.join('\n');
     return this.processAnsi(result, keepAnsi).trim();
   }
 }

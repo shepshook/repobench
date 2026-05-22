@@ -1,5 +1,12 @@
-import Docker from 'dockerode';
 import path from 'path';
+import { IDockerContainer, IDockerStream, IDockerExecOptions } from '../core/contracts';
+
+export interface PtySpawnOptions {
+  args?: string[];
+  user?: string;
+  env?: Record<string, string | undefined>;
+  cwd?: string;
+}
 
 export abstract class PtyDriver {
   protected dataCallback: ((data: Uint8Array) => void) | null = null;
@@ -13,7 +20,7 @@ export abstract class PtyDriver {
     this.exitCallback = cb;
   }
 
-  public abstract spawn(options: any): Promise<void>;
+  public abstract spawn(options: PtySpawnOptions): Promise<void>;
   public abstract write(data: string): Promise<void>;
   public abstract close(): Promise<void>;
 }
@@ -35,7 +42,9 @@ export class SimulationDriver extends PtyDriver {
   private static commandRegistry: Record<string, (args: string[], driver: SimulationDriver) => string | void> = {
     'echo': (args, driver) => {
       let content = args.join(' ');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       content = content.replace(/%(\w+)%/g, (_, name) => driver.env[name] || '');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       content = content.replace(/\$(\w+)/g, (_, name) => driver.env[name] || '');
       return content + '\n';
     },
@@ -92,9 +101,10 @@ export class SimulationDriver extends PtyDriver {
     },
   };
 
-  public async spawn(options: any): Promise<void> {
+  public spawn(options: PtySpawnOptions): Promise<void> {
     if (options.cwd) this.cwd = options.cwd;
     if (options.env) this.env = { ...this.env, ...options.env };
+    return Promise.resolve();
   }
 
   public async write(data: string): Promise<void> {
@@ -127,14 +137,14 @@ export class SimulationDriver extends PtyDriver {
     }
 
     if (trimmedData === 'exit') {
-      this.close();
+      void this.close();
       return;
     }
 
     return this.executeCommand(trimmedData);
   }
 
-  private async executeCommand(commandLine: string): Promise<void> {
+  private executeCommand(commandLine: string): Promise<void> {
     const parts = commandLine.trim().split(/\s+/);
     const cmd = parts[0];
     const args = parts.slice(1);
@@ -153,61 +163,67 @@ export class SimulationDriver extends PtyDriver {
     if (this.dataCallback && output) {
       this.dataCallback(new TextEncoder().encode(output));
     }
+    return Promise.resolve();
   }
 
-  public async close(): Promise<void> {
+  public close(): Promise<void> {
     if (this.exitCallback) {
       this.exitCallback(0);
     }
+    return Promise.resolve();
   }
 }
 
 export class DockerDriver extends PtyDriver {
-  private container: any;
-  private shellProcess: any;
+  private container: IDockerContainer;
+  private stream: IDockerStream | null = null;
 
-  constructor(container: any) {
+  constructor(container: IDockerContainer) {
     super();
     this.container = container;
   }
 
-  public async spawn(options: any): Promise<void> {
-    const exec = await this.container.exec({
-       Cmd: options.args || ['/bin/sh', '-i'],
+  public async spawn(options: PtySpawnOptions): Promise<void> {
+    const execOpts: IDockerExecOptions = {
+      Cmd: options.args ?? ['/bin/sh', '-i'],
       Tty: true,
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
       User: options.user,
-      Env: options.env,
-      WorkingDir: options.cwd
-    });
+      Env: options.env ? Object.entries(options.env).map(([k, v]) => v !== undefined ? `${k}=${v}` : k) : undefined,
+      WorkingDir: options.cwd,
+    };
 
-    this.shellProcess = await exec.start({ hijack: true, stdin: true });
+    const exec = await this.container.exec(execOpts);
+    const stream = await exec.start({ hijack: true, stdin: true });
+    this.stream = stream;
 
-    this.shellProcess.on('data', (data: Buffer) => {
+    stream.on('data', (data: Buffer) => {
       if (this.dataCallback) {
         this.dataCallback(new Uint8Array(data));
       }
     });
 
-    this.shellProcess.on('exit', (code: number) => {
+    stream.on('exit', (code: number) => {
       if (this.exitCallback) {
         this.exitCallback(code);
       }
     });
   }
 
-  public async write(data: string): Promise<void> {
-    if (this.shellProcess) {
+  public write(data: string): Promise<void> {
+    if (this.stream) {
       console.log(`[DockerDriver] Writing to shell: ${JSON.stringify(data)}`);
-      await this.shellProcess.write(Buffer.from(data));
+      this.stream.write(Buffer.from(data));
     }
+    return Promise.resolve();
   }
 
-  public async close(): Promise<void> {
-    if (this.shellProcess) {
-      await this.shellProcess.destroy();
+  public close(): Promise<void> {
+    if (this.stream) {
+      this.stream.destroy();
     }
+    return Promise.resolve();
   }
 }

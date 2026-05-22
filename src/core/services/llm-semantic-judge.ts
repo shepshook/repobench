@@ -4,6 +4,7 @@ import { SemanticScore, SemanticScoreSchema } from '../entities/evaluation-resul
 export class LLMSemanticJudge implements ISemanticJudge {
   private readonly maxRetries = 3;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(private readonly llmClient: { createChatCompletion: (params: any) => Promise<{ content: string }> }) {}
 
   async judge(code: string): Promise<SemanticScore> {
@@ -25,10 +26,13 @@ export class LLMSemanticJudge implements ISemanticJudge {
           response_format: { type: 'json_object' },
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const parsed = JSON.parse(response.content);
         const result = SemanticScoreSchema.parse(parsed);
         return result;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         lastError = error;
         if (attempt === this.maxRetries) break;
       }

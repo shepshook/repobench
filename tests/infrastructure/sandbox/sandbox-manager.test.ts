@@ -113,6 +113,23 @@ describe('SandboxManager', () => {
     await expect(sandboxManager.stopContainer(containerId)).rejects.toThrow(/Unexpected EOF from server/);
   });
 
+  it('should preserve the original error cause when stopContainer fails', async () => {
+    const containerId = 'cont-123';
+    const dockerError = new Error('Docker internal error');
+    
+    const mockContainer = {
+      stop: vi.fn().mockRejectedValue(dockerError),
+    };
+    mockDocker.getContainer = vi.fn().mockReturnValue(mockContainer);
+
+    try {
+      await sandboxManager.stopContainer(containerId);
+      expect(true).toBe(false); // Should not reach here
+    } catch (error: any) {
+      expect(error.cause).toBe(dockerError);
+    }
+  });
+
 
   it('should guarantee teardown of all resources even if some stop operations fail', async () => {
     const mockContainers = [
@@ -154,6 +171,23 @@ describe('SandboxManager', () => {
     mockDocker.getContainer = vi.fn().mockReturnValue(mockContainer);
 
     await expect(sandboxManager.trackContainer(containerId)).rejects.toThrow(/Container not found on host/);
+  });
+
+  it('should preserve the original error cause when tracking a container fails', async () => {
+    const containerId = 'cont-123';
+    const dockerError = new Error('Docker internal error');
+    
+    const mockContainer = {
+      inspect: vi.fn().mockRejectedValue(dockerError),
+    };
+    mockDocker.getContainer = vi.fn().mockReturnValue(mockContainer);
+
+    try {
+      await sandboxManager.trackContainer(containerId);
+      expect(true).toBe(false); // Should not reach here
+    } catch (error: any) {
+      expect(error.cause).toBe(dockerError);
+    }
   });
 
   it('should throw a descriptive error containing stderr when listing containers fails during cleanup', async () => {

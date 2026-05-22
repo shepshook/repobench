@@ -1,5 +1,6 @@
-export function mapSpawnErrorToRca(e: any): string {
-  const msg = e?.message || String(e);
+export function mapSpawnErrorToRca(e: unknown): string {
+  const err = e as { message?: string } | null | undefined;
+  const msg = err?.message || String(e);
   const prefix = 'PtySession failed to spawn: ';
   const lowerMsg = msg.toLowerCase();
 

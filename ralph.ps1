@@ -127,10 +127,28 @@ while ($Iteration -le $MaxIterations) {
             opencode run -m ${ProTierModel} "`"You are the PRINCIPAL ARCHITECT. All features for Epic ${EpicID} are marked [x], but the Epic checkbox is open. Evaluate system-wide stability, structural integrity across modules, cross-feature boundary leaks, and total regression logs. Evaluate the epic's implementation compliance with the documentation and its readiness. If PASS: Update the epic line to '## [x] Epic ${EpicID}' in .agents/ROADMAP.md and run 'git add . && git commit -m "chore: release and close Epic ${EpicID}"'. If FAIL: Append a new alignment feature block to the bottom of this Epic: '* [ ] Feature ${EpicID}.FIXN: Global Epic Integration & Alignment Round N'. Decompose your findings into atomic tasks if needed and append them to this feature: '    - [ ] [Task ${EpicID}.FIXN.I: Epic Audit <Summary> Round N](.agents/spec/task-${EpicID}.fixn.i.md)' and write your clear agent-ready instructions to the according spec files. EXIT.`""
             continue
         }
-    } else {
-        Write-Host "🎉 All Epics in .agents/ROADMAP.md are marked [x]! System completely implemented." -ForegroundColor Green
+} else {
+    # FINAL MVP REVIEW PHASE
+    Write-Host "🔍 All Epics checked. Launching Final MVP Review..." -ForegroundColor Blue
+    opencode run -m ${HighTierModel} "You are the FINAL MVP AUDITOR. Review the entire implementation against @.agents\ROADMAP.md and @.agents\ARCHITECTURE.md. Evaluate if the system is complete, stable, and production-ready.
+
+    Decide:
+    (A) PASS: System is complete. Add '## [x] MVP FINALIZED' to the bottom of .agents\ROADMAP.md and EXIT.
+    (B) FAIL: Issues found. For each issue:
+        1. Identify the relevant Epic number (e.g., 3).
+        2. Uncheck the Epic line (change '## [x] Epic X' to '## [ ] Epic X').
+        3. Add a new Feature '* [ ] Feature <EpicNumber>.FIXN: <Summary>' under that Epic.
+        4. Decompose the feature into atomic tasks and write their specs in .agents\spec\task-<EpicNumber>.FIXN.Y.md.
+        5. Update .agents\ROADMAP.md.
+    EXIT."
+
+    $RoadmapAfter = Get-Content ".agents/ROADMAP.md" -Raw
+    if ($RoadmapAfter -match '##\s*\[x\]\s*MVP\s*FINALIZED') {
+        Write-Host "🎉 MVP FINALIZED! System is production-ready." -ForegroundColor Green
         break
     }
+    Write-Host "⚠️ Final Review found gaps. Returning to Ralph Loop for remediation..." -ForegroundColor Yellow
+}
 
     $Iteration++
     Start-Sleep -Seconds 2

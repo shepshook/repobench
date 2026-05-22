@@ -51,3 +51,8 @@ npm test
 - [ ] `npm run lint` ≤ 150 errors
 - [ ] `npm test` has 0 test suite failures from persistence-layer or PTY causes (remaining failures must be documented as known platform-specific issues)
 - [ ] Epic 4 closure checklist items all marked [x] in ROADMAP.md
+
+## Audit Feedback Round 1
+- **Status**: FAIL
+- **Feedback**: The integration tests (`tests/integration/boundary-audit.test.ts` and `tests/integration/full-pipeline.test.ts`) pass and verify the required cross-module boundary data flows. However, the existing test suite has a failure in `tests/core/search-efficiency-tracker-coverage.test.ts` (`should calculate efficiency ratio correctly when accessed is more than modified`). This test failure must be resolved or documented as a known issue in the spec as per the DoD.
+

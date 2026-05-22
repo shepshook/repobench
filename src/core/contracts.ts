@@ -105,12 +105,79 @@ export interface SandboxConfig {
   project?: string;
 }
 
+export interface IDockerVolume {
+  remove(): Promise<void>;
+}
+
 export interface IDocker {
-  createVolume(options: any): Promise<any>;
-  getVolume(name: string): any;
-  getImage(image: string): any;
-  pull(image: string): Promise<any>;
-  createContainer(options: any): Promise<any>;
+  createVolume(options: { Name: string; Labels?: Record<string, string> }): Promise<IDockerVolume>;
+  getVolume(name: string): IDockerVolume;
+  getImage(image: string): IDockerImage;
+  pull(image: string): Promise<void>;
+  createContainer(options: unknown): Promise<IDockerContainer>;
+}
+
+export interface IDockerImage {
+  remove(options?: { force?: boolean }): Promise<void>;
+  inspect(): Promise<{ [key: string]: unknown }>;
+}
+
+export interface IDockerContainer {
+  readonly id: string;
+  start(): Promise<void>;
+  stop(options?: { t?: number }): Promise<void>;
+  remove(options?: { force?: boolean; v?: boolean }): Promise<void>;
+  inspect(): Promise<IDockerContainerInspect>;
+  exec(options: IDockerExecOptions): Promise<IDockerExec>;
+}
+
+export interface IDockerExecOptions {
+  Cmd: string[];
+  Tty?: boolean;
+  AttachStdin?: boolean;
+  AttachStdout?: boolean;
+  AttachStderr?: boolean;
+  User?: string;
+  Env?: string[];
+  WorkingDir?: string;
+}
+
+export interface IDockerExec {
+  start(options?: { hijack?: boolean; stdin?: boolean }): Promise<IDockerStream>;
+  inspect(): Promise<{
+    ID: string;
+    Running: boolean;
+    ExitCode: number;
+    ProcessConfig: { arguments: string[]; entrypoint: string };
+  }>;
+}
+
+export interface IDockerStream {
+  on(event: 'data', callback: (data: Buffer) => void): void;
+  on(event: 'end', callback: () => void): void;
+  on(event: 'error', callback: (err: Error) => void): void;
+  on(event: 'exit', callback: (code: number) => void): void;
+  write(data: Buffer): void;
+  destroy(): void;
+}
+
+export interface IDockerContainerInspect {
+  Id: string;
+  Config: {
+    Image: string;
+    Labels?: Record<string, string>;
+    Cmd?: string[];
+    Env?: string[];
+    WorkingDir?: string;
+    User?: string;
+  };
+  State: {
+    Status: string;
+    ExitCode: number;
+    Running: boolean;
+  };
+  Created: string;
+  Name: string;
 }
 
 export interface IVolumeManager {

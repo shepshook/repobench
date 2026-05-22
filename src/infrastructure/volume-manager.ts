@@ -3,10 +3,18 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
+
+interface DockerError {
+  json?: { message?: string };
+  message?: string;
+  stdout?: string;
+  stderr?: string;
+  stack?: string;
+}
 
 export class VolumeManagerError extends Error {
-  constructor(message: string, public context: any) {
+  constructor(message: string, public context: Record<string, unknown>) {
     super(message);
     this.name = 'VolumeManagerError';
   }
@@ -50,13 +58,15 @@ export class VolumeManager implements IVolumeManager {
 
     if (!existsSync(this.simCacheRoot)) {
       try {
-        require('node:fs').mkdirSync(this.simCacheRoot, { recursive: true });
-      } catch {}
+        mkdirSync(this.simCacheRoot, { recursive: true });
+      } catch {
+        /* intentionally empty */
+      }
     }
   }
 
-  async getCacheStats(): Promise<{ hits: number; misses: number }> {
-    return { hits: this.hits, misses: this.misses };
+  getCacheStats(): Promise<{ hits: number; misses: number }> {
+    return Promise.resolve({ hits: this.hits, misses: this.misses });
   }
 
   async calculateCacheKey(project: string, lockFile?: string): Promise<string> {
@@ -65,8 +75,8 @@ export class VolumeManager implements IVolumeManager {
       try {
         const content = await fs.readFile(lockFile, 'utf8');
         cacheKey = crypto.createHash('sha256').update(content).digest('hex');
-      } catch (error) {
-        // Fallback to default cache if lock file cannot be read
+      } catch {
+        /* Fallback to default cache if lock file cannot be read */
       }
     }
     return cacheKey;
@@ -86,17 +96,14 @@ export class VolumeManager implements IVolumeManager {
     const volumeName = `repobench-cache-${project}-${cacheKey}`;
     console.log(`DEBUG: volumeName=${volumeName}`);
 
-    let hit = false;
-    try {
-        if (isSimulation) {
+    let hit;
+    if (isSimulation) {
           console.log(`DEBUG: Checking simulatedCacheVolumes for ${volumeName}. Current size: ${VolumeManager.simulatedCacheVolumes.size}`);
             if (VolumeManager.simulatedCacheVolumes.has(volumeName)) {
               console.log(`DEBUG: Simulation HIT for ${volumeName}`);
-              hit = true;
               this.incrementStats(volumeName, true);
             } else {
               console.log(`DEBUG: Simulation MISS for ${volumeName}`);
-              hit = false;
               this.incrementStats(volumeName, false);
               VolumeManager.simulatedCacheVolumes.add(volumeName);
             }
@@ -111,20 +118,17 @@ export class VolumeManager implements IVolumeManager {
               this.incrementStats(volumeName, false);
             }
         }
-        // Map containerPath to volumeName
-        for (const volume of volumes) {
-          await this.mountVolume(volumeName, volume.containerPath);
-        }
-        return true;
-    } catch (error) {
-      throw error;
+    // Map containerPath to volumeName
+    for (const volume of volumes) {
+      await this.mountVolume(volumeName, volume.containerPath);
     }
+    return true;
   }
 
   async recordCacheStatus(project: string, lockFile?: string, isSimulation = false): Promise<{ hit: boolean }> {
     const cacheKey = await this.calculateCacheKey(project, lockFile);
     const volumeName = `repobench-cache-${project}-${cacheKey}`;
-    let hit = false;
+    let hit;
     if (isSimulation) {
         if (VolumeManager.simulatedCacheVolumes.has(volumeName)) {
           hit = true;
@@ -135,13 +139,9 @@ export class VolumeManager implements IVolumeManager {
           VolumeManager.simulatedCacheVolumes.add(volumeName);
         }
     } else {
-       try {
-         const wasHit = await this.createVolume(volumeName);
-         hit = wasHit;
-          if (hit) this.incrementStats(volumeName, true); else this.incrementStats(volumeName, false);
-       } catch (error) {
-         throw error;
-       }
+      const wasHit = await this.createVolume(volumeName);
+      hit = wasHit;
+      if (hit) this.incrementStats(volumeName, true); else this.incrementStats(volumeName, false);
     }
     return { hit };
   }
@@ -158,20 +158,20 @@ export class VolumeManager implements IVolumeManager {
     const promise = (async () => {
       try {
         await this.docker.createVolume({ Name: name, Labels: { app: SANDBOX_APP_LABEL } });
-        return false; // Miss
-      } catch (error: any) {
-        if (error.json?.message && typeof error.json.message === 'string' && error.json.message.includes('already exists')) {
-          return true; // Hit
+        return false;
+      } catch (error: unknown) {
+        const dockerError = error as DockerError;
+        if (dockerError.json?.message?.includes('already exists')) {
+          return true;
         }
         
-        // Ensure we capture detailed error context for RCA as per Architecture 4.3
-        const errorMessage = `Failed to create volume ${name}: ${error.message || 'Unknown error'} (stdout: ${error.stdout || 'N/A'}, stderr: ${error.stderr || 'N/A'})`;
+        const errorMessage = `Failed to create volume ${name}: ${dockerError.message || 'Unknown error'} (stdout: ${dockerError.stdout || 'N/A'}, stderr: ${dockerError.stderr || 'N/A'})`;
         const errorContext = {
-          message: error.message,
-          stack: error.stack,
-          json: error.json || 'N/A',
-          stdout: error.stdout || 'N/A',
-          stderr: error.stderr || 'N/A',
+          message: dockerError.message,
+          stack: dockerError.stack,
+          json: dockerError.json || 'N/A',
+          stdout: dockerError.stdout || 'N/A',
+          stderr: dockerError.stderr || 'N/A',
         };
         
         throw new VolumeManagerError(errorMessage, errorContext);
@@ -186,26 +186,29 @@ export class VolumeManager implements IVolumeManager {
     }
   }
 
-  async mountVolume(name: string, path: string): Promise<void> {
+  mountVolume(name: string, path: string): Promise<void> {
     this.cacheVolumes.set(path, name);
+    return Promise.resolve();
   }
 
   async removeVolume(name: string): Promise<void> {
     try {
       const volume = this.docker.getVolume(name);
       await volume.remove();
-    } catch (error: any) {
-      if (error.json?.message?.includes('no such volume')) {
+    } catch (error: unknown) {
+      const dockerError = error as DockerError;
+      if (dockerError.json?.message?.includes('no such volume')) {
         return;
       }
-       throw new VolumeManagerError(`Failed to remove volume ${name}: ${error.message || 'Unknown error'} (stdout: ${error.stdout || 'N/A'}, stderr: ${error.stderr || 'N/A'})`, {
-         message: error.message,
-         stack: error.stack,
-         stdout: error.stdout || 'N/A',
-         stderr: error.stderr || 'N/A',
-       });
+      throw new VolumeManagerError(`Failed to remove volume ${name}: ${dockerError.message || 'Unknown error'} (stdout: ${dockerError.stdout || 'N/A'}, stderr: ${dockerError.stderr || 'N/A'})`, {
+        message: dockerError.message,
+        stack: dockerError.stack,
+        stdout: dockerError.stdout || 'N/A',
+        stderr: dockerError.stderr || 'N/A',
+      });
     }
   }
+
 
   getDocker(): IDocker {
     return this.docker;

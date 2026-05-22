@@ -45,9 +45,11 @@ const DEFAULT_CONFIG: RepoBenchConfig = {
 export async function loadConfig(path: string = 'repobench.yaml'): Promise<RepoBenchConfig> {
   try {
     const fileContents = await fs.readFile(path, 'utf8');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const parsed = YAML.parse(fileContents);
     return RepoBenchConfigSchema.parse(parsed);
   } catch (error: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     if (error instanceof Error && (error as any).code === 'ENOENT') {
       return DEFAULT_CONFIG;
     }

@@ -34,12 +34,13 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** Meaningful test additions are captured; trivial comment changes are discarded.
 * **[x] Feature 1.3: Candidate Persistence Layer**
   * **Spec:** Integrate `better-sqlite3`; create `candidates` table and `CandidateRepository`.
-  * **DoD:** Candidates persist to `repobench.db` without duplicates on repeated runs.
-* **[x] Feature 1.4: LLM-Based Candidate Curation**
+  * **Tasks:**
     - [x] [Task 1.3.1: Define Candidate Entity & Repository Interface](.agents/spec/task-1.3.1.md)
     - [x] [Task 1.3.2: SQLite Infrastructure Setup](.agents/spec/task-1.3.2.md)
     - [x] [Task 1.3.3: CandidateRepository Implementation & Testing](.agents/spec/task-1.3.3.md)
     - [x] [Task 1.3.4: GitMiner Integration](.agents/spec/task-1.3.3.md)
+  * **DoD:** Candidates persist to `repobench.db` without duplicates on repeated runs.
+* **[x] Feature 1.4: LLM-Based Candidate Curation**
   * **Spec:** Build `CurationService` (e.g., GPT-4o-mini) to extract, rank, and validate raw candidates.
   * **Tasks:**
     - [x] [Task 1.4.1: Curation Service Contract Definition](.agents/spec/task-1.4.1.md)
@@ -236,8 +237,8 @@ This document serves as the central source of truth for the project's strategic 
 * **[x] Feature 4.2: Search Efficiency Tracker**
   * **Spec:** Log file access within Docker to calculate ratio: $\text{Files Accessed} / \text{Files Modified}$.
   * **Tasks:**
-        - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
-        - [x] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
+    - [x] [Task 4.2.1: Design File Access Interception Mechanism](.agents/spec/task-4.2.1.md)
+    - [x] [Task 4.2.2: Define ISearchEfficiencyTracker & EfficiencyMetrics Schema](.agents/spec/task-4.2.2.md)
     - [x] [Task 4.2.3: Implement SearchEfficiencyTracker Service](.agents/spec/task-4.2.3.md)
     - [x] [Task 4.2.4: Integrate SearchEfficiencyTracker into EvaluatorPipeline](.agents/spec/task-4.2.4.md)
     - [x] [Task 4.2.5: Add SearchEfficiencyTracker Verification Suite](.agents/spec/task-4.2.5.md)
@@ -255,17 +256,17 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Call LLM to rate Correctness, Maintainability, and Idiomaticity (1-5).
   * **Tasks:**
     - [x] [Task 4.4.1: Define ISemanticJudge interface and SemanticScore schema](.agents/spec/task-4.4.1.md)
-        - [x] [Task 4.4.2: Implement LLMSemanticJudge service](.agents/spec/task-4.4.2.md)
+    - [x] [Task 4.4.2: Implement LLMSemanticJudge service](.agents/spec/task-4.4.2.md)
     - [x] [Task 4.4.3: Integrate SemanticJudge into EvaluatorPipeline](.agents/spec/task-4.4.3.md)
     - [x] [Task 4.4.4: Verification & Test Suite](.agents/spec/task-4.4.4.md)
   * **DoD:** Reports include nuanced semantic scores alongside binary results.
-* **[ ] Feature 4.FIX1: Global Epic Integration & Alignment Round 1**
+* **[x] Feature 4.FIX1: Global Epic Integration & Alignment Round 1**
   * **Spec:** Resolve cross-module SessionOrchestrator→Evaluator cost-data boundary leak; mark implemented success criteria; remediate better-sqlite3 native binding; audit and fix system-wide lint regression root causes.
   * **Tasks:**
     - [x] [Task 4.FIX1.1: Wire SessionOrchestrator Cost Data into Evaluator Pipeline](.agents/spec/task-4.fix1.1.md)
     - [x] [Task 4.FIX1.2: Rebuild better-sqlite3 Native Bindings & Validate Persistence Layer](.agents/spec/task-4.fix1.2.md)
-    - [ ] [Task 4.FIX1.3: Remediate System-Wide Lint Regression — Infrastructure Files](.agents/spec/task-4.fix1.3.md)
-    - [ ] [Task 4.FIX1.4: Audit Cross-Module Boundary Leaks & Final Integration Verification](.agents/spec/task-4.fix1.4.md)
+    - [x] [Task 4.FIX1.3: Remediate System-Wide Lint Regression — Infrastructure Files](.agents/spec/task-4.fix1.3.md)
+    - [x] [Task 4.FIX1.4: Audit Cross-Module Boundary Leaks & Final Integration Verification](.agents/spec/task-4.fix1.4.md)
   * **DoD:** Cost data flows from SessionOrchestrator through JudgeService into E-Score formula; persistence tests pass; lint ≤ tolerance threshold (no `any`-typed member access in core services); all 9 Epic 4 test files + integration tests pass end-to-end.
 
 ---

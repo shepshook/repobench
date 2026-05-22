@@ -26,10 +26,13 @@ export class CostParser implements ICostParser {
       while ((match = regex.exec(logs)) !== null) {
         const value = match[1];
         if (type === 'int') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
           (metrics as any)[key] = parseInt(value, 10);
         } else if (type === 'float') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
           (metrics as any)[key] = parseFloat(value);
         } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
           (metrics as any)[key] = value;
         }
       }

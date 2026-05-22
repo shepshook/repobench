@@ -1,6 +1,14 @@
 import { db } from '../../infrastructure/persistence/database';
 import { ContainerMetadata } from '../contracts';
 
+interface ContainerRow {
+  containerId: string;
+  image: string;
+  createdAt: string;
+  status: string;
+  labels: string;
+}
+
 export class ContainerRepository {
   save(metadata: ContainerMetadata): void {
     db.run(
@@ -15,24 +23,32 @@ export class ContainerRepository {
       metadata.image,
       metadata.createdAt,
       metadata.status,
-      JSON.stringify(metadata.labels)
+      JSON.stringify(metadata.labels),
     );
   }
 
   getById(containerId: string): ContainerMetadata | undefined {
-    const row = db.prepare('SELECT * FROM containers WHERE container_id = ?').get(containerId) as any;
+    const row = db.prepare<ContainerRow>('SELECT * FROM containers WHERE container_id = ?').get(containerId);
     if (!row) return undefined;
 
     return {
-      ...row,
+      containerId: row.containerId,
+      image: row.image,
+      createdAt: row.createdAt,
+      status: row.status,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       labels: JSON.parse(row.labels),
     };
   }
 
   getAll(): ContainerMetadata[] {
-    const rows = db.prepare('SELECT * FROM containers').all() as any[];
+    const rows = db.prepare<ContainerRow>('SELECT * FROM containers').all();
     return rows.map(row => ({
-      ...row,
+      containerId: row.containerId,
+      image: row.image,
+      createdAt: row.createdAt,
+      status: row.status,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       labels: JSON.parse(row.labels),
     }));
   }

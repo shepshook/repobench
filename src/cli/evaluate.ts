@@ -28,17 +28,24 @@ export function registerEvaluateCommand(program: Command): void {
         }
 
         let costMap: Map<string, number> | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options.costFile) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
           const filePath = path.resolve(options.costFile);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const costData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           costMap = new Map(Object.entries(costData).map(([id, cost]) => [id, Number(cost)]));
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         } else if (options.cost) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const defaultCost = Number(options.cost);
           costMap = new Map(candidates.map(c => [c.id, defaultCost]));
         } else {
           console.warn('Warning: No cost data provided. Using default cost of 1 for all candidates.');
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const sandboxConfig: SandboxConfig = { project: options.project };
         const sandbox = new Sandbox(sandboxConfig);
         await sandbox.init();

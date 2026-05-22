@@ -13,6 +13,7 @@ describe('Sandbox File Interception Mechanism', () => {
 
   it('should track file modifications', async () => {
     const { sandbox } = createSandboxFixture();
+    await sandbox.init();
     
     const tracker = sandbox.getFileAccessTracker();
     
@@ -24,6 +25,7 @@ describe('Sandbox File Interception Mechanism', () => {
 
   it('should track file reads', async () => {
     const { sandbox } = createSandboxFixture();
+    await sandbox.init();
     
     const tracker = sandbox.getFileAccessTracker();
     
@@ -36,6 +38,7 @@ describe('Sandbox File Interception Mechanism', () => {
 
   it('should track file deletions', async () => {
     const { sandbox } = createSandboxFixture();
+    await sandbox.init();
     
     const tracker = sandbox.getFileAccessTracker();
     

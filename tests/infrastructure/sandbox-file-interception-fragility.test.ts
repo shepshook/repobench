@@ -7,6 +7,7 @@ describe('Sandbox File Interception Mechanism Fragility', () => {
 
   it('should track files modified in compound commands (e.g., &&)', async () => {
     const { sandbox } = createSandboxFixture();
+    await sandbox.init();
     const tracker = sandbox.getFileAccessTracker();
     
     // This command is expected to fail interception
@@ -18,6 +19,7 @@ describe('Sandbox File Interception Mechanism Fragility', () => {
 
   it('should track files accessed in pipelines (e.g., |)', async () => {
     const { sandbox } = createSandboxFixture();
+    await sandbox.init();
     const tracker = sandbox.getFileAccessTracker();
     
     await sandbox.runCommand('echo "data" > pipe_test.txt');

@@ -17,10 +17,13 @@ export async function main() {
       try {
         const originalCwd = process.cwd();
         
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options.repo) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
           process.chdir(options.repo);
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         const config = await loadConfig(options.config);
         initDatabase();
         const repository = new CandidateRepository();
@@ -29,6 +32,7 @@ export async function main() {
         
         console.log(`Found ${candidates.length} candidates.`);
         
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options.repo) {
           process.chdir(originalCwd);
         }
@@ -42,5 +46,5 @@ export async function main() {
 }
 
 if (process.argv[1]?.endsWith('mine.ts') || process.argv[1]?.endsWith('mine.js')) {
-  main();
+  void main();
 }

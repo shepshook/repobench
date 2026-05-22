@@ -21,40 +21,42 @@ function snakeToCamel(str: string) {
   );
 }
 
+interface TypedStatement<T> {
+  get(...params: unknown[]): T | undefined;
+  all(...params: unknown[]): T[];
+  run(...params: unknown[]): { changes: number; lastInsertRowid: number };
+}
+
 export const db = {
-  prepare: (sql: string) => {
+  prepare: <T = Record<string, unknown>>(sql: string): TypedStatement<T> => {
       const stmt = _rawDb.prepare(sql);
-      return new Proxy(stmt, {
-        get(stmtTarget, stmtProp, stmtReceiver) {
-          const stmtValue = Reflect.get(stmtTarget, stmtProp, stmtReceiver);
-          if (typeof stmtValue === 'function') {
-            return (...stmtArgs: any[]) => {
-              if (stmtProp === 'get' || stmtProp === 'all') {
-                const result = stmtValue.apply(stmtTarget, stmtArgs);
-                if (!result) return result;
-                if (Array.isArray(result)) {
-                  return result.map(row => {
-                    const newRow: any = {};
-                    for (const key in row) {
-                      newRow[snakeToCamel(key)] = row[key];
-                    }
-                    return newRow;
-                  });
-                }
-                const newRow: any = {};
-                for (const key in result) {
-                  newRow[snakeToCamel(key)] = result[key];
-                }
-                return newRow;
-              }
-              return stmtValue.apply(stmtTarget, stmtArgs);
-            };
-          }
-          return stmtValue;
-        },
-      });
+      const wrapResult = (result: unknown): T | T[] | undefined => {
+        if (!result) return result as undefined;
+        if (Array.isArray(result)) {
+          return result.map((row: Record<string, unknown>) => {
+            const newRow: Record<string, unknown> = {};
+            for (const key in row) {
+              newRow[snakeToCamel(key)] = row[key];
+            }
+            return newRow as T;
+          });
+        }
+        const row = result as Record<string, unknown>;
+        const newRow: Record<string, unknown> = {};
+        for (const key in row) {
+          newRow[snakeToCamel(key)] = row[key];
+        }
+        return newRow as T;
+      };
+      return {
+        get: (...params: unknown[]): T | undefined => wrapResult(stmt.get(...params)) as T | undefined,
+        all: (...params: unknown[]): T[] => wrapResult(stmt.all(...params)) as T[],
+        run: (...params: unknown[]): { changes: number; lastInsertRowid: number } =>
+          stmt.run(...params) as { changes: number; lastInsertRowid: number },
+      };
   },
-  run: (sql: string, ...args: any[]) => _rawDb.prepare(sql).run(...args),
+  run: (sql: string, ...params: unknown[]): { changes: number; lastInsertRowid: number } =>
+    _rawDb.prepare(sql).run(...params) as { changes: number; lastInsertRowid: number },
 };
 
 /**

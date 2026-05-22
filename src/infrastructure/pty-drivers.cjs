@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DockerDriver = exports.SimulationDriver = exports.PtyDriver = void 0;
 
-const Docker = require('dockerode');
 const path = require('path');
 
 class PtyDriver {
@@ -16,8 +15,8 @@ class PtyDriver {
     onExit(cb) {
         this.exitCallback = cb;
     }
-    async spawn(options) { throw new Error("Not implemented"); }
-    async write(data) { throw new Error("Not implemented"); }
+    async spawn(_options) { throw new Error("Not implemented"); }
+    async write(_data) { throw new Error("Not implemented"); }
     async close() { throw new Error("Not implemented"); }
 }
 exports.PtyDriver = PtyDriver;

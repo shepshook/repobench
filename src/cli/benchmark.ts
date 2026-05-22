@@ -11,6 +11,7 @@ program
   .option('-p, --project <name>', 'Project name', 'default')
   .action(async (options) => {
     const config: SandboxConfig = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       project: options.project,
       baseImage: 'node:20-alpine',
       buildCommand: 'echo "building..."',

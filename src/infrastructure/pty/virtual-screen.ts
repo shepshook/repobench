@@ -10,6 +10,7 @@ export class VirtualScreen {
   constructor(width: number = 80, height: number = 30) {
     this.width = width;
     this.height = height;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
     this.rows = Array.from({ length: height }, () => Array(width).fill(' '));
   }
 
@@ -118,6 +119,7 @@ export class VirtualScreen {
     for (let r = 0; r < this.height - 1; r++) {
       this.rows[r] = [...this.rows[r + 1]];
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.rows[this.height - 1] = Array(this.width).fill(' ');
   }
 

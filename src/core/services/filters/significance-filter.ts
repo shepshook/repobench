@@ -1,4 +1,4 @@
-import simpleGit, { SimpleGit } from 'simple-git';
+import { type SimpleGit } from 'simple-git';
 import { ISignificanceFilter } from '../../contracts.js';
 
 const NON_CODE_EXTENSIONS = ['.md', '.txt', '.json', '.yml', '.yaml', '.lock', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico'];
@@ -26,7 +26,9 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
       try {
         stdDiff = await git.diff([`${hash}^`, hash]);
         wDiff = await git.diff(['-w', '-b', `${hash}^`, hash]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         if (error.message.includes('unknown revision') || error.message.includes('ambiguous argument')) {
           return true;
         }
@@ -99,7 +101,7 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
 
       return significantLineFound;
     } catch (error: unknown) {
-      throw new Error(`Significance filter failed for hash ${hash}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Significance filter failed for hash ${hash}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 

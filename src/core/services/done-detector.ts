@@ -25,11 +25,12 @@ export class DoneDetector extends EventEmitter implements IDoneDetector {
           regex: new RegExp(sig.pattern, 'i'),
           signature: sig,
         };
-      } catch (e) {
+      } catch (error) {
         throw new Error(
           `Invalid regex pattern in completion signature "${sig.name}": ${sig.pattern}. ${
-            e instanceof Error ? e.message : e
-          }`
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { cause: error }
         );
       }
     });

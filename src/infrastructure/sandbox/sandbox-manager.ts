@@ -2,21 +2,27 @@ import Docker from 'dockerode';
 import { ISandboxManager, ContainerMetadata, SANDBOX_APP_LABEL } from '../../core/contracts';
 import { ContainerRepository } from '../../core/repositories/container-repository';
 
+interface DockerError {
+  message?: string;
+  stderr?: string;
+  stack?: string;
+}
+
 export class SandboxManager implements ISandboxManager {
   private cacheLimit: number = Infinity;
   private volumes: string[] = [];
   private cachePruned: boolean = false;
 
   constructor(
-    private readonly repositoryOrDocker: any,
-    private readonly dockerOrUndefined?: Docker
+    repositoryOrDocker: ContainerRepository | Docker,
+    dockerOrUndefined?: Docker,
   ) {
     if (dockerOrUndefined) {
-      this.repository = repositoryOrDocker;
+      this.repository = repositoryOrDocker as ContainerRepository;
       this.docker = dockerOrUndefined;
     } else {
-      this.repository = {} as any;
-      this.docker = repositoryOrDocker;
+      this.repository = {} as ContainerRepository;
+      this.docker = repositoryOrDocker as Docker;
     }
   }
 
@@ -29,8 +35,9 @@ export class SandboxManager implements ISandboxManager {
     await this.pruneCache();
   }
 
-  async setCacheLimit(limit: number): Promise<void> {
+  setCacheLimit(limit: number): Promise<void> {
     this.cacheLimit = limit;
+    return Promise.resolve();
   }
 
   async pruneCache(): Promise<void> {
@@ -39,10 +46,10 @@ export class SandboxManager implements ISandboxManager {
       const volumesToPrune = limit === 0 ? this.volumes : this.volumes.slice(0, this.volumes.length - limit);
       for (const volumeName of volumesToPrune) {
         try {
-          const volume = this.docker?.getVolume?.(volumeName);
-          if (volume) await volume.remove();
-        } catch (error) {
-          // Ignore errors
+          const volume = this.docker.getVolume(volumeName);
+          await volume.remove();
+        } catch {
+          /* intentionally empty */
         }
       }
       this.volumes = limit === 0 ? [] : this.volumes.slice(-limit);
@@ -50,25 +57,25 @@ export class SandboxManager implements ISandboxManager {
     }
   }
 
-  async listCacheVolumes(): Promise<string[]> {
-    return this.volumes;
+  listCacheVolumes(): Promise<string[]> {
+    return Promise.resolve(this.volumes);
   }
 
   async teardown(): Promise<void> {
     for (const volumeName of this.volumes) {
       try {
-        const volume = this.docker?.getVolume?.(volumeName);
-        if (volume) await volume.remove();
-      } catch (error) {
-        // Ignore errors
+        const volume = this.docker.getVolume(volumeName);
+        await volume.remove();
+      } catch {
+        /* intentionally empty */
       }
     }
     this.volumes = [];
     this.cachePruned = true;
   }
 
-  async getCacheStatus(): Promise<{ pruned: boolean }> {
-    return { pruned: this.cachePruned };
+  getCacheStatus(): Promise<{ pruned: boolean }> {
+    return Promise.resolve({ pruned: this.cachePruned });
   }
 
   async trackContainer(containerId: string): Promise<void> {
@@ -87,9 +94,10 @@ export class SandboxManager implements ISandboxManager {
       };
 
       this.repository.save(metadata);
-    } catch (error: any) {
-      const stderr = error.stderr || error.message;
-      throw new Error(`Failed to track container ${containerId}: ${stderr}`);
+    } catch (error: unknown) {
+      const dockerError = error as DockerError;
+      const stderr = dockerError.stderr || dockerError.message;
+      throw new Error(`Failed to track container ${containerId}: ${stderr ?? 'Unknown error'}`, { cause: error });
     }
   }
 
@@ -105,17 +113,18 @@ export class SandboxManager implements ISandboxManager {
           status: 'stopped',
         });
       }
-    } catch (error: any) {
-      const stderr = error.stderr || error.message;
-      throw new Error(`Failed to stop container ${containerId}: ${stderr}`);
+    } catch (error: unknown) {
+      const dockerError = error as DockerError;
+      const stderr = dockerError.stderr || dockerError.message;
+      throw new Error(`Failed to stop container ${containerId}: ${stderr ?? 'Unknown error'}`, { cause: error });
     }
   }
 
   async cleanupOrphanedContainers(): Promise<void> {
-    let containers: any[];
+    let containers: Docker.ContainerInfo[];
     try {
       containers = await this.docker.listContainers({ all: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.formatDockerError(error, 'Failed to cleanup orphaned containers');
     }
 
@@ -129,19 +138,22 @@ export class SandboxManager implements ISandboxManager {
         if (data.Config.Labels?.app === SANDBOX_APP_LABEL) {
           try {
             await container.stop();
-          } catch (error: any) {
-            errors.push(this.formatDockerError(error, `Failed to stop container ${containerInfo.Id}`));
-          }
+           } catch (error: unknown) {
+             errors.push(this.formatDockerError(error, `Failed to stop container ${containerInfo.Id}`));
+           }
+
 
           try {
             await container.remove();
-          } catch (error: any) {
-            errors.push(this.formatDockerError(error, `Failed to remove container ${containerInfo.Id}`));
-          }
+           } catch (error: unknown) {
+             errors.push(this.formatDockerError(error, `Failed to remove container ${containerInfo.Id}`));
+           }
+
         }
-      } catch (error: any) {
-        errors.push(this.formatDockerError(error, `Failed to inspect container ${containerInfo.Id}`));
-      }
+       } catch (error: unknown) {
+         errors.push(this.formatDockerError(error, `Failed to inspect container ${containerInfo.Id}`));
+       }
+
     }
 
     if (errors.length > 0) {
@@ -161,11 +173,12 @@ export class SandboxManager implements ISandboxManager {
       if (ageMs > timeoutMs) {
         try {
           await this.stopContainer(metadata.containerId);
-        } catch (error: any) {
-          if (!firstError) {
-            firstError = error;
-          }
-        }
+         } catch (error: unknown) {
+           if (!firstError) {
+             firstError = error as Error;
+           }
+         }
+
 
         try {
           const container = this.docker.getContainer(metadata.containerId);
@@ -175,11 +188,12 @@ export class SandboxManager implements ISandboxManager {
             ...metadata,
             status: 'removed',
           });
-        } catch (error: any) {
-          if (!firstError) {
-            firstError = this.formatDockerError(error, `Failed to remove timed-out container ${metadata.containerId}`);
-          }
-        }
+         } catch (error: unknown) {
+           if (!firstError) {
+             firstError = this.formatDockerError(error, `Failed to remove timed-out container ${metadata.containerId}`);
+           }
+         }
+
       }
     }
 
@@ -188,8 +202,9 @@ export class SandboxManager implements ISandboxManager {
     }
   }
 
-  private formatDockerError(error: any, context: string): Error {
-    const stderr = error.stderr || error.message || 'Unknown error';
-    return new Error(`${context}: ${stderr}`);
+  private formatDockerError(error: unknown, context: string): Error {
+    const dockerError = error as DockerError;
+    const stderr = dockerError.stderr || dockerError.message || 'Unknown error';
+    return new Error(`${context}: ${stderr}`, { cause: error });
   }
 }

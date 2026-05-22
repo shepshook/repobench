@@ -34,6 +34,7 @@ Return a JSON object matching this schema:
       .replace('{{files}}', candidate.files.join(', '));
 
     const maxRetries = 3;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lastError: any;
 
     for (let i = 0; i < maxRetries; i++) {
@@ -47,6 +48,7 @@ Return a JSON object matching this schema:
         const content = response.choices[0].message.content;
         if (!content) throw new Error('No content in response');
         
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const parsed = JSON.parse(content);
         return CurationResultSchema.parse({ ...parsed, rawResponse: content });
       } catch (error) {
@@ -60,11 +62,12 @@ Return a JSON object matching this schema:
 }
 
 export class NoOpCurationService implements ICurationService {
-  async curate(candidate: Candidate): Promise<CurationResult> {
-    return {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  curate(_candidate: Candidate): Promise<CurationResult> {
+    return Promise.resolve({
       score: 1,
       reasoning: 'No-op curation approved.',
       isApproved: true
-    };
+    });
   }
 }

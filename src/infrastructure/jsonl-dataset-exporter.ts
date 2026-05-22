@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { IDatasetExporter, ICandidateRepository, CandidateExport, CandidateExportSchema } from '../core/contracts.js';
+import { IDatasetExporter, ICandidateRepository, CandidateExportSchema } from '../core/contracts.js';
 
 export class JsonlDatasetExporter implements IDatasetExporter {
   constructor(private repo: ICandidateRepository) {}
@@ -40,8 +40,10 @@ export class JsonlDatasetExporter implements IDatasetExporter {
      
          await fs.writeFile(path, lines.join('\n') + (lines.length > 0 ? '\n' : ''), { encoding: 'utf8' });
          return lines.length;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        throw new Error(`Failed to export dataset to ${path}: ${error.message}`);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        throw new Error(`Failed to export dataset to ${path}: ${error.message}`, { cause: error });
       }
     }
 }

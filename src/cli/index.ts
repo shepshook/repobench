@@ -26,9 +26,12 @@ program
       console.log('DEBUG: Creating exporter');
       const exporter = new JsonlDatasetExporter(repo);
       console.log('DEBUG: Exporting');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const count = await exporter.export(path);
       console.log(`Export successful: ${count} candidate(s) processed`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       console.error(`Error: ${error.message}`);
       process.exit(1);
     }
@@ -42,9 +45,12 @@ program
       initDatabase();
       const repo = new CandidateRepository();
       const importer = new JsonlDatasetImporter(repo);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const count = await importer.import(path);
       console.log(`Import successful: ${count} candidate(s) processed`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       console.error(`Error: ${error.message}`);
       process.exit(1);
     }

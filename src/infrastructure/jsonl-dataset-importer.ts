@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
-import crypto from 'node:crypto';
-import { IDatasetImporter, ICandidateRepository, CandidateExportSchema, CandidateSchema, Candidate } from '../core/contracts.js';
+import { IDatasetImporter, ICandidateRepository, CandidateExportSchema, Candidate } from '../core/contracts.js';
 
 export class JsonlDatasetImporter implements IDatasetImporter {
   constructor(private repo: ICandidateRepository) {}
@@ -17,7 +16,8 @@ export class JsonlDatasetImporter implements IDatasetImporter {
          const lines = content.split('\n').filter(line => line.trim());
     
          for (const line of lines) {
-         const parsed = JSON.parse(line);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const parsed = JSON.parse(line);
          const exportValidation = CandidateExportSchema.safeParse(parsed);
  
          if (!exportValidation.success) {
@@ -57,9 +57,10 @@ export class JsonlDatasetImporter implements IDatasetImporter {
 
 
        return importedCount;
+     // eslint-disable-next-line @typescript-eslint/no-explicit-any
      } catch (error: any) {
-       if (error instanceof SyntaxError) {
-         throw new Error(`Malformed JSONL file: ${error.message}`);
+        if (error instanceof SyntaxError) {
+          throw new Error(`Malformed JSONL file: ${error.message}`, { cause: error });
        }
        throw error;
      }

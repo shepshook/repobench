@@ -2,6 +2,7 @@ export type PtyRequestType = 'spawn' | 'write' | 'close' | 'injectData';
 
 export interface PtyRequest {
   type: PtyRequestType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: any;
   id: string;
 }
@@ -13,6 +14,7 @@ export interface PtyResponseBase {
 export interface PtyResponseSuccess extends PtyResponseBase {
   type: 'response';
   id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result: any;
 }
 

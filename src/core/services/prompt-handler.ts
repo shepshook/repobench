@@ -78,13 +78,14 @@ export class PromptHandler implements IPromptHandler {
 
     // For more complex responses, we check for dangerous characters
     // Includes shell metacharacters and control characters (0x00-0x1F, 0x7F)
+    // eslint-disable-next-line no-control-regex
     const dangerousChars = /[;&|`$><\n\r\x00-\x1F\x7F]/;
     if (dangerousChars.test(response)) {
       return false;
     }
 
     // If it's a simple alphanumeric response, it's generally safe
-    if (/^[a-zA-Z0-9\s,.\-]+$/.test(response)) {
+    if (/^[a-zA-Z0-9\s,.-]+$/.test(response)) {
       return true;
     }
 

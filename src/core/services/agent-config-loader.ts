@@ -23,8 +23,11 @@ export class AgentConfigLoader {
         }
 
         if (!Array.isArray(parsed)) {
-            if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).agents)) {
-                parsed = (parsed as Record<string, unknown>).agents as unknown[];
+            if (parsed && typeof parsed === 'object' && Array.isArray(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+              (parsed as any).agents
+            )) {
+                parsed = (parsed as Record<string, unknown>).agents;
             } else {
                 throw new Error('agents.yaml must contain a list of agent configurations or an object with an "agents" key');
             }

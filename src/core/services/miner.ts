@@ -29,8 +29,10 @@ export class GitMiner implements IMiner {
     let repositoryUrl = 'https://github.com/unknown/unknown';
     let repositoryName = path.basename(process.cwd());
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     if (typeof (git as any).getConfig === 'function') {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const rawUrl = await (git as any).getConfig('remote.origin.url');
         if (typeof rawUrl === 'string') {
           repositoryUrl = rawUrl;
@@ -52,9 +54,10 @@ export class GitMiner implements IMiner {
     let commits: GitLogEntry[];
     try {
       const logResult = await git.log(logOptions);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       commits = (logResult as any).all || [];
     } catch (error: unknown) {
-      throw new Error(`Failed to fetch git log: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to fetch git log: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
 
     

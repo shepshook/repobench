@@ -1,11 +1,27 @@
 import { ICandidateRepository, Candidate } from '../contracts.js';
-import { db, getRawDb } from '../../infrastructure/persistence/database.js';
+import { db } from '../../infrastructure/persistence/database.js';
+
+interface CandidateRow {
+  id: string;
+  hash: string;
+  message: string;
+  files: string;
+  status: string;
+  createdAt: string;
+  repositoryUrl: string;
+  repositoryName: string;
+  preFixHash?: string;
+  postFixHash?: string;
+  curationScore?: number;
+  curationReasoning?: string;
+  curationIsApproved?: number;
+  curationRawResponse?: string;
+}
 
 export class CandidateRepository implements ICandidateRepository {
   save(candidate: Candidate): void {
-    const rawDb = getRawDb();
-    const stmt = rawDb.prepare(`
-      INSERT INTO candidates (id, hash, message, files, status, created_at, repository_url, repository_name, pre_fix_hash, post_fix_hash, curation_score, curation_reasoning, curation_is_approved, curation_raw_response)
+    db.run(
+      `INSERT INTO candidates (id, hash, message, files, status, created_at, repository_url, repository_name, pre_fix_hash, post_fix_hash, curation_score, curation_reasoning, curation_is_approved, curation_raw_response)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         hash = excluded.hash,
@@ -20,10 +36,7 @@ export class CandidateRepository implements ICandidateRepository {
         curation_score = excluded.curation_score,
         curation_reasoning = excluded.curation_reasoning,
         curation_is_approved = excluded.curation_is_approved,
-        curation_raw_response = excluded.curation_raw_response
-    `);
-    
-    stmt.run(
+        curation_raw_response = excluded.curation_raw_response`,
       candidate.id,
       candidate.hash,
       candidate.message,
@@ -37,37 +50,35 @@ export class CandidateRepository implements ICandidateRepository {
       candidate.curation?.score,
       candidate.curation?.reasoning,
       candidate.curation ? (candidate.curation.isApproved ? 1 : 0) : null,
-      candidate.curation?.rawResponse
+      candidate.curation?.rawResponse,
     );
   }
 
   upsert(candidate: Candidate): void {
     this.save(candidate);
   }
-  
+
   exists(hash: string): boolean {
-    const stmt = db.prepare('SELECT 1 FROM candidates WHERE hash = ?');
-    const row = stmt.get(hash);
+    const row = db.prepare<{ id: string }>('SELECT 1 as id FROM candidates WHERE hash = ?').get(hash);
     return !!row;
   }
-  
+
   existsById(id: string): boolean {
-    const stmt = db.prepare('SELECT 1 FROM candidates WHERE id = ?');
-    const row = stmt.get(id);
+    const row = db.prepare<{ id: string }>('SELECT 1 as id FROM candidates WHERE id = ?').get(id);
     return !!row;
   }
-  
+
   getById(id: string): Candidate | undefined {
-    const stmt = db.prepare('SELECT * FROM candidates WHERE id = ?');
-    const row = stmt.get(id) as any;
+    const row = db.prepare<CandidateRow>('SELECT * FROM candidates WHERE id = ?').get(id);
     if (!row) return undefined;
-    
+
     const candidate: Candidate = {
       id: row.id,
       hash: row.hash,
       message: row.message,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       files: JSON.parse(row.files),
-      status: row.status,
+      status: row.status as Candidate['status'],
       created_at: new Date(row.createdAt),
       repositoryUrl: row.repositoryUrl,
       repositoryName: row.repositoryName,
@@ -75,10 +86,10 @@ export class CandidateRepository implements ICandidateRepository {
 
     if (row.preFixHash) candidate.preFixHash = row.preFixHash;
     if (row.postFixHash) candidate.postFixHash = row.postFixHash;
-    if (row.curationIsApproved !== null || row.curationScore !== null) {
+    if (row.curationIsApproved !== null && row.curationIsApproved !== undefined) {
       candidate.curation = {
-        score: row.curationScore,
-        reasoning: row.curationReasoning,
+        score: row.curationScore ?? 0,
+        reasoning: row.curationReasoning ?? '',
         isApproved: !!row.curationIsApproved,
         rawResponse: row.curationRawResponse,
       };
@@ -88,16 +99,16 @@ export class CandidateRepository implements ICandidateRepository {
   }
 
   getAll(): Candidate[] {
-    const stmt = db.prepare('SELECT * FROM candidates');
-    const rows = stmt.all() as any[];
-    
+    const rows = db.prepare<CandidateRow>('SELECT * FROM candidates').all();
+
     return rows.map(row => {
       const candidate: Candidate = {
         id: row.id,
         hash: row.hash,
         message: row.message,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         files: JSON.parse(row.files),
-        status: row.status,
+        status: row.status as Candidate['status'],
         created_at: new Date(row.createdAt),
         repositoryUrl: row.repositoryUrl,
         repositoryName: row.repositoryName,
@@ -105,10 +116,10 @@ export class CandidateRepository implements ICandidateRepository {
 
       if (row.preFixHash) candidate.preFixHash = row.preFixHash;
       if (row.postFixHash) candidate.postFixHash = row.postFixHash;
-      if (row.curationIsApproved !== null || row.curationScore !== null) {
+      if (row.curationIsApproved !== null && row.curationIsApproved !== undefined) {
         candidate.curation = {
-          score: row.curationScore,
-          reasoning: row.curationReasoning,
+          score: row.curationScore ?? 0,
+          reasoning: row.curationReasoning ?? '',
           isApproved: !!row.curationIsApproved,
           rawResponse: row.curationRawResponse,
         };
