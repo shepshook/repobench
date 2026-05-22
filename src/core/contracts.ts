@@ -512,7 +512,7 @@ export const FailureArtifactSchema = z.object({
   runId: z.string().uuid(),
   candidateId: z.string().uuid(),
   agentId: z.string(),
-  regressionStatus: z.enum(['clean', 'regressed', 'error']),
+  regressionStatus: z.enum(['regressed', 'error']),
   diffPatchPath: z.string(),
   sessionLogPath: z.string(),
   groundTruthPath: z.string(),

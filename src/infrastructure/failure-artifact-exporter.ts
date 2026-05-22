@@ -4,10 +4,11 @@ import type {
   IRunResultRepository,
   ICandidateRepository,
   ISandbox,
+  IFailureArtifactExporter,
   FailureArtifact,
 } from '../core/contracts.js';
 
-export class FailureArtifactExporter {
+export class FailureArtifactExporter implements IFailureArtifactExporter {
   constructor(
     private readonly runResultRepo: IRunResultRepository,
     private readonly candidateRepo: ICandidateRepository,

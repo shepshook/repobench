@@ -7,6 +7,7 @@ import type {
   IRunResultRepository,
   ICandidateRepository,
   ISandbox,
+  IFailureArtifactExporter,
   RunResult,
   Candidate,
   FailureArtifact,
@@ -385,6 +386,44 @@ describe('FailureArtifactExporter', () => {
       expect(artifact.diffPatchPath).toContain(customDir);
       const diffExists = await fs.stat(artifact.diffPatchPath).then(() => true).catch(() => false);
       expect(diffExists).toBe(true);
+    });
+  });
+
+  describe('interface contract', () => {
+    it('should satisfy IFailureArtifactExporter type contract', async () => {
+      const run = createMockRunResult();
+      runResultRepo = createMockRunResultRepo([run]);
+      candidateRepo = createMockCandidateRepo();
+      sandbox = createMockSandbox();
+
+      const { FailureArtifactExporter } = await import('../../src/infrastructure/failure-artifact-exporter');
+      const exporter: IFailureArtifactExporter = new FailureArtifactExporter(
+        runResultRepo, candidateRepo, sandbox,
+      );
+      expect(exporter).toBeDefined();
+      expect(typeof exporter.exportForRun).toBe('function');
+      expect(typeof exporter.exportAllFailures).toBe('function');
+    });
+
+    it('should expose exportForRun and exportAllFailures with correct signatures', async () => {
+      runResultRepo = createMockRunResultRepo();
+      candidateRepo = createMockCandidateRepo();
+      sandbox = createMockSandbox();
+
+      const { FailureArtifactExporter } = await import('../../src/infrastructure/failure-artifact-exporter');
+      const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo, sandbox);
+
+      const forRunDescriptor = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(exporter), 'exportForRun',
+      );
+      const allDescriptor = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(exporter), 'exportAllFailures',
+      );
+
+      expect(forRunDescriptor?.value).toBeInstanceOf(Function);
+      expect(forRunDescriptor?.value.length).toBe(2);
+      expect(allDescriptor?.value).toBeInstanceOf(Function);
+      expect(allDescriptor?.value.length).toBe(1);
     });
   });
 });

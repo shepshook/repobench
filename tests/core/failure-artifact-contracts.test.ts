@@ -30,7 +30,7 @@ describe('FailureArtifactSchema', () => {
   });
 
   it('should accept all valid regressionStatus values', () => {
-    for (const status of ['clean', 'regressed', 'error'] as const) {
+    for (const status of ['regressed', 'error'] as const) {
       const artifact = {
         runId: validUuid(),
         candidateId: validUuid(),
@@ -57,6 +57,23 @@ describe('FailureArtifactSchema', () => {
       exportedAt: new Date(),
     };
     // @ts-expect-error - testing runtime validation
+    expect(() => FailureArtifactSchema.parse(artifact)).toThrow();
+  });
+
+  it('should reject clean regressionStatus after schema removal', () => {
+    // Regression test for Task 5.FIX1.1: 'clean' was removed from the enum
+    // because FailureArtifact is only produced for failed runs.
+    const artifact = {
+      runId: validUuid(),
+      candidateId: validUuid(),
+      agentId: 'agent-1',
+      regressionStatus: 'clean',
+      diffPatchPath: '/exports/diff.patch',
+      sessionLogPath: '/exports/session.log',
+      groundTruthPath: '/exports/ground-truth.diff',
+      exportedAt: new Date(),
+    };
+    // @ts-expect-error - 'clean' is no longer a valid regressionStatus
     expect(() => FailureArtifactSchema.parse(artifact)).toThrow();
   });
 
