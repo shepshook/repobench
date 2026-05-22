@@ -45,6 +45,38 @@ export async function main() {
   await program.parseAsync(process.argv);
 }
 
+export function registerMineCommand(program: Command): void {
+  program
+    .command('mine')
+    .description('Mine bug-fix candidates from git history')
+    .option('-c, --config <path>', 'path to config file', 'repobench.yaml')
+    .option('-r, --repo <path>', 'path to git repository')
+    .action(async (options: { config?: string; repo?: string }) => {
+      try {
+        const originalCwd = process.cwd();
+
+        if (options.repo) {
+          process.chdir(options.repo);
+        }
+
+        const config = await loadConfig(options.config ?? 'repobench.yaml');
+        initDatabase();
+        const repository = new CandidateRepository();
+        const miner = new GitMiner(repository);
+        const candidates = await miner.mineCommits(config);
+
+        console.log(`Found ${candidates.length} candidates.`);
+
+        if (options.repo) {
+          process.chdir(originalCwd);
+        }
+      } catch (error: unknown) {
+        console.error(`Error during mining: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+      }
+    });
+}
+
 if (process.argv[1]?.endsWith('mine.ts') || process.argv[1]?.endsWith('mine.js')) {
   void main();
 }

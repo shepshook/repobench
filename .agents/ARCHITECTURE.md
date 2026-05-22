@@ -90,17 +90,60 @@ The project uses **File-Based Memory** to manage context overflow:
 * **Interactive Sessions (Agents)**: Use `node-pty` via `PtySession.create()` for AI agent sessions that require TTY interaction. The worker-based architecture (`pty-worker.cjs`) provides terminal emulation (`VirtualScreen`), ECMA-48 compliant ANSI parsing (`VteParser`), and stateful shell interaction. Do not use `child_process.exec` or raw Docker exec for agents requiring TTY — they need the full PTY infrastructure for bidirectional conversational I/O.
 * **Scoring**: The E-Score is the primary metric. Any change to the scoring logic must be reflected in `Feature 4.3` of the Roadmap.
 
-## 7. Testing Principles
+## 7. System Integration & Pre-Flight Verification
+
+This section defines what "integration complete" means at each review level. Reviewers MUST use these criteria to evaluate readiness — not just spec compliance.
+
+### 7.1. Integration Contracts Between Modules
+
+Each module must be reachable and consumable by its upstream dependents:
+
+| Module | Produces | Consumed By | Integration Check |
+|--------|----------|-------------|-------------------|
+| **Miner** | Candidates (SQLite) | Evaluator, Session, Judge | `repobench mine` must be invocable; candidates must persist to `repobench.db`. |
+| **Sandbox** | Docker containers / simulation | Session, Judge | `SandboxConfig` must support agent tool installation; container must have repo checked out. |
+| **Session** | Agent interaction logs | Judge | Agent adapters must be registered in CLI; startup command must succeed inside container. |
+| **Judge** | Run results (SQLite) | Report | `repobench run-all` and `repobench evaluate` must complete without crashing. |
+| **Report** | Leaderboard table | User | `repobench report` must render a table; `export-failures` must produce artifact files. |
+
+### 7.2. CLI Command Inventory
+
+All user-facing commands must be registered in `src/cli/index.ts` and invocable:
+- `repobench mine` — Must exist. Accepts `-r <path>` and `-c <config>`.
+- `repobench export <path>` / `repobench import <path>` — Dataset portability.
+- `repobench evaluate` — Run evaluation pipeline.
+- `repobench run-all` — Batch agent evaluation.
+- `repobench report` — Leaderboard view.
+- `repobench export-failures` — Failure artifact export.
+
+### 7.3. Required Configuration Files
+
+For any target repository, the following must exist or have fallbacks:
+- `repobench.yaml` — Mining keywords, sandbox config (build/test commands, base image, agent setup commands).
+
+### 7.4. Pre-Flight Checklist (Final MVP Review)
+
+Before an epic or the full MVP can be marked `[x]`, verify:
+1. **CLI completeness**: All commands listed in §7.2 are registered in `src/cli/index.ts` and display via `--help`.
+2. **Config existence**: `repobench.yaml` exists for the target repo (or a template/fallback is documented).
+3. **Tool installation**: Agent dependencies (`agentSetupCommands`) can be installed inside the sandbox container.
+4. **End-to-end flow**: The pipeline `mine → evaluate → run-all → report → export-failures` can be invoked without crashes (individual runs may fail for valid reasons, but the system must not crash).
+5. **Error surface**: All errors produce actionable messages (no silent `catch {}` blocks, no unhelpful stack traces to end users).
+6. **Regression**: `npm run typecheck && npm run lint && npm test` passes.
+
+Reviewers MUST execute or simulate each step, not just read code. If any check fails, the epic/MVP is NOT ready and the reviewer must create remediation tasks following the FIXN pattern.
+
+## 8. Testing Principles
 To ensure deterministic benchmarks and reliable CI, all tests must adhere to these principles:
 
-### 7.1. Test Execution
+### 8.1. Test Execution
 * **Strict Isolation**: Tests must not rely on or mutate shared static state. Any static state (e.g., simulation caches) must be explicitly reset in `beforeEach`.
 * **DI-Driven Mocking**: Use Dependency Injection to provide mocks. Prefer injecting mock implementations of interfaces (e.g., `IDocker`) over mocking global modules.
 * **State-Aware Expectations**: Distinguish between instance-level state (e.g., performance stats) and process-wide state (e.g., simulated volumes) in assertions.
 * **Explicit Environment**: Use temporary directories for all file-based tests. Never rely on the existence of files in the workspace.
 * **No "Hope-based" Testing**: Mocking should be precise. Avoid broad mocks that return generic success; use specific setup helpers to define expected behaviors.
 
-### 7.2. Organization & Maintenance
+### 8.2. Organization & Maintenance
 * **Functional Grouping**: Do not create a new test file for every bug fix (e.g., avoid `feature-fix1.test.ts`). Group tests by functional domain (e.g., `sandbox-core.test.ts`, `volume-manager-stats.test.ts`).
 * **Fixture-Based Setup**: Use centralized fixtures (e.g., `tests/infrastructure/fixtures.ts`) to reduce boilerplate and ensure consistent setup across the suite.
 * **Regression Integration**: When fixing a bug, add the regression test to the existing relevant feature suite rather than creating isolated "fix" files.

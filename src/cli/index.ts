@@ -6,6 +6,7 @@ import { registerEvaluateCommand } from './evaluate.js';
 import { registerRunAllCommand } from './run-all.js';
 import { registerReportCommand } from './report.js';
 import { registerExportFailuresCommand } from './export-failures.js';
+import { registerMineCommand } from './mine.js';
 console.log('DEBUG: CLI starting');
 
 import { Command } from 'commander';
@@ -59,6 +60,7 @@ program
     }
   });
 
+registerMineCommand(program);
 registerEvaluateCommand(program);
 registerRunAllCommand(program);
 registerReportCommand(program);
@@ -67,9 +69,11 @@ registerExportFailuresCommand(program);
 import { AgentAdapterFactory } from '../core/services/agent-adapter-factory';
 import { ClaudeCodeAdapter } from '../infrastructure/agents/claude-code-adapter';
 import { AiderAdapter } from '../infrastructure/agents/aider-adapter';
+import { OpencodeAdapter } from '../infrastructure/agents/opencode-adapter';
 
 AgentAdapterFactory.registerAdapter('claude-code', ClaudeCodeAdapter);
 AgentAdapterFactory.registerAdapter('aider', AiderAdapter);
+AgentAdapterFactory.registerAdapter('opencode', OpencodeAdapter);
 
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);

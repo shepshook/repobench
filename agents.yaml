@@ -1,0 +1,14 @@
+agents:
+  - agentId: opencode
+    model: deepseek-v4-flash
+    temperature: 0.7
+    systemPrompt: "Fix the bug or implement the required change in the repository. You have full access to read and write files."
+    max_tokens: 4096
+    cliArgs: []
+    completionSignatures:
+      - pattern: "(Task|Request) (complete|finished|done)"
+        name: done
+      - pattern: "All tests pass"
+        name: tests-pass
+      - pattern: "The (bug|issue|problem) has been (fixed|resolved)"
+        name: fix-confirmed

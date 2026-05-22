@@ -118,23 +118,40 @@ while ($Iteration -le $MaxIterations) {
             # STATE C: FEATURE COMPLETION / INTEGRATION REVIEW
             Write-Host "    🏁 State: All tasks for Feature ${FeatureID} are [x]. Reviewing Feature Integration..." -ForegroundColor Green
             $closerMsg = 
-            opencode run -m ${HighTierModel} "`"You are the CLOSER. All tasks for Feature ${FeatureID} are checked off, but the Feature line is open. Run full typecheck and test suite. Audit the entire feature scope for architectural drift. Review the implementation compliance against the spec and evaluate the feature's readiness. If PASS: Update the feature line to '* [x] Feature ${FeatureID}' in .agents/ROADMAP.md. If FAIL: Decompose the findings into atomic tasks if needed and append them to this feature: '    - [ ] [Task ${FeatureID}.FIXN: Audit <Summary> Round X](.agents/spec/task-${FeatureID}.fixn.md)' and write your clear agent-ready instructions to the according spec files. EXIT.`""
+            opencode run -m ${HighTierModel} "`"You are the CLOSER. All tasks for Feature ${FeatureID} are checked off, but the Feature line is open. Run full typecheck and test suite. Audit the entire feature scope for architectural drift AND cross-feature integration boundaries (check ARCHITECTURE.md §7.1 for what this feature produces and who consumes it — verify the contract is actually consumable). Review the implementation compliance against the spec and evaluate the feature's readiness. If PASS: Update the feature line to '* [x] Feature ${FeatureID}' in .agents/ROADMAP.md. If FAIL: Decompose the findings into atomic tasks if needed and append them to this feature: '    - [ ] [Task ${FeatureID}.FIXN: Audit <Summary> Round X](.agents/spec/task-${FeatureID}.fixn.md)' and write your clear agent-ready instructions to the according spec files. EXIT.`""
             continue
         } else {
             # --- STEP 3: EPIC COMPLETION & REVIEW ---
             # All features for this epic are marked [x], proceed with epic-level review
             Write-Host "🏆 State: All features for Epic ${EpicID} are complete. Launching Epic-Level Review..." -ForegroundColor Blue
-            opencode run -m ${ProTierModel} "`"You are the PRINCIPAL ARCHITECT. All features for Epic ${EpicID} are marked [x], but the Epic checkbox is open. Evaluate system-wide stability, structural integrity across modules, cross-feature boundary leaks, and total regression logs. Evaluate the epic's implementation compliance with the documentation and its readiness. If PASS: Update the epic line to '## [x] Epic ${EpicID}' in .agents/ROADMAP.md and run 'git add . && git commit -m "chore: release and close Epic ${EpicID}"'. If FAIL: Append a new alignment feature block to the bottom of this Epic: '* [ ] Feature ${EpicID}.FIXN: Global Epic Integration & Alignment Round N'. Decompose your findings into atomic tasks if needed and append them to this feature: '    - [ ] [Task ${EpicID}.FIXN.I: Epic Audit <Summary> Round N](.agents/spec/task-${EpicID}.fixn.i.md)' and write your clear agent-ready instructions to the according spec files. EXIT.`""
+            opencode run -m ${ProTierModel} "`"You are the PRINCIPAL ARCHITECT. All features for Epic ${EpicID} are marked [x], but the Epic checkbox is open. Evaluate system-wide stability, structural integrity across modules, cross-feature boundary leaks, and total regression logs. Evaluate the epic's implementation compliance with the documentation and its readiness.
+
+**Integration Checklist (ARCHITECTURE.md §7):**
+1. Check that all CLI commands belonging to this epic are registered in src/cli/index.ts (run node src/cli/index.js --help to verify).
+2. Check that required configuration files (repobench.yaml) exist for any module in this epic.
+3. Verify that the epic's outputs are consumable by downstream epics (e.g., Miner produces candidates → Evaluator reads them; Sandbox provides shell → Session uses it).
+4. Verify that no required runtime dependency is missing (e.g., Docker for sandbox, npm packages for agents).
+5. Run the epic's relevant CLI command(s) at least with --help to confirm they parse correctly.
+
+If PASS: Update the epic line to '## [x] Epic ${EpicID}' in .agents/ROADMAP.md and run 'git add . && git commit -m "chore: release and close Epic ${EpicID}"'. If FAIL: Append a new alignment feature block to the bottom of this Epic: '* [ ] Feature ${EpicID}.FIXN: Global Epic Integration & Alignment Round N'. Decompose your findings into atomic tasks if needed and append them to this feature: '    - [ ] [Task ${EpicID}.FIXN.I: Epic Audit <Summary> Round N](.agents/spec/task-${EpicID}.fixn.i.md)' and write your clear agent-ready instructions to the according spec files. EXIT.`""
             continue
         }
 } else {
     # FINAL MVP REVIEW PHASE
     Write-Host "🔍 All Epics checked. Launching Final MVP Review..." -ForegroundColor Blue
-    opencode run -m ${HighTierModel} "You are the FINAL MVP AUDITOR. Review the entire implementation against @.agents\ROADMAP.md and @.agents\ARCHITECTURE.md. Evaluate if the system is complete, stable, and production-ready.
+    opencode run -m ${ProTierModel} "You are the FINAL MVP AUDITOR. Review the entire implementation against @.agents\ROADMAP.md and @.agents\ARCHITECTURE.md. Evaluate if the system is complete, stable, and production-ready.
+
+    Apply the Pre-Flight Checklist from ARCHITECTURE.md §7.4:
+    1. CLI completeness: Run 'node src/cli/index.js --help'. Every command (mine, export, import, evaluate, run-all, report, export-failures) must appear.
+    2. Config existence: Check that repobench.yaml exists with mining keywords, build/test commands, and base image.
+    3. Tool installation: Verify SandboxConfig supports agentSetupCommands and they execute inside the container (check src/infrastructure/sandbox.ts and src/core/config.ts).
+    4. End-to-end flow: Trace the pipeline manually — can a user run mine, then evaluate, then run-all, then report, then export-failures? Identify any missing wiring (unregistered commands, unconnected modules, missing imports).
+    5. Error surface: Search for empty 'catch { }' blocks across src/. Every catch must log or act.
+    6. Regression: Typecheck, lint, and test suite must pass.
 
     Decide:
-    (A) PASS: System is complete. Add '## [x] MVP FINALIZED' to the bottom of .agents\ROADMAP.md and EXIT.
-    (B) FAIL: Issues found. For each issue:
+    (A) PASS: All 6 checks pass. Add '## [x] MVP FINALIZED' to the bottom of .agents\ROADMAP.md and EXIT.
+    (B) FAIL: One or more checks failed. For each issue:
         1. Identify the relevant Epic number (e.g., 3).
         2. Uncheck the Epic line (change '## [x] Epic X' to '## [ ] Epic X').
         3. Add a new Feature '* [ ] Feature <EpicNumber>.FIXN: <Summary>' under that Epic.

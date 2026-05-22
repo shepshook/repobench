@@ -4,7 +4,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [x] Epic 1: Git-Based Benchmark Generation (The Miner)
+## [ ] Epic 1: Git-Based Benchmark Generation (The Miner)
 **Description:** Automate the discovery of high-signal 'ground truth' benchmarks from a private repository.
 **Metrics:** Precision (>80% actual bug fixes), Candidate Density (High-quality candidates per 1k commits).
 **Success Criteria:**
@@ -74,10 +74,16 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.6.FIX7: Fix DatasetImporter Deduplication](.agents/spec/task-1.6.fix7.md)
     - [x] [Task 1.6.FIX8: Fix Database Initialization in Integration Tests](.agents/spec/task-1.6.fix8.md)
   * **DoD:** Curated datasets can be exported/imported via a single file retaining all metadata.
+* **[ ] Feature 1.7: CLI Integration & Config Readiness**
+  * **Spec:** Register the standalone `mine` CLI command into the main `repobench` CLI and create a `repobench.yaml` configuration file for target repositories.
+  * **Tasks:**
+    - [x] [Task 1.7.1: Register mine command in main CLI](.agents/spec/task-1.7.1.md)
+    - [ ] [Task 1.7.2: Create repobench.yaml for target repository](.agents/spec/task-1.7.2.md)
+  * **DoD:** `repobench mine --help` works; `repobench mine -r <path>` discovers candidates; target repo has a valid `repobench.yaml` with mining keywords, build/test commands, and base image.
 
 ---
 
-## [x] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
+## [ ] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
 **Description:** Create a 'Clean Room' environment for agent execution using Docker.
 **Metrics:** Init Latency (<30s for standard projects), Setup Reliability (% of successful builds).
 **Success Criteria:**
@@ -125,6 +131,12 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 2.4.FIX5: Fix Caching Stats & Volume Mounting](.agents/spec/task-2.4.fix5.md)
     - [x] [Task 2.4.FIX6: Investigate and Fix Test Suite Failures](.agents/spec/task-2.4.fix6.md)
   * **DoD:** Subsequent initialization times are significantly reduced; cache does not grow unboundedly; dependencies are correctly invalidated.
+* **[ ] Feature 2.5: Agent Tool Dependency Installation**
+  * **Spec:** Extend `SandboxConfig` and the sandbox init flow to install agent-specific dependencies (e.g., `npm install -g opencode`) inside the container before the agent session starts.
+  * **Tasks:**
+    - [ ] [Task 2.5.1: Add agent dependency setup to SandboxConfig](.agents/spec/task-2.5.1.md)
+    - [ ] [Task 2.5.2: Implement agent dependency installation in sandbox init](.agents/spec/task-2.5.2.md)
+  * **DoD:** `SandboxConfig.agentSetupCommands` runs inside the container after `buildCommand`; simulation mode logs setup commands; all sandbox tests pass.
 
 ---
 
@@ -271,7 +283,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [x] Epic 5: Comparative Analysis & Reporting (The Leaderboard)
+## [ ] Epic 5: Comparative Analysis & Reporting (The Leaderboard)
 **Description:** Transform raw run data into a decision tool for tool selection.
 **Metrics:** Throughput (Candidate-agent pairs/hr), Actionability (Time to identify best tool).
 **Success Criteria:**
@@ -331,3 +343,9 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.FIX2.2: Epic Audit — Remediate Silent Error Swallowing in FailureArtifactExporter Round 2](.agents/spec/task-5.fix2.2.md)
     - [x] [Task 5.FIX2.3: Epic Audit — Fix SessionOrchestrator Concrete Import Boundary Leak Round 2](.agents/spec/task-5.fix2.3.md)
   * **DoD:** `RunResultRepository` receives `IDatabase` via constructor (no module-level global import); all three `catch` blocks in `failure-artifact-exporter.ts` log the original error before writing fallback content; `session-orchestrator.ts` depends only on `ISandbox` and `IPtySession` from `contracts.ts`; typecheck + lint + full test suite pass.
+* **[ ] Feature 5.5: End-to-End Pipeline Validation**
+  * **Spec:** Execute the full RepoBench pipeline (mine → sandbox → agent session → judge → report) against the RepoBench repository itself, document runtime issues, and implement fixes.
+  * **Tasks:**
+    - [ ] [Task 5.5.1: Execute full pipeline against RepoBench repository](.agents/spec/task-5.5.1.md)
+    - [ ] [Task 5.5.2: Document runtime issues and implement fixes](.agents/spec/task-5.5.2.md)
+  * **DoD:** `repobench mine`, `run-all`, `report`, and `export-failures` all complete without crashes; runtime issues are documented and fixed or tracked.
