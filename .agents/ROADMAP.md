@@ -81,7 +81,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.7.2: Create repobench.yaml for target repository](.agents/spec/task-1.7.2.md)
     - [x] [Task 1.7.FIX1: Populate preFixHash/postFixHash in GitMiner](.agents/spec/task-1.7.fix1.md)
     - [x] [Task 1.7.FIX2: Wire repobench.yaml sandbox config into evaluate/run-all CLI](.agents/spec/task-1.7.fix2.md)
-    - [ ] [Task 1.7.FIX3: Fix candidate status flow — accept pending in evaluate/run-all](.agents/spec/task-1.7.fix3.md)
+    - [x] [Task 1.7.FIX3: Fix candidate status flow — accept pending in evaluate/run-all](.agents/spec/task-1.7.fix3.md)
     - [ ] [Task 1.7.FIX4: Fix lint regression — remove unused _writtenCommands parameter](.agents/spec/task-1.7.fix4.md)
   * **DoD:** `repobench mine --help` works; `repobench mine -r <path>` discovers candidates; target repo has a valid `repobench.yaml` with mining keywords, build/test commands, and base image.
 

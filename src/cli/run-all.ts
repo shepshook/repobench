@@ -63,7 +63,7 @@ export function registerRunAllCommand(program: Command): void {
           const candidates = config.candidateIds 
 
             ? config.candidateIds.map(id => candidateRepo.getById(id)).filter((c): c is Candidate => !!c)
-            : candidateRepo.getAll().filter(c => c.status === 'validated');
+            : candidateRepo.getAll().filter(c => c.status === 'validated' || c.status === 'pending');
 
           console.log('\nPlanned run matrix:');
           console.log('-------------------');

@@ -40,7 +40,7 @@ export function registerEvaluateCommand(program: Command): void {
         const repo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);
         const allCandidates = repo.getAll();
-        const candidates = allCandidates.filter(c => c.status === 'validated');
+        const candidates = allCandidates.filter(c => c.status === 'validated' || c.status === 'pending');
 
         if (candidates.length === 0) {
           console.log('No validated candidates found to evaluate.');

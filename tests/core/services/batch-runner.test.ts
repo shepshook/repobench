@@ -140,6 +140,52 @@ describe('BatchRunnerService', () => {
     expect(tasks.length).toBe(6);
   });
 
+  it('should include pending candidates when candidateIds is not provided', async () => {
+    const pendingCandidates: Candidate[] = [
+      { id: 'cand-p1', hash: 'hp1', message: 'pending fix 1', files: [], status: 'pending', created_at: new Date(), repositoryUrl: 'http://git.com', repositoryName: 'repo' } as any,
+      { id: 'cand-p2', hash: 'hp2', message: 'pending fix 2', files: [], status: 'pending', created_at: new Date(), repositoryUrl: 'http://git.com', repositoryName: 'repo' } as any,
+    ];
+    mockCandidateRepository.getAll.mockReturnValue(pendingCandidates);
+
+    const configWithoutCandidates: BatchConfig = {
+      ...mockConfig,
+      candidateIds: undefined,
+    };
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => ({ id: t.id, status: 'fulfilled', value: await t.fn() })));
+    });
+
+    await service.runAll(configWithoutCandidates);
+
+    expect(mockCandidateRepository.getAll).toHaveBeenCalled();
+    const tasks = mockWorkerPool.exec.mock.calls[0][0];
+    expect(tasks.length).toBe(4);
+  });
+
+  it('should include both pending and validated candidates when candidateIds is not provided', async () => {
+    const mixedCandidates: Candidate[] = [
+      { id: 'cand-v1', hash: 'hv1', message: 'validated fix', files: [], status: 'validated', created_at: new Date(), repositoryUrl: 'http://git.com', repositoryName: 'repo' } as any,
+      { id: 'cand-p1', hash: 'hp1', message: 'pending fix', files: [], status: 'pending', created_at: new Date(), repositoryUrl: 'http://git.com', repositoryName: 'repo' } as any,
+    ];
+    mockCandidateRepository.getAll.mockReturnValue(mixedCandidates);
+
+    const configWithoutCandidates: BatchConfig = {
+      ...mockConfig,
+      candidateIds: undefined,
+    };
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => ({ id: t.id, status: 'fulfilled', value: await t.fn() })));
+    });
+
+    await service.runAll(configWithoutCandidates);
+
+    expect(mockCandidateRepository.getAll).toHaveBeenCalled();
+    const tasks = mockWorkerPool.exec.mock.calls[0][0];
+    expect(tasks.length).toBe(4);
+  });
+
   it('should handle partial failures and aggregate them in the summary', async () => {
     mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
       return tasks.map((t: any, index: number) => {

@@ -72,7 +72,7 @@ export class BatchRunnerService implements IBatchRunner {
         .map(id => this.candidateRepository.getById(id))
         .filter((c): c is Candidate => !!c);
     } else {
-      candidates = this.candidateRepository.getAll().filter(c => c.status === 'validated');
+      candidates = this.candidateRepository.getAll().filter(c => c.status === 'validated' || c.status === 'pending');
     }
 
     if (candidates.length === 0) {

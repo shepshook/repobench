@@ -70,6 +70,24 @@ describe('CLI: repobench evaluate', () => {
     expect(consoleLogSpy).toHaveBeenCalledWith('No validated candidates found to evaluate.');
   });
 
+  it('should process pending candidates instead of skipping them', async () => {
+    const mockCandidates = [
+      { id: 'cand-p1', status: 'pending' },
+    ];
+    (CandidateRepository.prototype.getAll as any).mockReturnValue(mockCandidates);
+
+    const mockResults = [
+      { candidateId: 'cand-p1', result: { regressionStatus: 'clean', message: 'All tests passed' } },
+    ];
+    (JudgeService.prototype.runEvaluationPipeline as any).mockResolvedValue(mockResults);
+    (Sandbox.prototype.init as any).mockResolvedValue(undefined);
+    (Sandbox.prototype.destroy as any).mockResolvedValue(undefined);
+
+    await program.parseAsync(['node', 'repobench', 'evaluate']);
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('Evaluation complete: 1 candidate(s) processed.');
+  });
+
   it('should report proper error messages when judge service fails', async () => {
     (CandidateRepository.prototype.getAll as any).mockReturnValue([{ id: 'cand-1', status: 'validated' }]);
     (JudgeService.prototype.runEvaluationPipeline as any).mockRejectedValue(new Error('Sandbox failure'));
