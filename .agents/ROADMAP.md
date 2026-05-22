@@ -8,10 +8,10 @@ This document serves as the central source of truth for the project's strategic 
 **Description:** Automate the discovery of high-signal 'ground truth' benchmarks from a private repository.
 **Metrics:** Precision (>80% actual bug fixes), Candidate Density (High-quality candidates per 1k commits).
 **Success Criteria:**
-- [ ] Implement 'Pure Fix' heuristics.
-- [ ] Filter out noise (refactors, docs).
-- [ ] Support `repobench.yaml` for keywords/exclusions.
-- [ ] Export candidates to structured format.
+- [x] Implement 'Pure Fix' heuristics.
+- [x] Filter out noise (refactors, docs).
+- [x] Support `repobench.yaml` for keywords/exclusions.
+- [x] Export candidates to structured format.
 
 ### Features
 * **[x] Feature 1.1: Configurable Mining Heuristics**
@@ -74,7 +74,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.6.FIX7: Fix DatasetImporter Deduplication](.agents/spec/task-1.6.fix7.md)
     - [x] [Task 1.6.FIX8: Fix Database Initialization in Integration Tests](.agents/spec/task-1.6.fix8.md)
   * **DoD:** Curated datasets can be exported/imported via a single file retaining all metadata.
-* **[ ] Feature 1.7: CLI Integration & Config Readiness**
+* **[x] Feature 1.7: CLI Integration & Config Readiness**
   * **Spec:** Register the standalone `mine` CLI command into the main `repobench` CLI and create a `repobench.yaml` configuration file for target repositories.
   * **Tasks:**
     - [x] [Task 1.7.1: Register mine command in main CLI](.agents/spec/task-1.7.1.md)
@@ -84,6 +84,13 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.7.FIX3: Fix candidate status flow — accept pending in evaluate/run-all](.agents/spec/task-1.7.fix3.md)
     - [x] [Task 1.7.FIX4: Fix lint regression — remove unused _writtenCommands parameter](.agents/spec/task-1.7.fix4.md)
   * **DoD:** `repobench mine --help` works; `repobench mine -r <path>` discovers candidates; target repo has a valid `repobench.yaml` with mining keywords, build/test commands, and base image.
+* **[ ] Feature 1.FIX1: Global Epic Integration & Alignment Round 1**
+  * **Spec:** Mark unchecked success criteria; remediate silent catch blocks in miner, evaluate CLI, and JSONL exporter per ARCHITECTURE.md §4.3.
+  * **Tasks:**
+    - [x] [Task 1.FIX1.1: Mark Epic 1 Success Criteria as Completed](.agents/spec/task-1.fix1.1.md)
+    - [ ] [Task 1.FIX1.2: Add Error Logging to Silent Catch Blocks in Epic 1 Services](.agents/spec/task-1.fix1.2.md)
+    - [ ] [Task 1.FIX1.3: Log Skipped Candidates in JSONL Exporter](.agents/spec/task-1.fix1.3.md)
+  * **DoD:** All 4 success criteria marked `[x]`; no empty catch blocks remain in Epic 1 source files; skipped export candidates produce a warning; typecheck + lint + full test suite pass.
 
 ---
 

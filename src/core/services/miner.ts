@@ -38,8 +38,8 @@ export class GitMiner implements IMiner {
           repositoryUrl = rawUrl;
           repositoryName = rawUrl.split('/').pop()?.replace('.git', '') || repositoryName;
         }
-      } catch {
-        // Fallback to defaults
+      } catch (error: unknown) {
+        console.warn(`Miner: Could not determine remote origin URL (${error instanceof Error ? error.message : String(error)}), using defaults`);
       }
     }
     
@@ -111,7 +111,8 @@ export class GitMiner implements IMiner {
         try {
           const parentResult = await git.raw(['rev-parse', `${commit.hash}^`]);
           preFixHash = parentResult.trim();
-        } catch {
+        } catch (error: unknown) {
+          console.warn(`Miner: Could not resolve parent commit for ${commit.hash} (${error instanceof Error ? error.message : String(error)}), preFixHash will be undefined`);
           preFixHash = undefined;
         }
 

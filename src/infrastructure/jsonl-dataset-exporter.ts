@@ -34,7 +34,7 @@ export class JsonlDatasetExporter implements IDatasetExporter {
            if (validation.success) {
              lines.push(JSON.stringify(validation.data));
            } else {
-             // Silently ignore candidates that do not meet the export schema requirements
+             console.warn(`Skipping candidate ${c.id} during export: ${validation.error.message}`);
            }
          }
      

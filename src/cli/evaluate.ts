@@ -33,8 +33,8 @@ export function registerEvaluateCommand(program: Command): void {
         let loadedConfig: RepoBenchConfig | undefined;
         try {
           loadedConfig = await loadConfig('repobench.yaml');
-        } catch {
-          console.warn('Warning: Could not load repobench.yaml, using defaults for sandbox config');
+        } catch (error: unknown) {
+          console.warn(`Warning: Could not load repobench.yaml (${error instanceof Error ? error.message : String(error)}), using defaults for sandbox config`);
         }
 
         const repo = new CandidateRepository();
