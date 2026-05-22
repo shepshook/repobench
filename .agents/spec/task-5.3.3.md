@@ -34,3 +34,6 @@
 - `TerminalReportRenderer` produces a correctly formatted table string.
 - All unit tests pass (`npx vitest run tests/core/services/report-renderer.test.ts`).
 - `npm run typecheck && npm run lint` pass.
+
+## Audit Feedback Round 1
+- **MISSING REQUIREMENT**: The requirement to "Use `console.table` as fallback if terminal width detection fails" is not implemented in `src/core/services/report-renderer.ts`.

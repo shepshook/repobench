@@ -471,6 +471,10 @@ export interface LeaderboardEntry {
   avgLatency: number;
 }
 
+export interface IReportRenderer {
+  render(entries: LeaderboardEntry[]): string;
+}
+
 export interface ILeaderboardReporter {
   getLeaderboard(options: LeaderboardOptions): Promise<LeaderboardEntry[]>;
 }
