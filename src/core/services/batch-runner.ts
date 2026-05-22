@@ -87,6 +87,11 @@ export class BatchRunnerService implements IBatchRunner {
     // 2. Build Cartesian product (candidate x agent)
     const tasks: WorkerTask<AgentPairResult>[] = [];
     for (const agentId of config.agentIds) {
+      const agentConfig = this.agentConfigs.find(a => a.agentId === agentId);
+      if (!agentConfig) {
+        throw new Error(`Agent configuration not found for ${agentId}`);
+      }
+
       for (const candidate of candidates) {
         const taskId = `${agentId}:${candidate.id}`;
         tasks.push({
@@ -101,12 +106,6 @@ export class BatchRunnerService implements IBatchRunner {
                const orchestrator = this.sessionOrchestratorFactory(agentId);
                const judge = this.judgeServiceFactory(agentId);
 
-                const agentConfig = this.agentConfigs.find(a => a.agentId === agentId);
-                if (!agentConfig) {
-                  throw new Error(`Agent configuration not found for ${agentId}`);
-                }
-
-               
                const { cost } = await orchestrator.executeSession(agentConfig, sandbox, '');
                
                const costMap = new Map<string, number>();

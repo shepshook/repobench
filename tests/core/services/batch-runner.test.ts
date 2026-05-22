@@ -239,24 +239,12 @@ describe('BatchRunnerService', () => {
     await service.runAll(configWithCustomAgent);
   });
 
-  it('should throw a BatchRunError when agent configuration is missing', async () => {
+  it('should throw an error when agent configuration is missing', async () => {
     const configWithMissingAgent: BatchConfig = {
       ...mockConfig,
       agentIds: ['missing-agent'],
     };
 
-    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
-      return await Promise.all(tasks.map(async (t: any) => {
-        try {
-          await t.fn();
-          return { id: t.id, status: 'fulfilled', value: {} };
-        } catch (e) {
-          return { id: t.id, status: 'rejected', error: e };
-        }
-      }));
-    });
-
-    const summary = await service.runAll(configWithMissingAgent);
-    expect(summary.failedRuns).toBe(mockCandidates.length);
+    await expect(service.runAll(configWithMissingAgent)).rejects.toThrow('Agent configuration not found for missing-agent');
   });
 });

@@ -3,7 +3,18 @@ import { BatchRunnerService, BatchConfig } from '../../../src/core/services/batc
 
 describe('BatchRunnerService DI', () => {
   const mockWorkerPool = {
-    exec: vi.fn().mockResolvedValue([]),
+    exec: vi.fn().mockImplementation(async (tasks) => {
+      const results = [];
+      for (const task of tasks) {
+        try {
+          const value = await task.fn();
+          results.push({ id: task.id, status: 'fulfilled', value });
+        } catch (error) {
+          results.push({ id: task.id, status: 'rejected', error });
+        }
+      }
+      return results;
+    }),
     getActiveCount: vi.fn(),
     shutdown: vi.fn().mockResolvedValue(undefined),
   };
@@ -23,9 +34,9 @@ describe('BatchRunnerService DI', () => {
       mockSessionOrchestratorFactory,
       mockJudgeServiceFactory,
       mockSandboxFactory,
-      mockCandidateRepository,
-      {} as any, // Invalid agentConfigs
-      { agentIds: ['agent-1'], candidateIds: [], concurrency: 1, timeoutPerRun: 1000, dryRun: false }
+       mockCandidateRepository,
+       [] as any, // Empty agentConfigs — triggers "Agent configuration not found"
+       { agentIds: ['agent-1'], candidateIds: [], concurrency: 1, timeoutPerRun: 1000, dryRun: false }
     );
 
     const config: BatchConfig = {
@@ -48,8 +59,8 @@ describe('BatchRunnerService DI', () => {
     ]);
 
     // We expect the service to throw "Agent configuration not found" 
-    // because we passed {} as agentConfigs.
+    // because we passed [] as agentConfigs.
     // If it doesn't throw, it means the fallback is active.
-    await expect(service.runAll(config)).rejects.toThrow('Agent configuration not found');
+    await expect(service.runAll(config)).rejects.toThrow('Agent configuration not found for agent-1');
   });
 });
