@@ -475,3 +475,58 @@ export const CandidateExportSchema = z.object({
 });
 
 export type CandidateExport = z.infer<typeof CandidateExportSchema>;
+
+// --- Batch Runner Types ---
+
+export const BatchConfigSchema = z.object({
+  agentIds: z.array(z.string()).min(1),
+  candidateIds: z.array(z.string().uuid()).optional(),
+  concurrency: z.number().int().min(1).max(10).default(2),
+  timeoutPerRun: z.number().int().min(60_000).default(300_000),
+  dryRun: z.boolean().default(false),
+});
+
+export type BatchConfig = z.infer<typeof BatchConfigSchema>;
+
+export interface AgentRunSummary {
+  agentId: string;
+  totalRuns: number;
+  successfulRuns: number;
+  avgEScore: number;
+  avgCost: number;
+  avgLatency: number;
+}
+
+export interface BatchRunSummary {
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
+  results: Map<string, AgentRunSummary>;
+  totalDuration: number;
+  startedAt: Date;
+  completedAt: Date;
+}
+
+export interface IBatchRunner {
+  runAll(config: BatchConfig): Promise<BatchRunSummary>;
+  cancel(): void;
+}
+
+export interface WorkerTask<T> {
+  id: string;
+  fn: () => Promise<T>;
+}
+
+export interface WorkerResult<T> {
+  id: string;
+  status: 'fulfilled' | 'rejected';
+  value?: T;
+  error?: Error;
+}
+
+export interface IWorkerPool {
+  exec<T>(tasks: WorkerTask<T>[]): Promise<WorkerResult<T>[]>;
+  getActiveCount(): number;
+  shutdown(): Promise<void>;
+}
+

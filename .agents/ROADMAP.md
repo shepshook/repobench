@@ -278,7 +278,7 @@ This document serves as the central source of truth for the project's strategic 
 - [ ] Multi-agent execution with SQLite storage and CLI Leaderboard.
 
 ### Features
-* **[ ] Feature 5.1: Results Persistence Layer**
+* **[x] Feature 5.1: Results Persistence Layer**
   * **Spec:** Integrate `better-sqlite3`; schema for runs tracking agent, candidate, cost, E-Score.
   * **Tasks:**
     - [x] [Task 5.1.1: Define RunResult Entity & Repository Interface](.agents/spec/task-5.1.1.md)
@@ -288,6 +288,12 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** 100% of runs persist safely to the local DB.
 * **[ ] Feature 5.2: Multi-Agent Batch Runner**
   * **Spec:** Build `BatchRunner` with worker pools to handle concurrent Docker limits.
+  * **Tasks:**
+    - [x] [Task 5.2.1: Define BatchRunner Contract, BatchConfig & WorkerPool Interface](.agents/spec/task-5.2.1.md)
+    - [ ] [Task 5.2.2: Implement WorkerPool Service](.agents/spec/task-5.2.2.md)
+    - [ ] [Task 5.2.3: Implement BatchRunner Orchestration Logic](.agents/spec/task-5.2.3.md)
+    - [ ] [Task 5.2.4: Implement Progress Tracking, Error Aggregation & Summary Reporter](.agents/spec/task-5.2.4.md)
+    - [ ] [Task 5.2.5: CLI Integration (`repobench run-all`)](.agents/spec/task-5.2.5.md)
   * **DoD:** `repobench run-all` processes candidates across multiple agents seamlessly.
 * **[ ] Feature 5.3: CLI Leaderboard View**
   * **Spec:** Build `report` command to query SQLite and aggregate metrics (Avg E-Score, Success Rate).
