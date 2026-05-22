@@ -138,7 +138,12 @@ export class BatchRunnerService implements IBatchRunner {
               throw batchError;
             } finally {
               if (sandbox) {
-                void sandbox.destroy().catch(() => {});
+                try {
+                  await sandbox.destroy();
+                } catch (destroyError) {
+                  console.warn(`[BatchRunner] Failed to destroy sandbox for ${agentId}:${candidate.id}:`,
+                    destroyError instanceof Error ? destroyError.message : String(destroyError));
+                }
               }
             }
           }

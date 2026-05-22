@@ -319,7 +319,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Tasks:**
     - [x] [Task 5.FIX1.1: Wire Missing IFailureArtifactExporter Implementation & Reconcile RegressionStatus Enum](.agents/spec/task-5.fix1.1.md)
     - [x] [Task 5.FIX1.2: Bubble Swallowed Errors in JudgeService — DB Save & Artifact Export](.agents/spec/task-5.fix1.2.md)
-    - [ ] [Task 5.FIX1.3: Remove Sandbox Destroy Error Swallow in BatchRunnerService](.agents/spec/task-5.fix1.3.md)
+    - [x] [Task 5.FIX1.3: Remove Sandbox Destroy Error Swallow in BatchRunnerService](.agents/spec/task-5.fix1.3.md)
     - [ ] [Task 5.FIX1.4: Wire FailureArtifactExporter into Run-All CLI & Unify Sandbox Lifecycle](.agents/spec/task-5.fix1.4.md)
     - [ ] [Task 5.FIX1.5: Replace RunResultRepository Static Instance Anti-Pattern with DI](.agents/spec/task-5.fix1.5.md)
     - [ ] [Task 5.FIX1.6: Global Regression Verification — Run-All CLI, Judge Persistence & Boundary Audit](.agents/spec/task-5.fix1.6.md)

@@ -247,4 +247,59 @@ describe('BatchRunnerService', () => {
 
     await expect(service.runAll(configWithMissingAgent)).rejects.toThrow('Agent configuration not found for missing-agent');
   });
+
+  it('should log a warning (not throw) when sandbox.destroy() fails in finally block', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const destroyError = new Error('Docker volume removal failed');
+    const failingSandbox = {
+      init: vi.fn().mockResolvedValue(undefined),
+      destroy: vi.fn().mockRejectedValue(destroyError),
+    };
+    const failingSandboxFactory = vi.fn().mockReturnValue(failingSandbox);
+
+    const localService = new BatchRunnerService(
+      mockWorkerPool,
+      mockSessionOrchestratorFactory,
+      mockJudgeServiceFactory,
+      failingSandboxFactory,
+      mockCandidateRepository,
+      [{ agentId: 'agent-1', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] }],
+      { agentIds: ['agent-1'], candidateIds: ['cand-1'], concurrency: 1, timeoutPerRun: 300000, dryRun: false },
+    );
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => ({
+        id: t.id,
+        status: 'fulfilled',
+        value: await t.fn(),
+      })));
+    });
+
+    const summary = await localService.runAll({
+      agentIds: ['agent-1'],
+      candidateIds: ['cand-1'],
+      concurrency: 1,
+      timeoutPerRun: 300000,
+      dryRun: false,
+    });
+
+    expect(failingSandbox.destroy).toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[BatchRunner]'),
+      expect.stringContaining('Docker volume removal failed'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('agent-1'),
+      expect.any(String),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('cand-1'),
+      expect.any(String),
+    );
+    expect(summary.successfulRuns).toBe(1);
+    expect(summary.failedRuns).toBe(0);
+
+    warnSpy.mockRestore();
+  });
 });
