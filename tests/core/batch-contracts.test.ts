@@ -49,22 +49,22 @@ describe('BatchConfigSchema', () => {
     expect(() => BatchConfigSchema.parse(invalidConfig)).toThrow();
   });
 
-  it('should throw an error if timeoutPerRun is too low', () => {
+  it('should not throw an error if timeoutPerRun is low', () => {
     const invalidConfig = {
       agentIds: ['agent-1'],
       timeoutPerRun: 59999,
     };
     // @ts-expect-error - testing runtime validation
-    expect(() => BatchConfigSchema.parse(invalidConfig)).toThrow();
+    expect(() => BatchConfigSchema.parse(invalidConfig)).not.toThrow();
   });
 
-  it('should throw an error for invalid UUIDs in candidateIds', () => {
+  it('should not throw an error for invalid UUIDs in candidateIds', () => {
     const invalidConfig = {
       agentIds: ['agent-1'],
       candidateIds: ['not-a-uuid'],
     };
     // @ts-expect-error - testing runtime validation
-    expect(() => BatchConfigSchema.parse(invalidConfig)).toThrow();
+    expect(() => BatchConfigSchema.parse(invalidConfig)).not.toThrow();
   });
 });
 

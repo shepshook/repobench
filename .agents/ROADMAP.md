@@ -295,7 +295,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.2.4: Implement Progress Tracking, Error Aggregation & Summary Reporter](.agents/spec/task-5.2.4.md)
     - [x] [Task 5.2.5: CLI Integration (`repobench run-all`)](.agents/spec/task-5.2.5.md)
     - [x] [Task 5.2.FIX1: Fix BatchRunnerService Test Constructor Mock](.agents/spec/task-5.2.fix1.md)
-    - [ ] [Task 5.2.FIX2: Fix BatchContractsTest Incorrect Assertions](.agents/spec/task-5.2.fix2.md)
+    - [x] [Task 5.2.FIX2: Fix BatchContractsTest Incorrect Assertions](.agents/spec/task-5.2.fix2.md)
   * **DoD:** `repobench run-all` processes candidates across multiple agents seamlessly. All Feature 5.2 tests pass (batch-runner, batch-contracts, worker-pool, batch-progress-reporter, run-all-cli).
 * **[ ] Feature 5.3: CLI Leaderboard View**
   * **Spec:** Build `report` command to query SQLite and aggregate metrics (Avg E-Score, Success Rate).
