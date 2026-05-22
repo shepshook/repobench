@@ -101,7 +101,7 @@ describe('Cross-Module Boundary Audit', () => {
       const judgeService = new JudgeService(mockSandbox, sandboxConfig, evaluator);
       // We simulate the flow that the CLI or Orchestrator would trigger
       const validated = candidates.filter(c => c.status === 'validated');
-      const results = await judgeService.runEvaluationPipeline(validated);
+       const results = await judgeService.runEvaluationPipeline(validated, 'test-agent');
 
       expect(results).toHaveLength(1);
       expect(results[0].candidateId).toBe('1');
@@ -182,7 +182,7 @@ describe('Cross-Module Boundary Audit', () => {
         postFixHash: 'post-hash',
       };
 
-      const runResults = await judgeService.runEvaluationPipeline([candidate]);
+       const runResults = await judgeService.runEvaluationPipeline([candidate], 'test-agent');
       const runResult = runResults[0];
 
       // Verify required fields for RunResult

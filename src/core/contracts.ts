@@ -405,7 +405,12 @@ export interface EvaluationResult {
 }
 
 export interface IJudgeService {
-  runEvaluationPipeline(candidates: Candidate[], costMap?: Map<string, number>): Promise<EvaluationRunResult[]>;
+  runEvaluationPipeline(
+    candidates: Candidate[],
+    agentId: string,
+    costMap?: Map<string, number>,
+    logPath?: string,
+  ): Promise<EvaluationRunResult[]>;
 }
 
 export interface EvaluationRunResult {

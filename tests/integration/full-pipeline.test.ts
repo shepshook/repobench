@@ -114,7 +114,7 @@ describe('Full Pipeline Integration Simulation', () => {
     
     // Retrieve from repo and evaluate
     const candidatesToEval = mockRepo.getAll().filter(c => c.status === 'validated');
-    const results = await judgeService.runEvaluationPipeline(candidatesToEval);
+    const results = await judgeService.runEvaluationPipeline(candidatesToEval, 'test-agent');
 
     // 5. Verify: Check output contains E-Scores and regression statuses
     expect(results).toHaveLength(1);
@@ -142,7 +142,7 @@ describe('Full Pipeline Integration Simulation', () => {
     const judgeService = new JudgeService(mockSandbox, sandboxConfig, evaluator);
     
     // This should not throw
-    const results = await judgeService.runEvaluationPipeline([invalidCandidate]);
+    const results = await judgeService.runEvaluationPipeline([invalidCandidate], 'test-agent');
     
     expect(results).toHaveLength(1);
     expect(results[0].result.regressionStatus).toBe('error');
@@ -166,7 +166,7 @@ describe('Full Pipeline Integration Simulation', () => {
     const evaluator = new Evaluator(mockSandbox, sandboxConfig, mockRunner);
     const judgeService = new JudgeService(mockSandbox, sandboxConfig, evaluator);
 
-    const results = await judgeService.runEvaluationPipeline([candidate]);
+    const results = await judgeService.runEvaluationPipeline([candidate], 'test-agent');
     
     expect(results[0].result.regressionStatus).toBe('error');
     expect(results[0].result.message).toContain('Sandbox failure');
