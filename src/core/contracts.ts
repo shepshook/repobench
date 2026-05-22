@@ -431,10 +431,18 @@ export const RunResultSchema = z.object({
     eScore: z.number(),
   }),
   timestamp: z.date(),
-  logPath: z.string(),
+  logPath: z.string().optional(),
 });
 
 export type RunResult = z.infer<typeof RunResultSchema>;
+
+export interface IRunResultRepository {
+  save(run: RunResult): void;
+  getById(runId: string): RunResult | undefined;
+  getAll(): RunResult[];
+  getByAgentId(agentId: string): RunResult[];
+  getByCandidateId(candidateId: string): RunResult[];
+}
 
 // --- Dataset Export/Import Types ---
 

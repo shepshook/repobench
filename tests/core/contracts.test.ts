@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer, ISemanticJudge } from '../../src/core/contracts';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer, ISemanticJudge, RunResultSchema, IRunResultRepository, RunResult } from '../../src/core/contracts';
 
 describe('ISemanticJudge', () => {
   it('should be implementable by a mock class', () => {
@@ -204,5 +204,115 @@ describe('ISearchEfficiencyTracker', () => {
     }
     const tracker: ISearchEfficiencyTracker = new MockTracker();
     expect(tracker).toBeDefined();
+  });
+});
+
+describe('RunResultSchema', () => {
+  it('should validate a correct RunResult object', () => {
+    const validRunResult = {
+      runId: '550e8400-e29b-41d4-a716-446655440000',
+      agentId: 'test-agent-1',
+      candidateId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      metrics: {
+        success: true,
+        cost: 0.05,
+        latency: 1200,
+        eScore: 0.85,
+      },
+      timestamp: new Date(),
+      logPath: '/logs/run-1.log',
+    };
+    expect(() => RunResultSchema.parse(validRunResult)).not.toThrow();
+  });
+
+  it('should validate a RunResult without logPath', () => {
+    const validRunResult = {
+      runId: '550e8400-e29b-41d4-a716-446655440000',
+      agentId: 'test-agent-1',
+      candidateId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      metrics: {
+        success: false,
+        cost: 0.02,
+        latency: 500,
+        eScore: 0.1,
+      },
+      timestamp: new Date(),
+    };
+    expect(() => RunResultSchema.parse(validRunResult)).not.toThrow();
+  });
+
+  it('should throw an error for invalid UUIDs', () => {
+    const invalidRunResult = {
+      runId: 'not-a-uuid',
+      agentId: 'test-agent-1',
+      candidateId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      metrics: {
+        success: true,
+        cost: 0.05,
+        latency: 1200,
+        eScore: 0.85,
+      },
+      timestamp: new Date(),
+    };
+    // @ts-expect-error - testing runtime validation
+    expect(() => RunResultSchema.parse(invalidRunResult)).toThrow();
+  });
+
+  it('should throw an error for missing required fields in metrics', () => {
+    const invalidRunResult = {
+      runId: '550e8400-e29b-41d4-a716-446655440000',
+      agentId: 'test-agent-1',
+      candidateId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      metrics: {
+        success: true,
+        // missing cost, latency, eScore
+      },
+      timestamp: new Date(),
+    };
+    // @ts-expect-error - testing runtime validation
+    expect(() => RunResultSchema.parse(invalidRunResult)).toThrow();
+  });
+});
+
+describe('IRunResultRepository', () => {
+  it('should be implementable by a mock class', () => {
+    class MockRepository implements IRunResultRepository {
+      private results: Map<string, RunResult> = new Map();
+
+      save(run: RunResult): void {
+        this.results.set(run.runId, run);
+      }
+
+      getById(runId: string): RunResult | undefined {
+        return this.results.get(runId);
+      }
+
+      getAll(): RunResult[] {
+        return Array.from(this.results.values());
+      }
+
+      getByAgentId(agentId: string): RunResult[] {
+        return Array.from(this.results.values()).filter(r => r.agentId === agentId);
+      }
+
+      getByCandidateId(candidateId: string): RunResult[] {
+        return Array.from(this.results.values()).filter(r => r.candidateId === candidateId);
+      }
+    }
+
+    const repo: IRunResultRepository = new MockRepository();
+    const testRun: RunResult = {
+      runId: '550e8400-e29b-41d4-a716-446655440000',
+      agentId: 'agent-1',
+      candidateId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      metrics: { success: true, cost: 1, latency: 1, eScore: 1 },
+      timestamp: new Date(),
+    };
+
+    repo.save(testRun);
+    expect(repo.getById(testRun.runId)).toEqual(testRun);
+    expect(repo.getAll()).toContainEqual(testRun);
+    expect(repo.getByAgentId('agent-1')).toContainEqual(testRun);
+    expect(repo.getByCandidateId('6ba7b810-9dad-11d1-80b4-00c04fd430c8')).toContainEqual(testRun);
   });
 });
