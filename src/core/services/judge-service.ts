@@ -7,6 +7,7 @@ import {
   EvaluationRunResult,
   IRunResultRepository,
   RunResult,
+  IFailureArtifactExporter,
 } from '../contracts';
 import { randomUUID } from 'node:crypto';
 
@@ -15,7 +16,8 @@ export class JudgeService implements IJudgeService {
     private readonly sandbox: ISandbox,
     private readonly config: SandboxConfig,
     private readonly evaluator: IEvaluator,
-    private readonly repository: IRunResultRepository,
+    private readonly repository?: IRunResultRepository,
+    private readonly failureArtifactExporter?: IFailureArtifactExporter,
   ) {}
 
   async runEvaluationPipeline(
@@ -32,23 +34,33 @@ export class JudgeService implements IJudgeService {
         cost,
       );
 
+      const runResult: RunResult = {
+        runId: randomUUID(),
+        agentId,
+        candidateId: candidate.id,
+        metrics: {
+          success: result.regressionStatus === 'clean',
+          cost: cost ?? 0,
+          latency: result.latency,
+          eScore: result.eScore,
+        },
+        timestamp: new Date(),
+        logPath,
+      };
       try {
-        const runResult: RunResult = {
-          runId: randomUUID(),
-          agentId,
-          candidateId: candidate.id,
-          metrics: {
-            success: result.regressionStatus === 'clean',
-            cost: cost ?? 0,
-            latency: result.latency,
-            eScore: result.eScore,
-          },
-          timestamp: new Date(),
-          logPath,
-        };
-        this.repository.save(runResult);
+        this.repository?.save(runResult);
       } catch (error) {
         console.error(`Failed to persist run result for candidate ${candidate.id}:`, error);
+      }
+
+      if (result.regressionStatus === 'regressed' || result.regressionStatus === 'error') {
+        if (this.failureArtifactExporter) {
+          try {
+            await this.failureArtifactExporter.exportForRun(runResult.runId);
+          } catch (e) {
+            console.error(`Failed to export artifacts for run ${runResult.runId}:`, e);
+          }
+        }
       }
 
       results.push({ candidateId: candidate.id, result, cost });

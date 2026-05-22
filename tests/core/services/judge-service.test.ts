@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { JudgeService } from '../../../src/core/services/judge-service';
-import { ISandbox, SandboxConfig, Candidate, IEvaluator, EvaluationResult, IRunResultRepository, RunResult } from '../../../src/core/contracts';
+import { ISandbox, SandboxConfig, Candidate, IEvaluator, EvaluationResult, IRunResultRepository, RunResult, IFailureArtifactExporter } from '../../../src/core/contracts';
 
 describe('JudgeService', () => {
   let sandbox: ISandbox;
@@ -281,6 +281,137 @@ describe('JudgeService', () => {
       expect(repository.save).toHaveBeenLastCalledWith(expect.objectContaining({
         metrics: expect.objectContaining({ cost: 50 }),
       }));
+    });
+  });
+
+  describe('Failure Artifact Exporter Integration', () => {
+    let failureArtifactExporter: IFailureArtifactExporter;
+
+    beforeEach(() => {
+      failureArtifactExporter = {
+        exportForRun: vi.fn().mockResolvedValue({
+          runId: '00000000-0000-0000-0000-000000000000',
+          candidateId: 'test-candidate-1',
+          agentId: 'test-agent-123',
+          regressionStatus: 'regressed',
+          diffPatchPath: 'exports/run-1/diff.patch',
+          sessionLogPath: 'exports/run-1/session.log',
+          groundTruthPath: 'exports/run-1/ground-truth.diff',
+          exportedAt: new Date(),
+        }),
+        exportAllFailures: vi.fn().mockResolvedValue([]),
+      };
+    });
+
+    it('should not call exporter when regressionStatus is clean', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'clean',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Clean',
+        eScore: 1.0,
+      });
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect(failureArtifactExporter.exportForRun).not.toHaveBeenCalled();
+    });
+
+    it('should call exporter when regressionStatus is regressed', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'regressed',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Regression detected',
+        eScore: 0.3,
+      });
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect(failureArtifactExporter.exportForRun).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call exporter when regressionStatus is error', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'error',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Error during evaluation',
+        eScore: 0,
+      });
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect(failureArtifactExporter.exportForRun).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not crash pipeline when exporter throws', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'regressed',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Regression detected',
+        eScore: 0.3,
+      });
+      failureArtifactExporter.exportForRun = vi.fn().mockRejectedValue(new Error('Export failed'));
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      const results = await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect(results).toHaveLength(1);
+      expect(results[0].result.regressionStatus).toBe('regressed');
+    });
+
+    it('should pass the correct runId to exporter.exportForRun', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'regressed',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Regression detected',
+        eScore: 0.3,
+      });
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect(failureArtifactExporter.exportForRun).toHaveBeenCalledWith(
+        expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+      );
+    });
+
+    it('should work without an exporter (backward compatible)', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'clean',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Clean',
+        eScore: 1.0,
+      });
+
+      const results = await judge.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+      expect(results).toHaveLength(1);
+      expect(results[0].result.regressionStatus).toBe('clean');
     });
   });
 });

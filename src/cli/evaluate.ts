@@ -8,6 +8,7 @@ import { Sandbox } from '../infrastructure/sandbox.js';
 import { SandboxConfig } from '../core/contracts.js';
 import { Evaluator } from '../core/services/evaluator.js';
 import { JudgeService } from '../core/services/judge-service.js';
+import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter.js';
 
 export function registerEvaluateCommand(program: Command): void {
   program
@@ -55,7 +56,8 @@ export function registerEvaluateCommand(program: Command): void {
         await sandbox.init();
 
         const evaluator = new Evaluator(sandbox, sandboxConfig);
-        const judgeService = new JudgeService(sandbox, sandboxConfig, evaluator, runResultRepo);
+        const failureArtifactExporter = new FailureArtifactExporter(runResultRepo, repo, sandbox);
+        const judgeService = new JudgeService(sandbox, sandboxConfig, evaluator, runResultRepo, failureArtifactExporter);
 
         const results = await judgeService.runEvaluationPipeline(
           candidates,
