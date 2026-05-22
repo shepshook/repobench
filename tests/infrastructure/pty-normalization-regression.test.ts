@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { PtySession } from '../../src/infrastructure/pty-session';
+import { AnsiProcessor } from '../../src/infrastructure/ansi-processor';
 import { Sandbox } from '../../src/infrastructure/sandbox';
 
 describe('PtySession Normalization Regression', () => {
@@ -113,5 +114,46 @@ describe('PtySession Normalization Regression', () => {
     let output = PtySession.normalize(input, isBehavior);
     if (isBehavior) output = output.replace(/\x1b/g, '\\x1b');
     expect(output).toBe('Welcome!');
+  });
+});
+
+describe('FIX4 Regression — Removed _writtenCommands parameter', () => {
+  describe('AnsiProcessor.normalize (direct, not through PtySession)', () => {
+    it('should handle plain text with no ANSI or prompts', () => {
+      const result = AnsiProcessor.normalize('hello world');
+      expect(result).toBe('hello world');
+    });
+
+    it('should strip ANSI in default mode (keepAnsi=false)', () => {
+      const result = AnsiProcessor.normalize('\x1b[32mSuccess\x1b[0m');
+      expect(result).toBe('Success');
+    });
+
+    it('should escape ANSI in behavior mode (keepAnsi=true)', () => {
+      const result = AnsiProcessor.normalize('\x1b[32mColor Test\x1b[0m', true);
+      expect(result).toBe('\\x1b[32mColor Test\\x1b[0m');
+    });
+
+    it('should handle carriage returns and prompt stripping', () => {
+      const result = AnsiProcessor.normalize('user@host:~/dir$ \r\nOutput');
+      expect(result).toBe('Output');
+    });
+
+    it('should work when called with only the data argument (keepAnsi defaults to false)', () => {
+      const result = AnsiProcessor.normalize('\x1b[1;31mError\x1b[0m');
+      expect(result).toBe('Error');
+    });
+  });
+
+  describe('PtySession.normalize signature validation', () => {
+    it('should work with exactly 2 arguments — default mode', () => {
+      const result = PtySession.normalize('plain text');
+      expect(result).toBe('plain text');
+    });
+
+    it('should work with exactly 2 arguments — behavior mode', () => {
+      const result = PtySession.normalize('\x1b[32mGreen\x1b[0m', true);
+      expect(result).toBe('\\x1b[32mGreen\\x1b[0m');
+    });
   });
 });
