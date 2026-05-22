@@ -96,6 +96,19 @@ export function initDatabase(newDbPath?: string): void {
         labels TEXT
       )
     `).run();
+    _rawDb.prepare(`
+      CREATE TABLE IF NOT EXISTS runs (
+        run_id TEXT PRIMARY KEY NOT NULL,
+        agent_id TEXT NOT NULL,
+        candidate_id TEXT NOT NULL,
+        success INTEGER NOT NULL,
+        cost REAL NOT NULL,
+        latency REAL NOT NULL,
+        e_score REAL NOT NULL,
+        timestamp TEXT NOT NULL,
+        log_path TEXT
+      )
+    `).run();
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;
