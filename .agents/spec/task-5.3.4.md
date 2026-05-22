@@ -39,3 +39,8 @@
 - Exit code is 0 on success, 1 on error.
 - Integration tests pass (`npx vitest run tests/integration/report-cli.test.ts`).
 - `npm run typecheck && npm run lint` pass.
+
+## Audit Feedback Round 1
+The implementation of `repobench report` correctly wires the database, repository, and reporter, but the integration tests are failing due to incorrect assertions regarding sorting behavior.
+
+- **Feedback**: The test `should respect --limit 5 and show at most 5 entries` in `tests/integration/report-cli.test.ts` incorrectly expects `agent-0` through `agent-4` to be present when sorting by `eScore` descending. Since the data is seeded with `agent-i` having `eScore = 0.5 + i * 0.05`, `agent-0` has the lowest `eScore` and should be excluded by the `--limit 5` filter. The assertion needs to be updated to expect `agent-5` through `agent-9` or the seeding data should be adjusted.

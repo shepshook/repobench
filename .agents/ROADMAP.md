@@ -304,7 +304,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.3.1: Define Leaderboard Query Contract & Options Schema](.agents/spec/task-5.3.1.md)
     - [x] [Task 5.3.2: Implement LeaderboardReporter Service & Tests](.agents/spec/task-5.3.2.md)
     - [x] [Task 5.3.3: Implement Terminal Table Renderer for Report Output](.agents/spec/task-5.3.3.md)
-    - [ ] [Task 5.3.4: CLI Integration (`repobench report`) & Verification](.agents/spec/task-5.3.4.md)
+    - [x] [Task 5.3.4: CLI Integration (`repobench report`) & Verification](.agents/spec/task-5.3.4.md)
   * **DoD:** Terminal renders a sorted, ranked table of agent performance.
 * **[ ] Feature 5.4: Failure Artifact Exporter**
   * **Spec:** Export `diff.patch`, `session.log`, and ground truth fix to `exports/<run_id>/`.

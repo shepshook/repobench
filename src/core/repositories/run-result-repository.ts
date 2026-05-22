@@ -1,7 +1,19 @@
 import { db } from '../../infrastructure/persistence/database';
 import { IRunResultRepository, RunResult } from '../contracts';
 
+const instances: RunResultRepository[] = [];
+
 export class RunResultRepository implements IRunResultRepository {
+  constructor() {
+    instances.push(this);
+  }
+
+  static getLastCreated(): RunResultRepository {
+    const latest = instances.at(-1);
+    if (latest) return latest;
+    const repo = new RunResultRepository();
+    return repo;
+  }
   private saveStmt = db.prepare(`
     INSERT INTO runs (run_id, agent_id, candidate_id, success, cost, latency, e_score, timestamp, log_path)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
