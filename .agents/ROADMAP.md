@@ -146,7 +146,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Extend `SandboxConfig` and the sandbox init flow to install agent-specific dependencies (e.g., `npm install -g opencode`) inside the container before the agent session starts.
   * **Tasks:**
     - [x] [Task 2.5.1: Add agent dependency setup to SandboxConfig](.agents/spec/task-2.5.1.md)
-    - [ ] [Task 2.5.2: Implement agent dependency installation in sandbox init](.agents/spec/task-2.5.2.md)
+    - [x] [Task 2.5.2: Implement agent dependency installation in sandbox init](.agents/spec/task-2.5.2.md)
   * **DoD:** `SandboxConfig.agentSetupCommands` runs inside the container after `buildCommand`; simulation mode logs setup commands; all sandbox tests pass.
 
 ---

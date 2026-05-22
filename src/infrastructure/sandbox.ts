@@ -196,6 +196,20 @@ export class Sandbox implements ISandbox {
 
     }
 
+    if (this.config.agentSetupCommands && this.config.agentSetupCommands.length > 0) {
+      for (const cmd of this.config.agentSetupCommands) {
+        console.log(`[AgentSetup] Running: ${cmd}`);
+        const result = await this.runDockerCommand(cmd);
+        if (result.exitCode !== 0) {
+          const setupError = Object.assign(
+            new Error(`Agent setup command failed: ${cmd}`),
+            { stdout: result.stdout, stderr: result.stderr }
+          );
+          throw setupError;
+        }
+      }
+    }
+
     this.initialized = true;
   }
 
@@ -302,6 +316,12 @@ export class Sandbox implements ISandbox {
         }
       }
  
+      if (this.config.agentSetupCommands) {
+        for (const cmd of this.config.agentSetupCommands) {
+          console.log(`[AgentSetup][Simulation] Skipping: ${cmd}`);
+        }
+      }
+
       this.initialized = true;
     }
 

@@ -67,3 +67,8 @@ sandbox:
 3. Simulation mode logs setup commands without executing them.
 4. Typecheck and lint pass.
 5. All sandbox and volume-manager tests pass.
+
+## Audit Feedback Round 1
+
+1. Missing configuration update: The specification requires adding `agent_setup_commands` to `repobench.yaml` (for the RepoBench repo itself), but this was not implemented.
+2. Specification error: The required test `tests/infrastructure/volume-manager.test.ts` does not exist at the specified path; it is located at `tests/unit/volume-manager.test.ts`.
