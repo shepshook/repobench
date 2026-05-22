@@ -46,16 +46,21 @@ interface AgentPairResult {
 }
 
 export class BatchRunnerService implements IBatchRunner {
+  private readonly agentConfigs: AgentConfig[];
+
   constructor(
     private readonly workerPool: IWorkerPool,
     private readonly sessionOrchestratorFactory: (agentId: string) => ISessionOrchestrator,
     private readonly judgeServiceFactory: (agentId: string) => IJudgeService,
     private readonly sandboxFactory: () => ISandbox,
     private readonly candidateRepository: ICandidateRepository,
-    private readonly agentConfigs: AgentConfig[],
+    agentConfigs: AgentConfig[],
     private readonly config: BatchConfig,
     private readonly reporter?: IProgressReporter,
-  ) {}
+  ) {
+    this.agentConfigs = agentConfigs;
+
+  }
 
   async runAll(config: BatchConfig): Promise<BatchRunSummary> {
     const startTime = new Date();
@@ -96,10 +101,11 @@ export class BatchRunnerService implements IBatchRunner {
                const orchestrator = this.sessionOrchestratorFactory(agentId);
                const judge = this.judgeServiceFactory(agentId);
 
-               const agentConfig = this.agentConfigs.find(a => a.agentId === agentId);
-               if (!agentConfig) {
-                 throw new Error(`Agent configuration not found for ${agentId}`);
-               }
+                const agentConfig = this.agentConfigs.find(a => a.agentId === agentId);
+                if (!agentConfig) {
+                  throw new Error(`Agent configuration not found for ${agentId}`);
+                }
+
                
                const { cost } = await orchestrator.executeSession(agentConfig, sandbox, '');
                

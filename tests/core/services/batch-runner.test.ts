@@ -12,7 +12,8 @@ import {
   ISandbox, 
   ICandidateRepository,
   Candidate,
-  EvaluationRunResult
+  EvaluationRunResult,
+  AgentConfig
 } from '../../../src/core/contracts';
 
 describe('BatchRunnerService', () => {
@@ -66,13 +67,20 @@ describe('BatchRunnerService', () => {
       getById: vi.fn().mockImplementation((id) => mockCandidates.find(c => c.id === id)),
     };
 
+    const mockAgentConfigs: AgentConfig[] = [
+      { agentId: 'agent-1', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] },
+      { agentId: 'agent-2', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] },
+      { agentId: 'agent-custom', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] },
+    ];
+
     service = new BatchRunnerService(
       mockWorkerPool,
       mockSessionOrchestratorFactory,
       mockJudgeServiceFactory,
       mockSandboxFactory,
       mockCandidateRepository,
-      {} as any // BatchConfig for constructor if needed, though runAll takes it
+      mockAgentConfigs,
+      mockConfig,
     );
   });
 
@@ -216,5 +224,39 @@ describe('BatchRunnerService', () => {
 
     const summary = await service.runAll(mockConfig);
     expect(summary.failedRuns).toBeGreaterThan(0);
+  });
+
+  it('should work with custom agent configurations', async () => {
+    const configWithCustomAgent: BatchConfig = {
+      ...mockConfig,
+      agentIds: ['agent-custom'],
+    };
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => ({ id: t.id, status: 'fulfilled', value: await t.fn() })));
+    });
+
+    await service.runAll(configWithCustomAgent);
+  });
+
+  it('should throw a BatchRunError when agent configuration is missing', async () => {
+    const configWithMissingAgent: BatchConfig = {
+      ...mockConfig,
+      agentIds: ['missing-agent'],
+    };
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => {
+        try {
+          await t.fn();
+          return { id: t.id, status: 'fulfilled', value: {} };
+        } catch (e) {
+          return { id: t.id, status: 'rejected', error: e };
+        }
+      }));
+    });
+
+    const summary = await service.runAll(configWithMissingAgent);
+    expect(summary.failedRuns).toBe(mockCandidates.length);
   });
 });
