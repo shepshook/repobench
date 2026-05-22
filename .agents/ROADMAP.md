@@ -217,7 +217,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [ ] Epic 4: The Evaluation & Scoring Engine (The Judge)
+## [x] Epic 4: The Evaluation & Scoring Engine (The Judge)
 **Description:** Quantitative scoring of agent output via execution and regression testing.
 **Metrics:** Verification Accuracy (Correlation with human judgment), Scoring Variance.
 **Success Criteria:**
