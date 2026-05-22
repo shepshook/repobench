@@ -51,7 +51,7 @@ export class BatchRunnerService implements IBatchRunner {
   constructor(
     private readonly workerPool: IWorkerPool,
     private readonly sessionOrchestratorFactory: (agentId: string) => ISessionOrchestrator,
-    private readonly judgeServiceFactory: (agentId: string) => IJudgeService,
+    private readonly judgeServiceFactory: (sandbox: ISandbox) => IJudgeService,
     private readonly sandboxFactory: () => ISandbox,
     private readonly candidateRepository: ICandidateRepository,
     agentConfigs: AgentConfig[],
@@ -104,7 +104,7 @@ export class BatchRunnerService implements IBatchRunner {
               await sandbox.init();
 
                const orchestrator = this.sessionOrchestratorFactory(agentId);
-               const judge = this.judgeServiceFactory(agentId);
+               const judge = this.judgeServiceFactory(sandbox);
 
                const { cost } = await orchestrator.executeSession(agentConfig, sandbox, '');
                

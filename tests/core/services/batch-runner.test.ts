@@ -183,7 +183,12 @@ describe('BatchRunnerService', () => {
     expect(taskExecuted).toBe(true);
     expect(mockSandboxFactory).toHaveBeenCalled();
     expect(mockSessionOrchestratorFactory).toHaveBeenCalledWith('agent-1');
-    expect(mockJudgeServiceFactory).toHaveBeenCalledWith('agent-1');
+    // After FIX1.4, judgeServiceFactory receives (sandbox: ISandbox) instead of (agentId: string)
+    const judgeFactoryArg = mockJudgeServiceFactory.mock.calls[0][0];
+    expect(typeof judgeFactoryArg).toBe('object');
+    expect(judgeFactoryArg).not.toBe('agent-1');
+    expect(judgeFactoryArg.init).toBeDefined();
+    expect(judgeFactoryArg.destroy).toBeDefined();
   });
 
   it('should correctly aggregate AgentRunSummary in the results map', async () => {
@@ -301,5 +306,79 @@ describe('BatchRunnerService', () => {
     expect(summary.failedRuns).toBe(0);
 
     warnSpy.mockRestore();
+  });
+
+  it('should pass the same sandbox instance to judgeServiceFactory that was created and init()-ed by sandboxFactory (FIX1.4)', async () => {
+    const createdSandboxes: ISandbox[] = [];
+    const trackingSandboxFactory = vi.fn((): ISandbox => {
+      const sb: ISandbox = {
+        init: vi.fn().mockResolvedValue(undefined),
+        destroy: vi.fn().mockResolvedValue(undefined),
+        execute: vi.fn(),
+        runCommand: vi.fn(),
+        switchState: vi.fn(),
+        createSnapshot: vi.fn(),
+        restoreSnapshot: vi.fn(),
+        getFilesystemSnapshot: vi.fn(),
+        getCacheStats: vi.fn(),
+        ping: vi.fn(),
+        getFileAccessTracker: vi.fn(),
+        id: `sandbox-${createdSandboxes.length}`,
+        config: {},
+      };
+      createdSandboxes.push(sb);
+      return sb;
+    });
+
+    let capturedArg: unknown = null;
+    const capturingFactory = vi.fn((arg: unknown) => {
+      capturedArg = arg;
+      return {
+        runEvaluationPipeline: vi.fn().mockResolvedValue([
+          { candidateId: 'cand-1', result: { eScore: 0.8, latency: 100, success: true }, cost: 10 },
+        ] as EvaluationRunResult[]),
+      };
+    });
+
+    const localService = new BatchRunnerService(
+      mockWorkerPool,
+      mockSessionOrchestratorFactory,
+      capturingFactory,
+      trackingSandboxFactory,
+      mockCandidateRepository,
+      [{ agentId: 'agent-1', model: 'default', temperature: 0, systemPrompt: '', cliArgs: [] } as AgentConfig],
+      {
+        agentIds: ['agent-1'],
+        candidateIds: ['cand-1'],
+        concurrency: 1,
+        timeoutPerRun: 300000,
+        dryRun: false,
+      },
+    );
+
+    mockWorkerPool.exec.mockImplementation(async (tasks: any[]) => {
+      return await Promise.all(tasks.map(async (t: any) => ({
+        id: t.id,
+        status: 'fulfilled' as const,
+        value: await t.fn(),
+      })));
+    });
+
+    await localService.runAll({
+      agentIds: ['agent-1'],
+      candidateIds: ['cand-1'],
+      concurrency: 1,
+      timeoutPerRun: 300000,
+      dryRun: false,
+    });
+
+    // Only ONE sandbox was created by sandboxFactory (no second instance inside judgeServiceFactory)
+    expect(createdSandboxes.length).toBe(1);
+    // The captured argument is an object (not a string agentId)
+    expect(typeof capturedArg).toBe('object');
+    // It is the exact same sandbox instance created by sandboxFactory
+    expect(capturedArg).toBe(createdSandboxes[0]);
+    // The sandbox was init()-ed before being passed to the factory
+    expect(createdSandboxes[0].init).toHaveBeenCalled();
   });
 });

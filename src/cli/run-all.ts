@@ -13,6 +13,7 @@ import { RunResultRepository } from '../core/repositories/run-result-repository'
 import { Sandbox } from '../infrastructure/sandbox';
 import { Evaluator } from '../core/services/evaluator';
 import { JudgeService } from '../core/services/judge-service';
+import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter';
 import { SessionOrchestrator } from '../core/services/session-orchestrator';
 import { WorkerPool } from '../infrastructure/services/worker-pool';
 import { BatchProgressReporter } from '../core/services/batch-progress-reporter';
@@ -86,13 +87,14 @@ export function registerRunAllCommand(program: Command): void {
         const batchRunner = new BatchRunnerService(
           workerPool,
           () => new SessionOrchestrator(),
-          () => {
-            const sandbox = new Sandbox(sandboxConfig);
+          (sandbox) => {
+            const failureArtifactExporter = new FailureArtifactExporter(runResultRepo, candidateRepo, sandbox);
             return new JudgeService(
-              sandbox, 
-              sandboxConfig, 
-              new Evaluator(sandbox, sandboxConfig), 
-              runResultRepo
+              sandbox,
+              sandboxConfig,
+              new Evaluator(sandbox, sandboxConfig),
+              runResultRepo,
+              failureArtifactExporter
             );
           },
           () => new Sandbox(sandboxConfig),
