@@ -106,6 +106,15 @@ export class GitMiner implements IMiner {
 
         if (!shouldKeep) continue;
 
+        // Retrieve parent commit hash for preFixHash
+        let preFixHash: string | undefined;
+        try {
+          const parentResult = await git.raw(['rev-parse', `${commit.hash}^`]);
+          preFixHash = parentResult.trim();
+        } catch {
+          preFixHash = undefined;
+        }
+
         const candidate: Candidate = {
           id: crypto.randomUUID(),
           hash: commit.hash,
@@ -115,6 +124,8 @@ export class GitMiner implements IMiner {
           created_at: new Date(),
           repositoryUrl,
           repositoryName,
+          postFixHash: commit.hash,
+          preFixHash,
         };
 
         // Curation

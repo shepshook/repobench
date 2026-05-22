@@ -28,7 +28,7 @@ export class AnsiProcessor {
     return screen.toString().split('\n').map(line => line.trimEnd()).join('\n').trim();
   }
 
-  public static normalize(data: string, keepAnsi: boolean = false, _writtenCommands: string[] = []): string {
+  public static normalize(data: string, keepAnsi: boolean = false): string {
     const processed = data.replace(/\r/g, '');
     
     const lines = processed.split('\n');

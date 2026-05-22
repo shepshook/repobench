@@ -217,6 +217,37 @@ describe('Evaluator', () => {
     expect(mockTracker.trackModification).toHaveBeenCalledWith('modified.ts');
   });
 
+  it('should return error status when candidate missing preFixHash', async () => {
+    const invalidCandidate: Candidate = {
+      ...mockCandidate,
+      preFixHash: undefined,
+    };
+
+    const result = await evaluator.evaluate(invalidCandidate);
+
+    expect(result.regressionStatus).toBe('error');
+    expect(result.message).toContain('Candidate missing preFixHash');
+    expect(result.comparison).toBeNull();
+    expect(result.preTestResults).toBeNull();
+    expect(result.postTestResults).toBeNull();
+  });
+
+  it('should return error status when candidate missing postFixHash', async () => {
+    const invalidCandidate: Candidate = {
+      ...mockCandidate,
+      postFixHash: undefined,
+    };
+
+    const result = await evaluator.evaluate(invalidCandidate);
+
+    expect(result.regressionStatus).toBe('error');
+    expect(result.message).toContain('Candidate missing postFixHash');
+    expect(result.comparison).toBeNull();
+    // preTestResults is populated because the error occurs after pre-fix test run
+    expect(result.preTestResults).not.toBeNull();
+    expect(result.postTestResults).toBeNull();
+  });
+
   it('should pass the provided cost to the scorer', async () => {
     const preResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };
     const postResults: TestResults = { stdout: '', stderr: '', exitCode: 0, duration: 10, passed: true };

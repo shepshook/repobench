@@ -22,6 +22,7 @@ describe('GitMiner', () => {
     const mockFilter = {
       isSignificant: vi.fn().mockResolvedValue(true),
     };
+    mockGit.raw = vi.fn();
     
     const mockRepository = {
       save: vi.fn(),
@@ -267,5 +268,62 @@ describe('GitMiner', () => {
 
     const candidates = await miner.mineCommits(config);
     expect(candidates).toHaveLength(1);
+  });
+
+  it('should populate postFixHash with the commit hash on every candidate', async () => {
+    const mockCommits = [
+      { hash: 'abc12345', message: 'fix: auth bug' },
+    ];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.show = vi.fn().mockResolvedValue('file1.ts');
+
+    const config: RepoBenchConfig = {
+      mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined }
+    };
+
+    const candidates = await miner.mineCommits(config);
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toHaveProperty('postFixHash');
+    expect(candidates[0].postFixHash).toBe('abc12345');
+  });
+
+  it('should populate preFixHash with the parent commit hash for non-root commits', async () => {
+    const mockCommits = [
+      { hash: 'def67890', message: 'fix: another bug' },
+    ];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.show = vi.fn().mockResolvedValue('file2.ts');
+    mockGit.raw = vi.fn().mockResolvedValue('parent123\n');
+
+    const config: RepoBenchConfig = {
+      mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined }
+    };
+
+    const candidates = await miner.mineCommits(config);
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toHaveProperty('preFixHash');
+    expect(candidates[0].preFixHash).toBe('parent123');
+    expect(mockGit.raw).toHaveBeenCalledWith(['rev-parse', 'def67890^']);
+  });
+
+  it('should leave preFixHash undefined for root commits without a parent', async () => {
+    const mockCommits = [
+      { hash: 'root00001', message: 'initial commit' },
+    ];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.show = vi.fn().mockResolvedValue('file3.ts');
+    mockGit.raw = vi.fn().mockRejectedValue(new Error('fatal: ambiguous argument'));
+
+    const config: RepoBenchConfig = {
+      mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined }
+    };
+
+    const candidates = await miner.mineCommits(config);
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toHaveProperty('preFixHash');
+    expect(candidates[0].preFixHash).toBeUndefined();
   });
 });

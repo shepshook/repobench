@@ -133,4 +133,50 @@ describe('GitMiner Pipeline Integration', () => {
 
     expect(mockValidator.validate).not.toHaveBeenCalled();
   });
+
+  it('should save candidate with postFixHash matching commit hash through pipeline', async () => {
+    const mockCommits = [{ hash: 'abc12345', message: 'feat: test' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.raw = vi.fn().mockResolvedValue('parent123\n');
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      hash: 'abc12345',
+      postFixHash: 'abc12345',
+    }));
+  });
+
+  it('should save candidate with preFixHash from git rev-parse through pipeline', async () => {
+    const mockCommits = [{ hash: 'def67890', message: 'fix: bug' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.raw = vi.fn().mockResolvedValue('parent999\n');
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      hash: 'def67890',
+      preFixHash: 'parent999',
+    }));
+    expect(mockGit.raw).toHaveBeenCalledWith(['rev-parse', 'def67890^']);
+  });
+
+  it('should save candidate with preFixHash undefined for root commits through pipeline', async () => {
+    const mockCommits = [{ hash: 'root00001', message: 'initial commit' }];
+    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockGit.raw = vi.fn().mockRejectedValue(new Error('fatal: ambiguous argument'));
+    (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+    const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+    await miner.mineCommits(config);
+
+    expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      hash: 'root00001',
+      preFixHash: undefined,
+    }));
+  });
 });

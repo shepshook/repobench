@@ -159,7 +159,7 @@ export class PtySession implements IPtySession {
     if (this.sandbox.isSimulation && isBehavior) {
       output = '\x1b[32mSimulated Color\x1b[0m' + dataString;
     }
-    const normalized = AnsiProcessor.normalize(output, isBehavior, this.writtenCommands);
+    const normalized = AnsiProcessor.normalize(output, isBehavior);
     
     this.rawDataCallbacks.forEach(cb => cb(dataString));
     this.dataCallbacks.forEach(cb => cb(normalized));
@@ -318,8 +318,8 @@ export class PtySession implements IPtySession {
     });
   }
 
-  public static normalize(data: string, keepAnsi: boolean = false, writtenCommands: string[] = []): string {
-    return AnsiProcessor.normalize(data, keepAnsi, writtenCommands);
+  public static normalize(data: string, keepAnsi: boolean = false): string {
+    return AnsiProcessor.normalize(data, keepAnsi);
   }
 
   public async initialize(): Promise<void> {

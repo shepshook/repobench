@@ -5,6 +5,7 @@ import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { GitMiner } from '../../src/core/services/miner.js';
 import type { RepoBenchConfig } from '../../src/core/config.js';
+import type { Candidate } from '../../src/core/contracts.js';
 
 describe('Mine CLI Integration Test', () => {
   let tempDir: string;
@@ -120,11 +121,66 @@ mining:
         // Should only contain the "meaningful fix" commit
         expect(results.length).toBe(1);
         expect(results[0].message).toBe('fix: resolve addition bug');
+
+        // Verify preFixHash/postFixHash are populated
+        const candidate: Candidate = results[0];
+        expect(candidate.postFixHash).toBeDefined();
+        expect(typeof candidate.postFixHash).toBe('string');
+        // postFixHash should match the mined commit hash
+        expect(candidate.postFixHash).toBe(candidate.hash);
+        // For the first (root) commit, preFixHash should be undefined
+        // since git rev-parse <hash>^ fails
+        expect(candidate.preFixHash).toBeUndefined();
       } finally {
         process.chdir(originalCwd);
       }
     } finally {
       await fs.rm(sigTempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should populate preFixHash for non-root commits from real git history', async () => {
+    const nonRootTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'repobench-nonroot-test-'));
+    try {
+      execSync('git init', { cwd: nonRootTempDir });
+      execSync('git config user.email "test@example.com"', { cwd: nonRootTempDir });
+      execSync('git config user.name "Test User"', { cwd: nonRootTempDir });
+
+      // Root commit
+      await fs.writeFile(path.join(nonRootTempDir, 'app.ts'), 'function add(a, b) { return a + b; }');
+      execSync('git add .', { cwd: nonRootTempDir });
+      execSync('git commit -m "feat: initial implementation"', { cwd: nonRootTempDir });
+
+      const rootHash = execSync('git rev-parse HEAD', { cwd: nonRootTempDir }).toString().trim();
+
+      // Non-root fix commit
+      await fs.writeFile(path.join(nonRootTempDir, 'app.ts'), 'function add(a, b) { return a - b; }');
+      execSync('git add .', { cwd: nonRootTempDir });
+      execSync('git commit -m "fix: resolve addition bug"', { cwd: nonRootTempDir });
+
+      const originalCwd = process.cwd();
+      process.chdir(nonRootTempDir);
+
+      try {
+        const repository = { save: () => {}, upsert: () => {}, exists: () => false, getAll: () => [] };
+        const miner = new GitMiner(repository);
+        const config: RepoBenchConfig = {
+          mining: { keywords: ['fix'], exclude_paths: [] },
+        };
+
+        const results = await miner.mineCommits(config);
+
+        expect(results.length).toBe(1);
+        const candidate: Candidate = results[0];
+        expect(candidate.postFixHash).toBeDefined();
+        expect(candidate.postFixHash).toBe(candidate.hash);
+        expect(candidate.preFixHash).toBeDefined();
+        expect(candidate.preFixHash).toBe(rootHash);
+      } finally {
+        process.chdir(originalCwd);
+      }
+    } finally {
+      await fs.rm(nonRootTempDir, { recursive: true, force: true });
     }
   });
 
