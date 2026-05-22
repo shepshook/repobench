@@ -5,6 +5,7 @@ import { JsonlDatasetImporter } from '../infrastructure/jsonl-dataset-importer.j
 import { registerEvaluateCommand } from './evaluate.js';
 import { registerRunAllCommand } from './run-all.js';
 import { registerReportCommand } from './report.js';
+import { registerExportFailuresCommand } from './export-failures.js';
 console.log('DEBUG: CLI starting');
 
 import { Command } from 'commander';
@@ -61,6 +62,7 @@ program
 registerEvaluateCommand(program);
 registerRunAllCommand(program);
 registerReportCommand(program);
+registerExportFailuresCommand(program);
 
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);
