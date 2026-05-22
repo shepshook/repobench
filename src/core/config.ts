@@ -18,6 +18,7 @@ export const RepoBenchConfigSchema = z.object({
     env_vars: z.record(z.string()).optional(),
     base_image: z.string().optional(),
     cache_paths: z.array(z.string()).optional(),
+    agent_setup_commands: z.array(z.string()).optional(),
   }).optional(),
 }).transform((data) => ({
   ...data,
@@ -27,6 +28,7 @@ export const RepoBenchConfigSchema = z.object({
     envVars: data.sandbox.env_vars,
     baseImage: data.sandbox.base_image,
     cachePaths: data.sandbox.cache_paths,
+    agentSetupCommands: data.sandbox.agent_setup_commands,
   } : undefined,
 }));
 

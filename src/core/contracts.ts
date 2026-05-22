@@ -103,6 +103,7 @@ export interface SandboxConfig {
   cacheVolumes?: { hostPath: string; containerPath: string }[];
   cachePaths?: string[];
   project?: string;
+  agentSetupCommands?: string[];
 }
 
 export interface IDockerVolume {

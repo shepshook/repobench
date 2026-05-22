@@ -136,4 +136,71 @@ describe('RepoBenchConfigSchema', () => {
     });
     expect(result.mining.since).toBe('2025-06-01T00:00:00Z');
   });
+
+  it('should transform sandbox.agent_setup_commands to agentSetupCommands', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: {
+        keywords: ['fix'],
+        exclude_paths: [],
+      },
+      sandbox: {
+        agent_setup_commands: ['npm install -g opencode'],
+      },
+    });
+    expect(result.sandbox).toBeDefined();
+    expect(result.sandbox!.agentSetupCommands).toEqual(['npm install -g opencode']);
+  });
+
+  it('should handle empty agent_setup_commands array', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: {
+        keywords: ['fix'],
+        exclude_paths: [],
+      },
+      sandbox: {
+        agent_setup_commands: [],
+      },
+    });
+    expect(result.sandbox).toBeDefined();
+    expect(result.sandbox!.agentSetupCommands).toEqual([]);
+  });
+
+  it('should transform agent_setup_commands alongside other sandbox fields', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: {
+        keywords: ['fix'],
+        exclude_paths: [],
+      },
+      sandbox: {
+        build_command: 'npm ci',
+        test_command: 'npm test',
+        base_image: 'node:20-alpine',
+        env_vars: { NODE_ENV: 'test' },
+        cache_paths: ['/root/.npm'],
+        agent_setup_commands: ['npm install -g opencode', 'pip install aider-chat'],
+      },
+    });
+    expect(result.sandbox).toEqual({
+      buildCommand: 'npm ci',
+      testCommand: 'npm test',
+      baseImage: 'node:20-alpine',
+      envVars: { NODE_ENV: 'test' },
+      cachePaths: ['/root/.npm'],
+      agentSetupCommands: ['npm install -g opencode', 'pip install aider-chat'],
+    });
+  });
+
+  it('should reject non-string elements in agent_setup_commands array', () => {
+    expect(() =>
+      RepoBenchConfigSchema.parse({
+        mining: {
+          keywords: ['fix'],
+          exclude_paths: [],
+        },
+        sandbox: {
+          agent_setup_commands: ['npm install -g opencode', 42],
+        },
+      }),
+    ).toThrow();
+  });
 });

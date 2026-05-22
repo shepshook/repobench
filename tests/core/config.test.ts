@@ -129,6 +129,29 @@ sandbox:
     });
   });
 
+  it('should load sandbox with agent_setup_commands from YAML', async () => {
+    const mockConfig = `
+mining:
+  keywords: ['ai']
+  exclude_paths: []
+sandbox:
+  build_command: 'npm install'
+  agent_setup_commands:
+    - 'npm install -g opencode'
+    - 'pip install aider-chat'
+`;
+    vi.mocked(fs.readFile).mockResolvedValue(mockConfig);
+
+    const config = await loadConfig('repobench.yaml');
+
+    expect(config.sandbox).toBeDefined();
+    expect(config.sandbox!.agentSetupCommands).toEqual([
+      'npm install -g opencode',
+      'pip install aider-chat',
+    ]);
+    expect(config.sandbox!.buildCommand).toBe('npm install');
+  });
+
   it('should throw when YAML has invalid syntax', async () => {
     const invalidYaml = `
 mining:
