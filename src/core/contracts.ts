@@ -512,6 +512,13 @@ export interface IBatchRunner {
   cancel(): void;
 }
 
+export interface IProgressReporter {
+  onTaskStart(taskId: string, agentId: string, candidateId: string): void;
+  onTaskComplete(taskId: string, result: WorkerResult<unknown>): void;
+  onBatchComplete(summary: BatchRunSummary): void;
+  onError(taskId: string, error: Error): void;
+}
+
 export interface WorkerTask<T> {
   id: string;
   fn: () => Promise<T>;
