@@ -1,8 +1,7 @@
-import { Sandbox } from '../../infrastructure/sandbox';
-import { PtySession } from '../../infrastructure/pty-session';
 import { AgentAdapterFactory } from './agent-adapter-factory';
-import { IPtySession, AgentConfig, ISessionOrchestrator, IDoneDetector, ICostParser, ISessionRepository } from '../contracts';
+import { ISandbox, IPtySession, IPtySessionFactory, AgentConfig, ISessionOrchestrator, IDoneDetector, ICostParser, ISessionRepository } from '../contracts';
 import { PromptHandler } from './prompt-handler';
+import { defaultPtySessionFactory } from '../pty-session-factory';
 
 export class SessionOrchestrator implements ISessionOrchestrator {
     constructor(
@@ -11,10 +10,11 @@ export class SessionOrchestrator implements ISessionOrchestrator {
             setSignatures: () => {},
         },
         private costParser?: ICostParser,
-        private sessionRepository?: ISessionRepository
+        private sessionRepository?: ISessionRepository,
+        private ptySessionFactory: IPtySessionFactory = defaultPtySessionFactory,
     ) {}
 
-    async createSession(config: AgentConfig, sandbox: Sandbox): Promise<IPtySession> {
+    async createSession(config: AgentConfig, sandbox: ISandbox): Promise<IPtySession> {
         await sandbox.createSnapshot();
         const adapter = AgentAdapterFactory.createAdapter(config);
         adapter.configure(config);
@@ -26,7 +26,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         }));
         promptHandler.setRules(rules);
 
-        const session = await PtySession.create(sandbox, adapter, {}, promptHandler);
+        const session = await this.ptySessionFactory.create(sandbox, adapter, {}, promptHandler);
 
         if (config.completionSignatures) {
             this.doneDetector.setSignatures(config.completionSignatures);
@@ -49,7 +49,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         return session;
     }
 
-    async executeSession(config: AgentConfig, sandbox: Sandbox, buildCommand: string, runId?: string): Promise<{ success: boolean, cost: number }> {
+    async executeSession(config: AgentConfig, sandbox: ISandbox, buildCommand: string, runId?: string): Promise<{ success: boolean, cost: number }> {
         const session = await this.createSession(config, sandbox);
         let cost = 0;
         try {
@@ -77,7 +77,7 @@ export class SessionOrchestrator implements ISessionOrchestrator {
         }
     }
 
-    async validateAndRollback(sandbox: Sandbox, command: string): Promise<boolean> {
+    async validateAndRollback(sandbox: ISandbox, command: string): Promise<boolean> {
         const result = await sandbox.execute(command);
         if (result.exitCode !== 0) {
             await sandbox.restoreSnapshot();

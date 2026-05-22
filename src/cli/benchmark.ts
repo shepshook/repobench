@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import { BenchmarkService } from '../core/services/benchmark-service';
 import { Sandbox } from '../infrastructure/sandbox';
-import { SandboxConfig } from '../core/contracts';
+import { VolumeManager } from '../infrastructure/volume-manager';
+import { SandboxConfig, IDocker } from '../core/contracts';
+import Docker from 'dockerode';
 
 const program = new Command();
 
@@ -17,7 +19,8 @@ program
       buildCommand: 'echo "building..."',
     };
 
-    const benchmarkService = new BenchmarkService(Sandbox);
+    const volumeManager = new VolumeManager(new Docker() as unknown as IDocker);
+    const benchmarkService = new BenchmarkService(Sandbox, volumeManager);
     const results = await benchmarkService.runBenchmark(config);
 
     console.log('Benchmark Results:');

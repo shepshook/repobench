@@ -1,14 +1,14 @@
-import { IBenchmarkService, SandboxConfig, ISandbox, IDocker } from '../contracts';
+import { IBenchmarkService, SandboxConfig, ISandbox, IVolumeManager } from '../contracts';
 import { performance } from 'perf_hooks';
-import { VolumeManager } from '../../infrastructure/volume-manager';
-import Docker from 'dockerode';
 
 export class BenchmarkService implements IBenchmarkService {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(private SandboxClass: new (config: SandboxConfig, volumeManager?: any) => ISandbox) {}
+  constructor(
+    private SandboxClass: new (config: SandboxConfig, volumeManager?: IVolumeManager) => ISandbox,
+    private volumeManager: IVolumeManager,
+  ) {}
 
   async runBenchmark(config: SandboxConfig): Promise<{ coldStart: number, warmStart: number, hitRatio: number }> {
-    const volumeManager = new VolumeManager(new Docker() as unknown as IDocker);
+    const volumeManager = this.volumeManager;
 
     // 1. Cold start
     let sandbox: ISandbox = new this.SandboxClass(config, volumeManager);

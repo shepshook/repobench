@@ -1,16 +1,11 @@
 import { IAgentAdapter } from '../contracts/agent-adapter';
-import { ClaudeCodeAdapter } from '../../infrastructure/agents/claude-code-adapter';
-import { AiderAdapter } from '../../infrastructure/agents/aider-adapter';
 import { DefaultAdapter } from './base-agent-adapter';
 import { AgentConfig, AgentConfigSchema } from '../contracts';
 
-export class AgentAdapterFactory {
-    private static adapters = new Map<string, new () => IAgentAdapter>();
+type AdapterCtor = new () => IAgentAdapter;
 
-    static {
-        this.registerAdapter('claude-code', ClaudeCodeAdapter);
-        this.registerAdapter('aider', AiderAdapter);
-    }
+export class AgentAdapterFactory {
+    private static adapters = new Map<string, AdapterCtor>();
 
     static registerAdapter(agentId: string, adapterClass: new () => IAgentAdapter) {
         this.adapters.set(agentId, adapterClass);

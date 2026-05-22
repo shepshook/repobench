@@ -271,6 +271,10 @@ export interface IPromptHandler {
   setRules(rules: InteractionRule[]): void;
 }
 
+export interface IPtySessionFactory {
+  create(sandbox: ISandbox, adapter: IAgentAdapter, options: Record<string, unknown>, promptHandler: IPromptHandler): Promise<IPtySession>;
+}
+
 export interface IPtySession {
   onData(callback: (data: string) => void): void;
   onTimeout(callback: () => void): void;

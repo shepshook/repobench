@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { JudgeService } from '../../src/core/services/judge-service';
 import { Evaluator } from '../../src/core/services/evaluator';
@@ -191,6 +193,76 @@ describe('Cross-Module Boundary Audit', () => {
       expect(runResult.result).toHaveProperty('eScore');
       expect(runResult.result).toHaveProperty('latency');
       expect(runResult.result).toHaveProperty('regressionStatus');
+    });
+  });
+
+  describe('Boundary E: SessionOrchestrator — Dependency Inversion', () => {
+    const sourcePath = resolve('src/core/services/session-orchestrator.ts');
+
+    it('should not import concrete Sandbox or PtySession from infrastructure layer', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/from\s+['"]\.\.\/\.\.\/infrastructure\//);
+    });
+
+    it('should not dynamically import from infrastructure layer either', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/import\s*\(\s*['"]\.\.\/\.\.\/infrastructure\//);
+    });
+
+    it('should import ISandbox from contracts instead of concrete Sandbox', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/from\s+['"]\.\.\/\.\.\/infrastructure\/sandbox['"]/);
+      expect(content).toMatch(/ISandbox/);
+    });
+
+    it('should declare sandbox method parameters as ISandbox, not Sandbox', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/:\s*Sandbox\b/);
+    });
+  });
+
+  describe('Boundary F: BenchmarkService — Dependency Inversion', () => {
+    const sourcePath = resolve('src/core/services/benchmark-service.ts');
+
+    it('should not import concrete VolumeManager from infrastructure layer', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/from\s+['"]\.\.\/\.\.\/infrastructure\//);
+    });
+
+    it('should import ISandbox, SandboxConfig, and IDocker from contracts instead', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/from\s+['"]\.\.\/\.\.\/infrastructure\//);
+      expect(content).toMatch(/IBenchmarkService/);
+    });
+
+    it('should not instantiate VolumeManager directly (should use DI)', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/new\s+VolumeManager/);
+    });
+  });
+
+  describe('Boundary G: AgentAdapterFactory — Dependency Inversion', () => {
+    const sourcePath = resolve('src/core/services/agent-adapter-factory.ts');
+
+    it('should not import concrete adapter classes from infrastructure layer', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/from\s+['"]\.\.\/\.\.\/infrastructure\//);
+    });
+
+    it('should import only IAgentAdapter from contracts, not concrete adapters', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/ClaudeCodeAdapter/);
+      expect(content).not.toMatch(/AiderAdapter/);
+    });
+
+    it('should not dynamically import adapter classes from infrastructure layer', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/import\s*\(\s*['"]\.\.\/\.\.\/infrastructure\//);
+    });
+
+    it('should not contain a static initializer block that registers adapters', () => {
+      const content = readFileSync(sourcePath, 'utf-8');
+      expect(content).not.toMatch(/static\s*\{/);
     });
   });
 });

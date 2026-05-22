@@ -19,3 +19,5 @@ export class AiderAdapter extends AgentAdapter {
             : baseCmd;
     }
 }
+
+export default AiderAdapter;

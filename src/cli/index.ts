@@ -64,6 +64,13 @@ registerRunAllCommand(program);
 registerReportCommand(program);
 registerExportFailuresCommand(program);
 
+import { AgentAdapterFactory } from '../core/services/agent-adapter-factory';
+import { ClaudeCodeAdapter } from '../infrastructure/agents/claude-code-adapter';
+import { AiderAdapter } from '../infrastructure/agents/aider-adapter';
+
+AgentAdapterFactory.registerAdapter('claude-code', ClaudeCodeAdapter);
+AgentAdapterFactory.registerAdapter('aider', AiderAdapter);
+
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);
 });

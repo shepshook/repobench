@@ -21,3 +21,5 @@ export class ClaudeCodeAdapter extends AgentAdapter {
             : baseCmd;
     }
 }
+
+export default ClaudeCodeAdapter;

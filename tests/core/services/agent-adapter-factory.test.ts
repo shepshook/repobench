@@ -13,10 +13,11 @@ class MockCustomAdapter extends AgentAdapter {
 }
 
 describe('AgentAdapterFactory', () => {
-    beforeEach(() => {
-        // Reset factory state if possible, but since it's static and 
-        // uses a static block for registration, we just need to be aware of it.
-        // The factory doesn't have a reset method, so we'll just add new ones.
+    beforeAll(() => {
+        // Register known adapters explicitly (composition root responsibility).
+        // This ensures tests are not coupled to any static initializer in the factory itself.
+        AgentAdapterFactory.registerAdapter('claude-code', ClaudeCodeAdapter);
+        AgentAdapterFactory.registerAdapter('aider', AiderAdapter);
     });
 
     it('should return ClaudeCodeAdapter for "claude-code"', () => {
@@ -29,7 +30,7 @@ describe('AgentAdapterFactory', () => {
         expect(adapter).toBeInstanceOf(AiderAdapter);
     });
 
-    it('should return DefaultAdapter for unknown agentId', () => {
+    it('should return DefaultAdapter for unknown agentId when no adapter is registered', () => {
         const adapter = AgentAdapterFactory.createAdapter('unknown-agent');
         expect(adapter).toBeInstanceOf(DefaultAdapter);
     });
@@ -43,7 +44,7 @@ describe('AgentAdapterFactory', () => {
         expect(adapter.getStartupCommand()).toBe('custom-cmd');
     });
 
-    it('should return ClaudeCodeAdapter when provided with a valid AgentConfig', () => {
+    it('should return a registered adapter when provided with a valid AgentConfig', () => {
         const config: AgentConfig = {
             agentId: 'claude-code',
             model: 'claude-3-5-sonnet',
