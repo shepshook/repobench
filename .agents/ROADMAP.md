@@ -142,12 +142,20 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 2.4.FIX5: Fix Caching Stats & Volume Mounting](.agents/spec/task-2.4.fix5.md)
     - [x] [Task 2.4.FIX6: Investigate and Fix Test Suite Failures](.agents/spec/task-2.4.fix6.md)
   * **DoD:** Subsequent initialization times are significantly reduced; cache does not grow unboundedly; dependencies are correctly invalidated.
-* **[ ] Feature 2.5: Agent Tool Dependency Installation**
+* **[x] Feature 2.5: Agent Tool Dependency Installation**
   * **Spec:** Extend `SandboxConfig` and the sandbox init flow to install agent-specific dependencies (e.g., `npm install -g opencode`) inside the container before the agent session starts.
   * **Tasks:**
     - [x] [Task 2.5.1: Add agent dependency setup to SandboxConfig](.agents/spec/task-2.5.1.md)
     - [x] [Task 2.5.2: Implement agent dependency installation in sandbox init](.agents/spec/task-2.5.2.md)
-  * **DoD:** `SandboxConfig.agentSetupCommands` runs inside the container after `buildCommand`; simulation mode logs setup commands; all sandbox tests pass.
+     * **DoD:** `SandboxConfig.agentSetupCommands` runs inside the container after `buildCommand`; simulation mode logs setup commands; all sandbox tests pass.
+* **[ ] Feature 2.FIX1: Global Epic Integration & Alignment Round 1**
+   * **Spec:** Register benchmark CLI in main index; wire agentSetupCommands/cachePaths into evaluate/run-all CLI config; mark success criteria; remediate silent catch blocks per ARCHITECTURE.md §4.3.
+   * **Tasks:**
+     - [x] [Task 2.FIX1.1: Register Benchmark CLI Command in Main CLI](.agents/spec/task-2.fix1.1.md)
+     - [ ] [Task 2.FIX1.2: Wire agentSetupCommands and cachePaths into evaluate/run-all CLI](.agents/spec/task-2.fix1.2.md)
+     - [ ] [Task 2.FIX1.3: Mark Epic 2 Success Criteria as Completed](.agents/spec/task-2.fix1.3.md)
+     - [ ] [Task 2.FIX1.4: Remediate Silent Catch Blocks in Sandbox Module](.agents/spec/task-2.fix1.4.md)
+   * **DoD:** `repobench benchmark --help` works; `evaluate`/`run-all` pass `agentSetupCommands` and `cachePaths` from YAML to sandbox; both success criteria marked `[x]`; zero empty `catch { }` blocks in sandbox module files; typecheck + lint + full test suite pass.
 
 ---
 

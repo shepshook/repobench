@@ -7,6 +7,7 @@ import { registerRunAllCommand } from './run-all.js';
 import { registerReportCommand } from './report.js';
 import { registerExportFailuresCommand } from './export-failures.js';
 import { registerMineCommand } from './mine.js';
+import { registerBenchmarkCommand } from './benchmark.js';
 console.log('DEBUG: CLI starting');
 
 import { Command } from 'commander';
@@ -61,6 +62,7 @@ program
   });
 
 registerMineCommand(program);
+registerBenchmarkCommand(program);
 registerEvaluateCommand(program);
 registerRunAllCommand(program);
 registerReportCommand(program);
