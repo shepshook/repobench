@@ -219,6 +219,27 @@ describe('JudgeService', () => {
       expect(results).toHaveLength(1); // Pipeline should complete
     });
 
+    it('should collect error in errors array when repository.save fails', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'clean',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Clean',
+        eScore: 1.0,
+      });
+      (repository.save as any).mockImplementation(() => {
+        throw new Error('DB Error');
+      });
+
+      const results = await judge.runEvaluationPipeline([mockCandidate], agentId);
+      expect((results[0] as any).errors).toBeDefined();
+      expect((results[0] as any).errors).toHaveLength(1);
+      expect((results[0] as any).errors[0]).toContain('Failed to persist');
+      expect((results[0] as any).errors[0]).toContain('DB Error');
+    });
 
     it('should include logPath in persisted RunResult if provided', async () => {
       (evaluator.evaluate as any).mockResolvedValue({
@@ -377,6 +398,28 @@ describe('JudgeService', () => {
       expect(results[0].result.regressionStatus).toBe('regressed');
     });
 
+    it('should collect error in errors array when artifact export fails', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'regressed',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Regression detected',
+        eScore: 0.3,
+      });
+      failureArtifactExporter.exportForRun = vi.fn().mockRejectedValue(new Error('Export failed'));
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, failureArtifactExporter);
+      const results = await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect((results[0] as any).errors).toBeDefined();
+      expect((results[0] as any).errors).toHaveLength(1);
+      expect((results[0] as any).errors[0]).toContain('Failed to export');
+      expect((results[0] as any).errors[0]).toContain('Export failed');
+    });
+
     it('should pass the correct runId to exporter.exportForRun', async () => {
       (evaluator.evaluate as any).mockResolvedValue({
         candidateId: 'test-candidate-1',
@@ -412,6 +455,87 @@ describe('JudgeService', () => {
       const results = await judge.runEvaluationPipeline([mockCandidate], 'test-agent-123');
       expect(results).toHaveLength(1);
       expect(results[0].result.regressionStatus).toBe('clean');
+    });
+  });
+
+  describe('Error Aggregation', () => {
+    it('should collect errors from both save and export failures', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'regressed',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Regression detected',
+        eScore: 0.3,
+      });
+      (repository.save as any).mockImplementation(() => {
+        throw new Error('DB Error');
+      });
+      const exporter = {
+        exportForRun: vi.fn().mockRejectedValue(new Error('Export failed')),
+        exportAllFailures: vi.fn().mockResolvedValue([]),
+      };
+
+      const judgeWithExporter = new JudgeService(sandbox, config, evaluator, repository, exporter);
+      const results = await judgeWithExporter.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+
+      expect((results[0] as any).errors).toBeDefined();
+      expect((results[0] as any).errors).toHaveLength(2);
+      expect((results[0] as any).errors[0]).toContain('Failed to persist');
+      expect((results[0] as any).errors[1]).toContain('Failed to export');
+    });
+
+    it('should not include errors field when no failures occur', async () => {
+      (evaluator.evaluate as any).mockResolvedValue({
+        candidateId: 'test-candidate-1',
+        regressionStatus: 'clean',
+        comparison: null,
+        preTestResults: null,
+        postTestResults: null,
+        latency: 100,
+        message: 'Clean',
+        eScore: 1.0,
+      });
+
+      const results = await judge.runEvaluationPipeline([mockCandidate], 'test-agent-123');
+      expect((results[0] as any).errors).toBeUndefined();
+    });
+
+    it('should only include errors on the affected candidate', async () => {
+      const candidate2: Candidate = { ...mockCandidate, id: 'test-candidate-2' };
+      (evaluator.evaluate as any)
+        .mockResolvedValueOnce({
+          candidateId: 'test-candidate-1',
+          regressionStatus: 'clean',
+          comparison: null,
+          preTestResults: null,
+          postTestResults: null,
+          latency: 100,
+          message: 'Clean',
+          eScore: 1.0,
+        })
+        .mockResolvedValueOnce({
+          candidateId: 'test-candidate-2',
+          regressionStatus: 'regressed',
+          comparison: null,
+          preTestResults: null,
+          postTestResults: null,
+          latency: 150,
+          message: 'Regression',
+          eScore: 0.4,
+        });
+      (repository.save as any)
+        .mockReturnValueOnce(undefined)
+        .mockImplementationOnce(() => { throw new Error('DB Error on second'); });
+
+      const results = await judge.runEvaluationPipeline([mockCandidate, candidate2], 'test-agent-123');
+
+      expect((results[0] as any).errors).toBeUndefined();
+      expect((results[1] as any).errors).toBeDefined();
+      expect((results[1] as any).errors).toHaveLength(1);
+      expect((results[1] as any).errors[0]).toContain('DB Error on second');
     });
   });
 });

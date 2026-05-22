@@ -47,10 +47,13 @@ export class JudgeService implements IJudgeService {
         timestamp: new Date(),
         logPath,
       };
+      const errors: string[] = [];
       try {
         this.repository?.save(runResult);
       } catch (error) {
-        console.error(`Failed to persist run result for candidate ${candidate.id}:`, error);
+        const msg = `Failed to persist run result for candidate ${candidate.id}: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(msg);
+        errors.push(msg);
       }
 
       if (result.regressionStatus === 'regressed' || result.regressionStatus === 'error') {
@@ -58,12 +61,14 @@ export class JudgeService implements IJudgeService {
           try {
             await this.failureArtifactExporter.exportForRun(runResult.runId);
           } catch (e) {
-            console.error(`Failed to export artifacts for run ${runResult.runId}:`, e);
+            const msg = `Failed to export artifacts for run ${runResult.runId}: ${e instanceof Error ? e.message : String(e)}`;
+            console.error(msg);
+            errors.push(msg);
           }
         }
       }
 
-      results.push({ candidateId: candidate.id, result, cost });
+      results.push({ candidateId: candidate.id, result, cost, errors: errors.length > 0 ? errors : undefined });
     }
     return results;
   }

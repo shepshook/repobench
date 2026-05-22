@@ -318,7 +318,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Resolve cross-module structural integrity gaps: wire missing `implements` clause on `FailureArtifactExporter`, remediate error swallowing in `judge-service.ts` and `batch-runner.ts`, restore failure-artifact wiring in `run-all` batch CLI, consolidate sandbox lifecycle in batch-runner, and replace static-instance anti-pattern in `RunResultRepository`.
   * **Tasks:**
     - [x] [Task 5.FIX1.1: Wire Missing IFailureArtifactExporter Implementation & Reconcile RegressionStatus Enum](.agents/spec/task-5.fix1.1.md)
-    - [ ] [Task 5.FIX1.2: Bubble Swallowed Errors in JudgeService — DB Save & Artifact Export](.agents/spec/task-5.fix1.2.md)
+    - [x] [Task 5.FIX1.2: Bubble Swallowed Errors in JudgeService — DB Save & Artifact Export](.agents/spec/task-5.fix1.2.md)
     - [ ] [Task 5.FIX1.3: Remove Sandbox Destroy Error Swallow in BatchRunnerService](.agents/spec/task-5.fix1.3.md)
     - [ ] [Task 5.FIX1.4: Wire FailureArtifactExporter into Run-All CLI & Unify Sandbox Lifecycle](.agents/spec/task-5.fix1.4.md)
     - [ ] [Task 5.FIX1.5: Replace RunResultRepository Static Instance Anti-Pattern with DI](.agents/spec/task-5.fix1.5.md)

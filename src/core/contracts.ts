@@ -417,6 +417,7 @@ export interface EvaluationRunResult {
   candidateId: string;
   result: EvaluationResult;
   cost?: number;
+  errors?: string[];
 }
 
 export interface ISemanticJudge {
