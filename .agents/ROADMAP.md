@@ -321,6 +321,6 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.FIX1.2: Bubble Swallowed Errors in JudgeService — DB Save & Artifact Export](.agents/spec/task-5.fix1.2.md)
     - [x] [Task 5.FIX1.3: Remove Sandbox Destroy Error Swallow in BatchRunnerService](.agents/spec/task-5.fix1.3.md)
     - [x] [Task 5.FIX1.4: Wire FailureArtifactExporter into Run-All CLI & Unify Sandbox Lifecycle](.agents/spec/task-5.fix1.4.md)
-    - [ ] [Task 5.FIX1.5: Replace RunResultRepository Static Instance Anti-Pattern with DI](.agents/spec/task-5.fix1.5.md)
+    - [x] [Task 5.FIX1.5: Replace RunResultRepository Static Instance Anti-Pattern with DI](.agents/spec/task-5.fix1.5.md)
     - [ ] [Task 5.FIX1.6: Global Regression Verification — Run-All CLI, Judge Persistence & Boundary Audit](.agents/spec/task-5.fix1.6.md)
   * **DoD:** `FailureArtifactExporter` formally implements its contract; `judge-service.ts` aggregates and surfaces persistence/export errors to the caller; `batch-runner.ts` logs sandbox teardown failures; `run-all` CLI exports failure artifacts identically to `evaluate`; `RunResultRepository` receives its DB via constructor injection; all Epic 5 integration tests pass (run-all-cli, report-cli, export-failures-cli, judge-persistence, full-pipeline, boundary-audit).

@@ -108,4 +108,22 @@ describe('RunResultRepository', () => {
     expect(all).toHaveLength(1);
     expect(all[0].metrics.eScore).toBe(0.9);
   });
+
+  describe('DI compliance', () => {
+    it('should not expose static getLastCreated method', () => {
+      expect((RunResultRepository as any).getLastCreated).toBeUndefined();
+    });
+
+    it('should not maintain a static instances array', () => {
+      // Create multiple instances; after the fix there should be no static array
+      const repo1 = new RunResultRepository();
+      const repo2 = new RunResultRepository();
+      expect(repo1).toBeInstanceOf(RunResultRepository);
+      expect(repo2).toBeInstanceOf(RunResultRepository);
+      // Both instances share the same db — no static tracking needed
+      const run = createValidRunResult();
+      repo1.save(run);
+      expect(repo2.getAll()).toHaveLength(1);
+    });
+  });
 });

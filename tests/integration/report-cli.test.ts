@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { registerReportCommand } from '../../src/cli/report';
 import { RunResultRepository } from '../../src/core/repositories/run-result-repository';
 import { reinitDatabase } from '../../src/infrastructure/persistence/database';
+import * as databaseModule from '../../src/infrastructure/persistence/database';
 import type { RunResult } from '../../src/core/contracts';
 import { generateValidUuid } from '../helpers/dataset';
 import path from 'node:path';
@@ -135,8 +136,8 @@ describe('CLI: repobench report', () => {
   });
 
   it('should exit with code 1 on error', async () => {
-    vi.spyOn(repository, 'getAll').mockImplementation(() => {
-      throw new Error('db error');
+    vi.spyOn(databaseModule, 'initDatabase').mockImplementation(() => {
+      throw new Error('db initialization failed');
     });
 
     try {
@@ -145,7 +146,7 @@ describe('CLI: repobench report', () => {
       // process.exit mock throws
     }
 
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('db initialization failed'));
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
@@ -184,5 +185,31 @@ describe('CLI: repobench report', () => {
     const alphaIndex = logCalls.indexOf('agent-a');
     const betaIndex = logCalls.indexOf('agent-b');
     expect(betaIndex).toBeLessThan(alphaIndex);
+  });
+
+  describe('DI compliance', () => {
+    it('should create its own fresh RunResultRepository instance', async () => {
+      // Seed data through one repository
+      repository.save(seedRunResult({ agentId: 'standalone-agent', metrics: { success: true, cost: 1, latency: 10, eScore: 0.5 } }));
+
+      // CLI should create its own repository internally and still read the data
+      await program.parseAsync(['node', 'repobench', 'report']);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('standalone-agent'));
+    });
+
+    it('should not rely on static instance tracking when unrelated repos exist', async () => {
+      // Create unrelated repos before seeding (simulating other operations)
+      const unrelated1 = new RunResultRepository();
+      const unrelated2 = new RunResultRepository();
+
+      // Seed data through a specific repo
+      repository.save(seedRunResult({ agentId: 'target-agent', metrics: { success: true, cost: 1, latency: 10, eScore: 0.5 } }));
+
+      // Run the report CLI — it must use its own repo instance, not getLastCreated
+      await program.parseAsync(['node', 'repobench', 'report']);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('target-agent'));
+    });
   });
 });

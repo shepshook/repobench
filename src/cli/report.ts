@@ -23,7 +23,7 @@ export function registerReportCommand(program: Command): void {
     }) => {
       try {
         initDatabase();
-        const repository = RunResultRepository.getLastCreated();
+        const repository = new RunResultRepository();
         const reporter = new LeaderboardReporter(repository);
         const renderer = new TerminalReportRenderer();
 
