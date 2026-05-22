@@ -286,7 +286,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.1.3: Implement RunResultRepository & Tests](.agents/spec/task-5.1.3.md)
     - [x] [Task 5.1.4: Integration into Evaluation Pipeline](.agents/spec/task-5.1.4.md)
   * **DoD:** 100% of runs persist safely to the local DB.
-* **[ ] Feature 5.2: Multi-Agent Batch Runner**
+* **[x] Feature 5.2: Multi-Agent Batch Runner**
   * **Spec:** Build `BatchRunner` with worker pools to handle concurrent Docker limits.
   * **Tasks:**
     - [x] [Task 5.2.1: Define BatchRunner Contract, BatchConfig & WorkerPool Interface](.agents/spec/task-5.2.1.md)
@@ -300,6 +300,11 @@ This document serves as the central source of truth for the project's strategic 
   * **DoD:** `repobench run-all` processes candidates across multiple agents seamlessly. All Feature 5.2 tests pass (batch-runner, batch-contracts, worker-pool, batch-progress-reporter, run-all-cli).
 * **[ ] Feature 5.3: CLI Leaderboard View**
   * **Spec:** Build `report` command to query SQLite and aggregate metrics (Avg E-Score, Success Rate).
+  * **Tasks:**
+    - [x] [Task 5.3.1: Define Leaderboard Query Contract & Options Schema](.agents/spec/task-5.3.1.md)
+    - [ ] [Task 5.3.2: Implement LeaderboardReporter Service & Tests](.agents/spec/task-5.3.2.md)
+    - [ ] [Task 5.3.3: Implement Terminal Table Renderer for Report Output](.agents/spec/task-5.3.3.md)
+    - [ ] [Task 5.3.4: CLI Integration (`repobench report`) & Verification](.agents/spec/task-5.3.4.md)
   * **DoD:** Terminal renders a sorted, ranked table of agent performance.
 * **[ ] Feature 5.4: Failure Artifact Exporter**
   * **Spec:** Export `diff.patch`, `session.log`, and ground truth fix to `exports/<run_id>/`.

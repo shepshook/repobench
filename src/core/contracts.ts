@@ -449,6 +449,32 @@ export interface IRunResultRepository {
   getByCandidateId(candidateId: string): RunResult[];
 }
 
+export const LeaderboardOptionsSchema = z.object({
+  sortBy: z.enum(['eScore', 'successRate', 'cost', 'latency', 'runs']).default('eScore'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.number().int().positive().default(10),
+  agentId: z.string().optional(),
+  candidateId: z.string().uuid().optional(),
+});
+
+export type LeaderboardOptions = z.infer<typeof LeaderboardOptionsSchema>;
+
+export interface LeaderboardEntry {
+  rank: number;
+  agentId: string;
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
+  successRate: number;
+  avgEScore: number;
+  avgCost: number;
+  avgLatency: number;
+}
+
+export interface ILeaderboardReporter {
+  getLeaderboard(options: LeaderboardOptions): Promise<LeaderboardEntry[]>;
+}
+
 // --- Dataset Export/Import Types ---
 
 export interface IDatasetExporter {
