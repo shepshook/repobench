@@ -94,6 +94,8 @@ export function registerRunAllCommand(program: Command): void {
           testCommand: loadedConfig?.sandbox?.testCommand,
           baseImage: loadedConfig?.sandbox?.baseImage,
           envVars: loadedConfig?.sandbox?.envVars,
+          agentSetupCommands: loadedConfig?.sandbox?.agentSetupCommands,
+          cachePaths: loadedConfig?.sandbox?.cachePaths,
         };
         
         const reporter = new BatchProgressReporter();

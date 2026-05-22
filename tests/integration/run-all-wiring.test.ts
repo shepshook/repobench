@@ -170,6 +170,8 @@ describe('run-all CLI wiring (FIX1.4)', () => {
         testCommand: 'npm test',
         baseImage: 'node:20-alpine',
         envVars: { NODE_ENV: 'test' },
+        agentSetupCommands: ['pip install pytest', 'npm ci'],
+        cachePaths: ['/app/node_modules', '/root/.cache'],
       },
     });
 
@@ -192,6 +194,8 @@ describe('run-all CLI wiring (FIX1.4)', () => {
     expect(sandboxConfig.testCommand).toBe('npm test');
     expect(sandboxConfig.baseImage).toBe('node:20-alpine');
     expect(sandboxConfig.envVars).toEqual({ NODE_ENV: 'test' });
+    expect(sandboxConfig.agentSetupCommands).toEqual(['pip install pytest', 'npm ci']);
+    expect(sandboxConfig.cachePaths).toEqual(['/app/node_modules', '/root/.cache']);
     expect(sandboxConfig.project).toBe('default');
   });
 

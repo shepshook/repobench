@@ -65,6 +65,8 @@ export function registerEvaluateCommand(program: Command): void {
           testCommand: loadedConfig?.sandbox?.testCommand,
           baseImage: loadedConfig?.sandbox?.baseImage,
           envVars: loadedConfig?.sandbox?.envVars,
+          agentSetupCommands: loadedConfig?.sandbox?.agentSetupCommands,
+          cachePaths: loadedConfig?.sandbox?.cachePaths,
         };
         const sandbox = new Sandbox(sandboxConfig);
         await sandbox.init();

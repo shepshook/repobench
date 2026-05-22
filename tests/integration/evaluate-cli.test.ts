@@ -112,7 +112,7 @@ describe('CLI: repobench evaluate', () => {
     exitSpy.mockRestore();
   });
 
-  it('should populate SandboxConfig buildCommand testCommand baseImage and envVars from repobench.yaml', async () => {
+  it('should populate SandboxConfig buildCommand testCommand baseImage envVars agentSetupCommands and cachePaths from repobench.yaml', async () => {
     vi.mocked(loadConfig).mockResolvedValue({
       mining: { keywords: ['fix'], exclude_paths: [] },
       sandbox: {
@@ -120,6 +120,8 @@ describe('CLI: repobench evaluate', () => {
         testCommand: 'npm test',
         baseImage: 'node:20-alpine',
         envVars: { NODE_ENV: 'test' },
+        agentSetupCommands: ['pip install pytest', 'npm ci'],
+        cachePaths: ['/app/node_modules', '/root/.cache'],
       },
     });
 
@@ -136,6 +138,8 @@ describe('CLI: repobench evaluate', () => {
     expect(sandboxConfig.testCommand).toBe('npm test');
     expect(sandboxConfig.baseImage).toBe('node:20-alpine');
     expect(sandboxConfig.envVars).toEqual({ NODE_ENV: 'test' });
+    expect(sandboxConfig.agentSetupCommands).toEqual(['pip install pytest', 'npm ci']);
+    expect(sandboxConfig.cachePaths).toEqual(['/app/node_modules', '/root/.cache']);
     expect(sandboxConfig.project).toBe('default');
   });
 
