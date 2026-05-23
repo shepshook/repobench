@@ -94,7 +94,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [ ] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
+## [x] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
 **Description:** Create a 'Clean Room' environment for agent execution using Docker.
 **Metrics:** Init Latency (<30s for standard projects), Setup Reliability (% of successful builds).
 **Success Criteria:**
@@ -148,7 +148,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 2.5.1: Add agent dependency setup to SandboxConfig](.agents/spec/task-2.5.1.md)
     - [x] [Task 2.5.2: Implement agent dependency installation in sandbox init](.agents/spec/task-2.5.2.md)
      * **DoD:** `SandboxConfig.agentSetupCommands` runs inside the container after `buildCommand`; simulation mode logs setup commands; all sandbox tests pass.
-* **[ ] Feature 2.FIX1: Global Epic Integration & Alignment Round 1**
+* **[x] Feature 2.FIX1: Global Epic Integration & Alignment Round 1**
    * **Spec:** Register benchmark CLI in main index; wire agentSetupCommands/cachePaths into evaluate/run-all CLI config; mark success criteria; remediate silent catch blocks per ARCHITECTURE.md §4.3.
    * **Tasks:**
      - [x] [Task 2.FIX1.1: Register Benchmark CLI Command in Main CLI](.agents/spec/task-2.fix1.1.md)
