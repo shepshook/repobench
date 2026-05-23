@@ -98,8 +98,8 @@ This document serves as the central source of truth for the project's strategic 
 **Description:** Create a 'Clean Room' environment for agent execution using Docker.
 **Metrics:** Init Latency (<30s for standard projects), Setup Reliability (% of successful builds).
 **Success Criteria:**
-- [ ] Full Docker isolation with state reproduction via git and `build_command`.
-- [ ] Automated resource teardown.
+- [x] Full Docker isolation with state reproduction via git and `build_command`.
+- [x] Automated resource teardown.
 
 ### Features
 * **[x] Feature 2.1: Configurable Environment Setup**
@@ -153,7 +153,7 @@ This document serves as the central source of truth for the project's strategic 
    * **Tasks:**
      - [x] [Task 2.FIX1.1: Register Benchmark CLI Command in Main CLI](.agents/spec/task-2.fix1.1.md)
       - [x] [Task 2.FIX1.2: Wire agentSetupCommands and cachePaths into evaluate/run-all CLI](.agents/spec/task-2.fix1.2.md)
-     - [ ] [Task 2.FIX1.3: Mark Epic 2 Success Criteria as Completed](.agents/spec/task-2.fix1.3.md)
+     - [x] [Task 2.FIX1.3: Mark Epic 2 Success Criteria as Completed](.agents/spec/task-2.fix1.3.md)
      - [ ] [Task 2.FIX1.4: Remediate Silent Catch Blocks in Sandbox Module](.agents/spec/task-2.fix1.4.md)
    * **DoD:** `repobench benchmark --help` works; `evaluate`/`run-all` pass `agentSetupCommands` and `cachePaths` from YAML to sandbox; both success criteria marked `[x]`; zero empty `catch { }` blocks in sandbox module files; typecheck + lint + full test suite pass.
 

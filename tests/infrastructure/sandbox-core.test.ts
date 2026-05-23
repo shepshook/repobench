@@ -250,6 +250,48 @@ describe('Sandbox Core (Integration)', () => {
     });
   });
 
+  describe('Resource Teardown (destroy)', () => {
+    it('should stop and remove the Docker container when destroyed', async () => {
+      const { sandbox, mockDocker } = createSandboxFixture();
+      const stopSpy = vi.fn().mockResolvedValue({});
+      const removeSpy = vi.fn().mockResolvedValue({});
+
+      mockDocker.createContainerMock.mockResolvedValue({
+        id: 'mock-container-id',
+        Id: 'mock-container-id',
+        start: vi.fn().mockResolvedValue({}),
+        stop: stopSpy,
+        remove: removeSpy,
+        inspect: vi.fn().mockResolvedValue({ State: { Running: true } }),
+        exec: vi.fn().mockResolvedValue({
+          start: vi.fn().mockResolvedValue({
+            on: vi.fn((_event: string, _cb: Function) => {}),
+          }),
+          inspect: vi.fn().mockResolvedValue({ ExitCode: 0 }),
+        }),
+      });
+
+      await sandbox.init();
+      await sandbox.destroy();
+
+      expect(stopSpy).toHaveBeenCalled();
+      expect(removeSpy).toHaveBeenCalled();
+    });
+
+    it('should be safe to call destroy multiple times', async () => {
+      const { sandbox } = createSandboxFixture();
+      await sandbox.init();
+
+      await expect(sandbox.destroy()).resolves.not.toThrow();
+      await expect(sandbox.destroy()).resolves.not.toThrow();
+    });
+
+    it('should not throw when destroy is called before init', async () => {
+      const { sandbox } = createSandboxFixture();
+      await expect(sandbox.destroy()).resolves.not.toThrow();
+    });
+  });
+
   describe('Database Isolation', () => {
     it('should maintain isolation between tests using different DB paths', async () => {
       const tempDbPath = path.join(os.tmpdir(), `isolation-test-${Math.random()}.db`);

@@ -30,3 +30,20 @@ describe('ROADMAP.md Epic 1 Success Criteria (Task 1.FIX1.1)', () => {
     expect(content).toContain('* **[x] Feature 1.FIX1: Global Epic Integration & Alignment Round 1**');
   });
 });
+
+describe('ROADMAP.md Epic 2 Success Criteria (Task 2.FIX1.3)', () => {
+  const roadmapPath = path.resolve(process.cwd(), '.agents', 'ROADMAP.md');
+  let content: string;
+
+  beforeAll(() => {
+    content = fs.readFileSync(roadmapPath, 'utf-8');
+  });
+
+  it('should mark "Full Docker isolation with state reproduction via git and build_command" as completed', () => {
+    expect(content).toContain('- [x] Full Docker isolation with state reproduction via git and `build_command`.');
+  });
+
+  it('should mark "Automated resource teardown" as completed', () => {
+    expect(content).toContain('- [x] Automated resource teardown.');
+  });
+});

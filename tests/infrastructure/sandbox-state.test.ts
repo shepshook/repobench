@@ -149,4 +149,35 @@ describe('Sandbox State Management', () => {
     await sandbox.destroy();
   });
 
+  it('should remain operational after switching state', async () => {
+    const { sandbox } = createSandboxFixture({
+      project: 'state-operational-test'
+    });
+    await sandbox.init();
+
+    await sandbox.switchState('518a18328344bd6cf80ab0c61904dc0135e0f6fb');
+
+    const result = await sandbox.execute('echo "still-works"');
+    expect(result.exitCode).toBe(0);
+
+    await sandbox.destroy();
+  });
+
+  it('should persist state when switching between different hashes', async () => {
+    const { sandbox } = createSandboxFixture({
+      project: 'state-persist-test'
+    });
+    await sandbox.init();
+
+    await sandbox.switchState('518a18328344bd6cf80ab0c61904dc0135e0f6fb');
+    const result1 = await sandbox.execute('echo "state-A"');
+    expect(result1.exitCode).toBe(0);
+
+    await sandbox.switchState('a263f3f3d41a44a43655ff60a0c1ab34de9aa99f');
+    const result2 = await sandbox.execute('echo "state-B"');
+    expect(result2.exitCode).toBe(0);
+
+    await sandbox.destroy();
+  });
+
 });
