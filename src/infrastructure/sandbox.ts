@@ -140,21 +140,24 @@ export class Sandbox implements ISandbox {
     const envs = Object.entries(this.config.envVars || {}).map(([k, v]) => `${k}=${v}`);
     
     const cacheVolumes = this.config.cacheVolumes || (this.config.cachePaths ? this.config.cachePaths.map(p => ({ hostPath: p, containerPath: p })) : null);
+    const lockFile = this.detectLockFile() || '';
 
     if (cacheVolumes) {
-        const lockFile = this.detectLockFile() || '';
         await this.volumeManager.setupCacheVolumes(
           cacheVolumes,
           this.config.project || 'default',
           lockFile,
           false
         );
+    } else {
+        await this.volumeManager.recordCacheStatus(this.config.project || 'default', lockFile, false);
     }
 
     console.log(`DEBUG: image is ${image}`);
     try {
       await this.volumeManager.getDocker().getImage(image).inspect();
-    } catch {
+    } catch (err: unknown) {
+      console.debug(`Image not found locally, will pull: ${(err as Error).message}`);
       /* Pull image if not found */
       console.log(`DEBUG: pulling image ${image}`);
       await this.volumeManager.getDocker().pull(image);
@@ -239,15 +242,15 @@ export class Sandbox implements ISandbox {
             lockFile,
             true
           );
-      } catch {
-        /* Cache setup failure should not prevent sandbox initialization */
+      } catch (err: unknown) {
+        console.warn(`Simulation cache setup failed (non-fatal): ${(err as Error).message}`);
       }
 
       } else {
         try {
           await this.volumeManager.recordCacheStatus(this.config.project || 'default', lockFile, true);
-      } catch {
-        /* Cache status recording failure should not prevent sandbox initialization */
+      } catch (err: unknown) {
+        console.warn(`Simulation cache status recording failed (non-fatal): ${(err as Error).message}`);
       }
 
       }
@@ -257,8 +260,8 @@ export class Sandbox implements ISandbox {
       // Create tmp directory
       try {
         await execAsync(`mkdir ${tmpPath}`);
-      } catch {
-        // Use fs if mkdir fails
+      } catch (err: unknown) {
+        console.warn(`mkdir via exec failed (non-fatal): ${(err as Error).message}`);
       }
  
       if (this.config.buildCommand) {
@@ -701,7 +704,8 @@ export class Sandbox implements ISandbox {
     try {
       const data = await this.container.inspect();
       return data.State.Running;
-    } catch {
+    } catch (err: unknown) {
+      console.debug(`ping inspect failed: ${(err as Error).message}`);
       return false;
     }
   }
@@ -740,24 +744,24 @@ export class Sandbox implements ISandbox {
 
   async destroy(): Promise<void> {
     if (this.sessions.size > 0) {
-      await Promise.all(Array.from(this.sessions).map(s => s.close().catch(() => {})));
+      await Promise.all(Array.from(this.sessions).map(s => s.close().catch((err: unknown) => { console.debug(`session close during destroy failed: ${(err as Error).message}`); })));
       this.sessions.clear();
     }
     if (this.isSimulation && this.simulationDir) {
       try {
         rmSync(this.simulationDir, { recursive: true, force: true });
-      } catch { /* intentional */ }
+      } catch (err: unknown) { console.debug(`simulation dir cleanup failed during destroy: ${(err as Error).message}`); }
     }
     if (this.isSimulation && this._snapshotDir) {
       try {
         rmSync(this._snapshotDir, { recursive: true, force: true });
-      } catch { /* intentional */ }
+      } catch (err: unknown) { console.debug(`snapshot dir cleanup failed during destroy: ${(err as Error).message}`); }
     }
     if (this.container) {
       try {
         await this.container.stop();
         await this.container.remove();
-      } catch { /* intentional */ }
+      } catch (err: unknown) { console.debug(`container stop/remove failed during destroy: ${(err as Error).message}`); }
     }
     this.container = null;
     this._simulationDir = null;

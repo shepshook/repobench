@@ -59,8 +59,8 @@ export class VolumeManager implements IVolumeManager {
     if (!existsSync(this.simCacheRoot)) {
       try {
         mkdirSync(this.simCacheRoot, { recursive: true });
-      } catch {
-        /* intentionally empty */
+      } catch (err: unknown) {
+        console.debug(`simCacheRoot mkdir failed (non-fatal): ${(err as Error).message}`);
       }
     }
   }
@@ -75,8 +75,8 @@ export class VolumeManager implements IVolumeManager {
       try {
         const content = await fs.readFile(lockFile, 'utf8');
         cacheKey = crypto.createHash('sha256').update(content).digest('hex');
-      } catch {
-        /* Fallback to default cache if lock file cannot be read */
+      } catch (err: unknown) {
+        console.debug(`calculateCacheKey lockfile read failed, using default: ${(err as Error).message}`);
       }
     }
     return cacheKey;

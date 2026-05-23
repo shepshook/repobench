@@ -32,7 +32,9 @@ export class SandboxManager implements ISandboxManager {
   async createCacheForSession(sessionId: string, lockId: string): Promise<void> {
     const volumeName = `cache-${sessionId}-${lockId}`;
     this.volumes.push(volumeName);
-    await this.pruneCache();
+    if (this.cacheLimit !== Infinity) {
+      await this.pruneCache();
+    }
   }
 
   setCacheLimit(limit: number): Promise<void> {
@@ -48,8 +50,8 @@ export class SandboxManager implements ISandboxManager {
         try {
           const volume = this.docker.getVolume(volumeName);
           await volume.remove();
-        } catch {
-          /* intentionally empty */
+        } catch (err: unknown) {
+          console.warn(`pruneCache: failed to remove volume: ${(err as Error).message}`);
         }
       }
       this.volumes = limit === 0 ? [] : this.volumes.slice(-limit);
@@ -66,11 +68,11 @@ export class SandboxManager implements ISandboxManager {
       try {
         const volume = this.docker.getVolume(volumeName);
         await volume.remove();
-      } catch {
-        /* intentionally empty */
+        } catch (err: unknown) {
+          console.warn(`teardown: failed to remove volume: ${(err as Error).message}`);
+        }
       }
-    }
-    this.volumes = [];
+      this.volumes = [];
     this.cachePruned = true;
   }
 

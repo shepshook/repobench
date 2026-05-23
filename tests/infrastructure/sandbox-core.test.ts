@@ -356,4 +356,141 @@ describe('Sandbox Core (Integration)', () => {
     });
   });
 });
-;
+
+describe('Catch Block Logging (FIX1.4)', () => {
+  describe('Image Inspect Fallback', () => {
+    it('should log debug when image inspect fails and falls back to pull', async () => {
+      const { sandbox, mockDocker } = createSandboxFixture();
+      mockDocker.getImageMock.mockReturnValue({
+        inspect: vi.fn().mockRejectedValue(new Error('Image not found locally')),
+      });
+      mockDocker.pullMock.mockResolvedValue({});
+
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      await sandbox.init();
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Image not found locally')
+      );
+
+      debugSpy.mockRestore();
+      await sandbox.destroy();
+    });
+  });
+
+  describe('ping() Error Handling', () => {
+    it('should log debug when ping inspect fails', async () => {
+      const { sandbox, mockDocker } = createSandboxFixture({ project: 'ping-error-test' });
+
+      mockDocker.createContainerMock.mockResolvedValue({
+        id: 'mock-container-id',
+        start: vi.fn().mockResolvedValue({}),
+        stop: vi.fn().mockResolvedValue({}),
+        remove: vi.fn().mockResolvedValue({}),
+        inspect: vi.fn().mockRejectedValue(new Error('Container not found')),
+        exec: vi.fn().mockResolvedValue({
+          start: vi.fn().mockResolvedValue({
+            on: vi.fn(),
+          }),
+          inspect: vi.fn().mockResolvedValue({ ExitCode: 0 }),
+        }),
+      });
+
+      await sandbox.init();
+
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      const result = await sandbox.ping();
+      expect(result).toBe(false);
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ping inspect failed')
+      );
+
+      debugSpy.mockRestore();
+      await sandbox.destroy();
+    });
+  });
+
+  describe('destroy() Cleanup Logging', () => {
+    it('should log debug when container stop/remove fails during destroy', async () => {
+      const { sandbox, mockDocker } = createSandboxFixture({ project: 'destroy-log-test' });
+
+      mockDocker.createContainerMock.mockResolvedValue({
+        id: 'mock-container-id',
+        start: vi.fn().mockResolvedValue({}),
+        stop: vi.fn().mockRejectedValue(new Error('Container stop failed')),
+        remove: vi.fn().mockRejectedValue(new Error('Container remove failed')),
+        inspect: vi.fn().mockResolvedValue({ State: { Running: true } }),
+        exec: vi.fn().mockResolvedValue({
+          start: vi.fn().mockResolvedValue({
+            on: vi.fn(),
+          }),
+          inspect: vi.fn().mockResolvedValue({ ExitCode: 0 }),
+        }),
+      });
+
+      await sandbox.init();
+
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      await expect(sandbox.destroy()).resolves.not.toThrow();
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('container stop/remove failed during destroy')
+      );
+
+      debugSpy.mockRestore();
+    });
+  });
+
+  describe('Simulation Cache Fallback Logging', () => {
+    it('should log warn when simulation cache setup fails', async () => {
+      const fixture = createSimulationFixture({
+        project: 'sim-cache-warn-test',
+        cachePaths: ['/tmp/cache'],
+      });
+
+      const setupCacheSpy = vi.spyOn(fixture.volumeManager, 'setupCacheVolumes');
+      setupCacheSpy.mockResolvedValueOnce(true);
+      setupCacheSpy.mockRejectedValueOnce(
+        new Error('Simulation cache setup failed (non-fatal)')
+      );
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await fixture.sandbox.init();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Simulation cache setup failed')
+      );
+
+      warnSpy.mockRestore();
+      await fixture.sandbox.destroy();
+    });
+
+    it('should log warn when simulation cache status recording fails', async () => {
+      const fixture = createSimulationFixture({
+        project: 'sim-cache-status-warn-test',
+        cachePaths: undefined as unknown as string[],
+      });
+
+      const recordSpy = vi.spyOn(fixture.volumeManager, 'recordCacheStatus');
+      recordSpy.mockResolvedValueOnce({ hit: false });
+      recordSpy.mockRejectedValueOnce(
+        new Error('Simulation cache status recording failed (non-fatal)')
+      );
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await fixture.sandbox.init();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Simulation cache status recording failed')
+      );
+
+      warnSpy.mockRestore();
+      await fixture.sandbox.destroy();
+    });
+  });
+});

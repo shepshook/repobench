@@ -174,4 +174,44 @@ describe('SandboxManager', () => {
       await expect(sandboxManager.cleanupOrphanedContainers()).resolves.not.toThrow();
     });
   });
+
+  describe('Catch Block Logging (FIX1.4)', () => {
+    it('should log warn when pruneCache volume remove fails', async () => {
+      const failingVolume = {
+        remove: vi.fn().mockRejectedValue(new Error('Volume remove failed in prune')),
+      };
+      mockDocker.getVolume = vi.fn().mockReturnValue(failingVolume);
+
+      await sandboxManager.createCacheForSession('session-1', 'lock-1');
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await sandboxManager.pruneCache();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('pruneCache: failed to remove volume')
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should log warn when teardown volume remove fails', async () => {
+      const failingVolume = {
+        remove: vi.fn().mockRejectedValue(new Error('Volume remove failed in teardown')),
+      };
+      mockDocker.getVolume = vi.fn().mockReturnValue(failingVolume);
+
+      await sandboxManager.createCacheForSession('session-2', 'lock-2');
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await sandboxManager.teardown();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('teardown: failed to remove volume')
+      );
+
+      warnSpy.mockRestore();
+    });
+  });
 });

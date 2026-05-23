@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VolumeManager, VolumeManagerError } from '../../src/infrastructure/volume-manager';
 import { MockDocker } from '../mocks/docker.mock';
 
@@ -87,6 +87,21 @@ describe('VolumeManager Core', () => {
       // Instance-level stats: vm2 sees its own hit
       expect(stats2.misses).toBe(0);
       expect(stats2.hits).toBe(1);
+    });
+  });
+
+  describe('Catch Block Logging (FIX1.4)', () => {
+    it('should log debug when calculateCacheKey lockfile read fails', async () => {
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      const cacheKey = await vm.calculateCacheKey('test-project', '/nonexistent/lockfile/that/does/not/exist.lock');
+
+      expect(cacheKey).toBe('default');
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('calculateCacheKey lockfile read failed')
+      );
+
+      debugSpy.mockRestore();
     });
   });
 });
