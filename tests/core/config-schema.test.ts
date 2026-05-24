@@ -204,3 +204,54 @@ describe('RepoBenchConfigSchema', () => {
     ).toThrow();
   });
 });
+
+describe('RepoBenchConfigSchema — database block', () => {
+  it('should be optional — database is undefined when not provided', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: { keywords: ['fix'], exclude_paths: [] },
+    });
+    expect(result.database).toBeUndefined();
+  });
+
+  it('should parse database block with a custom path', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: { keywords: ['fix'], exclude_paths: [] },
+      database: { path: '/custom/storage/db.sqlite' },
+    });
+    expect(result.database).toBeDefined();
+    expect(result.database!.path).toBe('/custom/storage/db.sqlite');
+  });
+
+  it('should default database.path to ~/.repobench/db/repobench.db when block is empty', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: { keywords: ['fix'], exclude_paths: [] },
+      database: {},
+    });
+    expect(result.database).toBeDefined();
+    expect(result.database!.path).toBe('~/.repobench/db/repobench.db');
+  });
+
+  it('should accept database block alongside sandbox and curation sections', () => {
+    const result = RepoBenchConfigSchema.parse({
+      mining: { keywords: ['fix', 'bug'], exclude_paths: [] },
+      sandbox: { build_command: 'npm ci' },
+      curation: { prompt: 'Evaluate this fix' },
+      database: { path: '/data/repobench.db' },
+    });
+    expect(result.database).toBeDefined();
+    expect(result.database!.path).toBe('/data/repobench.db');
+    expect(result.sandbox).toBeDefined();
+    expect(result.sandbox!.buildCommand).toBe('npm ci');
+    expect(result.curation).toBeDefined();
+    expect(result.curation!.prompt).toBe('Evaluate this fix');
+  });
+
+  it('should reject database.path when it is not a string', () => {
+    expect(() =>
+      RepoBenchConfigSchema.parse({
+        mining: { keywords: ['fix'], exclude_paths: [] },
+        database: { path: 42 },
+      }),
+    ).toThrow();
+  });
+});

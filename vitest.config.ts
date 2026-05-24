@@ -8,5 +8,6 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/toy-repo/**'],
     testTimeout: 60000,
     hookTimeout: 30000,
+    clearMocks: true,
   },
 });
