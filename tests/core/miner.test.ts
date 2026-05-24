@@ -67,6 +67,50 @@ describe('GitMiner Since Date Filtering (Task 1.8.1)', () => {
     }
   });
 
+  it('should return only commits after the since date when since is date-only format YYYY-MM-DD', async () => {
+    const testDir = path.join(tempDir, 'since-filter-dateonly');
+    await fs.mkdir(testDir, { recursive: true });
+    initRepo(testDir);
+
+    await fs.writeFile(path.join(testDir, 'old.ts'), '// old');
+    execSync('git add .', { cwd: testDir });
+    execSync('git commit -m "feat: old feature"', {
+      cwd: testDir,
+      env: { ...process.env, GIT_AUTHOR_DATE: '2020-06-15T12:00:00Z', GIT_COMMITTER_DATE: '2020-06-15T12:00:00Z' },
+    });
+
+    await fs.writeFile(path.join(testDir, 'new.ts'), '// new');
+    execSync('git add .', { cwd: testDir });
+    execSync('git commit -m "feat: new feature"', {
+      cwd: testDir,
+      env: { ...process.env, GIT_AUTHOR_DATE: '2024-06-15T12:00:00Z', GIT_COMMITTER_DATE: '2024-06-15T12:00:00Z' },
+    });
+
+    const originalCwd = process.cwd();
+    process.chdir(testDir);
+    try {
+      const repository = {
+        save: () => {},
+        upsert: () => {},
+        exists: () => false,
+        existsById: () => false,
+        getById: () => undefined,
+        getAll: () => [],
+      };
+      const miner = new GitMiner(repository as any);
+      const config: RepoBenchConfig = {
+        mining: { keywords: [], exclude_paths: [], since: '2024-01-01' },
+      };
+
+      const results = await miner.mineCommits(config);
+
+      expect(results.length).toBe(1);
+      expect(results[0].message).toBe('feat: new feature');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it('should return all commits when since is not provided', async () => {
     const testDir = path.join(tempDir, 'no-since');
     await fs.mkdir(testDir, { recursive: true });

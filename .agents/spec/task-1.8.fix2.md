@@ -34,3 +34,12 @@ The DoD for Feature 1.8 states: `repobench mine --since 2025-01-01` returns only
 - `npm run typecheck && npm run lint` passes.
 - `npx vitest run tests/integration/mine.test.ts` passes (the `--since` integration test).
 - Manual: `repobench mine --since 2025-01-01` does not produce a date format error.
+
+## Audit Feedback Round 1
+- **Status**: FAIL
+- **Review**: The regex validation correctly allows `YYYY-MM-DD` format as per requirements. However, the integration tests `tests/integration/mine.test.ts` failed for both full ISO-8601 and date-only formats. 
+- **Observations**: 
+    - The `npm run typecheck` and `npm run lint` passed.
+    - `should filter commits by --since date when passed via CLI` failed (expected 1 candidate, found 0).
+    - `should filter commits by --since date when using date-only format YYYY-MM-DD` failed (expected 1 candidate, found 0).
+- **Recommendation**: Investigate why `git log` (or the underlying filtering logic) is not returning the expected candidates when `--since` is provided. The `config.mining.since` appears to be set (as validation passes), so the issue likely lies in how this value is consumed by the mining service.

@@ -182,6 +182,77 @@ mining:
     }
   }, 30000);
 
+  it('should filter commits by --since date when using date-only format YYYY-MM-DD', async () => {
+    const sinceDir = path.join(tempDir, 'cli-since-dateonly');
+    await fs.mkdir(sinceDir, { recursive: true });
+    initRepo(sinceDir);
+
+    await createCommit(sinceDir, 'old.ts', '// old', 'feat: old feature', '2020-06-15T12:00:00Z');
+    await createCommit(sinceDir, 'new.ts', '// new', 'feat: new feature', '2024-06-15T12:00:00Z');
+
+    const configYaml = `mining:\n  keywords: ["feat"]\n  exclude_paths: []\n  since: '2024-01-01'\n`;
+    await fs.writeFile(path.join(sinceDir, 'repobench.yaml'), configYaml);
+
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
+    const configPath = path.join(sinceDir, 'repobench.yaml');
+
+    const originalCwd = process.cwd();
+    try {
+      const stdout = execSync(
+        `npx tsx "${scriptPath}" -r "${sinceDir}" -c "${configPath}" --since 2024-01-01`,
+        { cwd: projectRoot, env: { ...process.env, PATH: process.env.PATH }, timeout: 30000 },
+      ).toString();
+      expect(stdout).toContain('Found 1 candidates.');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  }, 30000);
+
+  it('should filter commits by --since date with fractional seconds format', async () => {
+    const sinceDir = path.join(tempDir, 'cli-since-fractional');
+    await fs.mkdir(sinceDir, { recursive: true });
+    initRepo(sinceDir);
+
+    await createCommit(sinceDir, 'old.ts', '// old', 'feat: old feature', '2020-06-15T12:00:00Z');
+    await createCommit(sinceDir, 'new.ts', '// new', 'feat: new feature', '2024-06-15T12:00:00Z');
+
+    const configYaml = `mining:\n  keywords: ["feat"]\n  exclude_paths: []\n`;
+    await fs.writeFile(path.join(sinceDir, 'repobench.yaml'), configYaml);
+
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
+    const configPath = path.join(sinceDir, 'repobench.yaml');
+
+    const stdout = execSync(
+      `npx tsx "${scriptPath}" -r "${sinceDir}" -c "${configPath}" --since 2024-01-01T00:00:00.000Z`,
+      { cwd: projectRoot, env: { ...process.env, PATH: process.env.PATH }, timeout: 30000 },
+    ).toString();
+    expect(stdout).toContain('Found 1 candidates.');
+  }, 30000);
+
+  it('should filter commits by --since date with timezone offset format', async () => {
+    const sinceDir = path.join(tempDir, 'cli-since-tzoffset');
+    await fs.mkdir(sinceDir, { recursive: true });
+    initRepo(sinceDir);
+
+    await createCommit(sinceDir, 'old.ts', '// old', 'feat: old feature', '2020-06-15T12:00:00Z');
+    await createCommit(sinceDir, 'new.ts', '// new', 'feat: new feature', '2024-06-15T12:00:00Z');
+
+    const configYaml = `mining:\n  keywords: ["feat"]\n  exclude_paths: []\n`;
+    await fs.writeFile(path.join(sinceDir, 'repobench.yaml'), configYaml);
+
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
+    const configPath = path.join(sinceDir, 'repobench.yaml');
+
+    const stdout = execSync(
+      `npx tsx "${scriptPath}" -r "${sinceDir}" -c "${configPath}" --since 2024-01-01T00:00:00+00:00`,
+      { cwd: projectRoot, env: { ...process.env, PATH: process.env.PATH }, timeout: 30000 },
+    ).toString();
+    expect(stdout).toContain('Found 1 candidates.');
+  }, 30000);
+
   it('should show helpful error for invalid --since date value', async () => {
     const invalidDir = path.join(tempDir, 'cli-since-invalid');
     await fs.mkdir(invalidDir, { recursive: true });

@@ -6,7 +6,7 @@ export const RepoBenchConfigSchema = z.object({
   mining: z.object({
     keywords: z.array(z.string()),
     exclude_paths: z.array(z.string()),
-    since: z.string().datetime().optional(),
+    since: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/).optional(),
     limit: z.number().optional(),
   }),
   curation: z.object({

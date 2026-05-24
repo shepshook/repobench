@@ -87,8 +87,6 @@ export class GitMiner implements IMiner {
     
     // Process commits sequentially to avoid process exhaustion (EMFILE)
     for (const commit of commits) {
-        if (this.repository.exists(commit.hash)) continue;
-
         try {
           const filesContent = await git.show(['--format=', '--name-only', commit.hash]);
           const files = filesContent

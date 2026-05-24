@@ -30,8 +30,8 @@ export async function main() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options.since !== undefined) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(options.since as string)) {
-            console.error('Error: Invalid --since date format. Expected ISO-8601 datetime (e.g., 2024-01-01T00:00:00Z).');
+          if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/.test(options.since as string)) {
+            console.error('Error: Invalid --since date format. Expected ISO-8601 (e.g., 2024-01-01 or 2024-01-01T00:00:00Z).');
             process.exit(1);
           }
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -76,8 +76,8 @@ export function registerMineCommand(program: Command): void {
         const config = await loadConfig(options.config ?? 'repobench.yaml');
 
         if (options.since !== undefined) {
-          if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(options.since)) {
-            console.error('Error: Invalid --since date format. Expected ISO-8601 datetime (e.g., 2024-01-01T00:00:00Z).');
+          if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/.test(options.since)) {
+            console.error('Error: Invalid --since date format. Expected ISO-8601 (e.g., 2024-01-01 or 2024-01-01T00:00:00Z).');
             process.exit(1);
           }
           config.mining.since = options.since;
