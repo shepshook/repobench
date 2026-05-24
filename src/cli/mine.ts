@@ -13,6 +13,7 @@ export async function main() {
     .description('Mine bug-fix candidates from git history')
     .option('-c, --config <path>', 'path to config file', 'repobench.yaml')
     .option('-r, --repo <path>', 'path to git repository')
+    .option('--since <date>', 'minimum date for commits (ISO-8601)')
     .action(async (options) => {
       try {
         const originalCwd = process.cwd();
@@ -25,6 +26,18 @@ export async function main() {
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         const config = await loadConfig(options.config);
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (options.since !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(options.since as string)) {
+            console.error('Error: Invalid --since date format. Expected ISO-8601 datetime (e.g., 2024-01-01T00:00:00Z).');
+            process.exit(1);
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          config.mining.since = options.since;
+        }
+
         initDatabase();
         const repository = new CandidateRepository();
         const miner = new GitMiner(repository);
@@ -51,7 +64,8 @@ export function registerMineCommand(program: Command): void {
     .description('Mine bug-fix candidates from git history')
     .option('-c, --config <path>', 'path to config file', 'repobench.yaml')
     .option('-r, --repo <path>', 'path to git repository')
-    .action(async (options: { config?: string; repo?: string }) => {
+    .option('--since <date>', 'minimum date for commits (ISO-8601)')
+    .action(async (options: { config?: string; repo?: string; since?: string }) => {
       try {
         const originalCwd = process.cwd();
 
@@ -60,7 +74,15 @@ export function registerMineCommand(program: Command): void {
         }
 
         const config = await loadConfig(options.config ?? 'repobench.yaml');
-        config.mining.since = undefined;
+
+        if (options.since !== undefined) {
+          if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(options.since)) {
+            console.error('Error: Invalid --since date format. Expected ISO-8601 datetime (e.g., 2024-01-01T00:00:00Z).');
+            process.exit(1);
+          }
+          config.mining.since = options.since;
+        }
+
         initDatabase();
         const repository = new CandidateRepository();
         const miner = new GitMiner(repository);

@@ -95,7 +95,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Replace `simple-git`'s revision-range-mapped `LogOptions.from` with raw `child_process.execFile('git', ['log', '--since=...', ...])` to restore correct `--since` semantics. Re-enable the `since` date parameter in the CLI.
   * **Tasks:**
     - [x] [Task 1.8.1: Replace simple-git LogOptions with child_process.execFile for raw git log](.agents/spec/task-1.8.1.md)
-    - [ ] [Task 1.8.2: Re-enable since date parameter in CLI mine command](.agents/spec/task-1.8.2.md)
+    - [x] [Task 1.8.2: Re-enable since date parameter in CLI mine command](.agents/spec/task-1.8.2.md)
   * **DoD:** `repobench mine --since 2025-01-01` returns only commits after that date; no shell injection vector from user-provided date strings; all existing filters (keyword, path, significance) continue to work.
 
 ---

@@ -18,6 +18,22 @@ describe('Mine CLI Integration Test', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
+  // Helpers for dated-commit repos
+  async function initRepo(dir: string) {
+    execSync('git init', { cwd: dir });
+    execSync('git config user.email "test@example.com"', { cwd: dir });
+    execSync('git config user.name "Test User"', { cwd: dir });
+  }
+
+  async function createCommit(dir: string, file: string, content: string, message: string, date: string) {
+    await fs.writeFile(path.join(dir, file), content);
+    execSync('git add .', { cwd: dir });
+    execSync(`git commit -m "${message}"`, {
+      cwd: dir,
+      env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+    });
+  }
+
   async function setupRepo(dir: string) {
     // Initialize git repo
     execSync('git init', { cwd: dir });
@@ -138,6 +154,60 @@ mining:
       await fs.rm(sigTempDir, { recursive: true, force: true });
     }
   });
+
+  it('should filter commits by --since date when passed via CLI', async () => {
+    const sinceDir = path.join(tempDir, 'cli-since');
+    await fs.mkdir(sinceDir, { recursive: true });
+    initRepo(sinceDir);
+
+    await createCommit(sinceDir, 'old.ts', '// old', 'feat: old feature', '2020-06-15T12:00:00Z');
+    await createCommit(sinceDir, 'new.ts', '// new', 'feat: new feature', '2024-06-15T12:00:00Z');
+
+    const configYaml = `mining:\n  keywords: ["feat"]\n  exclude_paths: []\n  since: '2024-01-01T00:00:00Z'\n`;
+    await fs.writeFile(path.join(sinceDir, 'repobench.yaml'), configYaml);
+
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
+    const configPath = path.join(sinceDir, 'repobench.yaml');
+
+    const originalCwd = process.cwd();
+    try {
+      const stdout = execSync(
+        `npx tsx "${scriptPath}" -r "${sinceDir}" -c "${configPath}" --since 2024-01-01T00:00:00Z`,
+        { cwd: projectRoot, env: { ...process.env, PATH: process.env.PATH }, timeout: 30000 },
+      ).toString();
+      expect(stdout).toContain('Found 1 candidates.');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  }, 30000);
+
+  it('should show helpful error for invalid --since date value', async () => {
+    const invalidDir = path.join(tempDir, 'cli-since-invalid');
+    await fs.mkdir(invalidDir, { recursive: true });
+    initRepo(invalidDir);
+
+    await createCommit(invalidDir, 'a.ts', '// a', 'feat: commit a', '2024-06-15T12:00:00Z');
+
+    const configYaml = `mining:\n  keywords: ["feat"]\n  exclude_paths: []\n`;
+    await fs.writeFile(path.join(invalidDir, 'repobench.yaml'), configYaml);
+
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'src/cli/mine.ts');
+    const configPath = path.join(invalidDir, 'repobench.yaml');
+
+    try {
+      execSync(
+        `npx tsx "${scriptPath}" -r "${invalidDir}" -c "${configPath}" --since not-a-date`,
+        { cwd: projectRoot, env: { ...process.env, PATH: process.env.PATH }, timeout: 30000 },
+      );
+      expect.unreachable('Expected CLI to throw for invalid --since date');
+    } catch (error: unknown) {
+      const stderr = error instanceof Error ? error.message : String(error);
+      expect(stderr).not.toMatch(/unknown option/i);
+      expect(stderr).toMatch(/invalid|format|ISO|datetime/i);
+    }
+  }, 30000);
 
   it('should populate preFixHash for non-root commits from real git history', async () => {
     const nonRootTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'repobench-nonroot-test-'));

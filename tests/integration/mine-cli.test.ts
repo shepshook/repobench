@@ -56,4 +56,12 @@ describe('CLI: repobench mine — command registration', () => {
     expect(names).toContain('report');
     expect(names.indexOf('mine')).toBe(names.indexOf('evaluate') + 1);
   });
+
+  it('should expose --since <date> option', () => {
+    registerMineCommand(program);
+    const command = program.commands.find(cmd => cmd.name() === 'mine');
+    const opt = command!.options.find(o => o.long === '--since');
+    expect(opt).toBeDefined();
+    expect(opt!.attributeName()).toBe('since');
+  });
 });
