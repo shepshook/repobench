@@ -4,7 +4,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [x] Epic 1: Git-Based Benchmark Generation (The Miner)
+## [ ] Epic 1: Git-Based Benchmark Generation (The Miner)
 **Description:** Automate the discovery of high-signal 'ground truth' benchmarks from a private repository.
 **Metrics:** Precision (>80% actual bug fixes), Candidate Density (High-quality candidates per 1k commits).
 **Success Criteria:**
@@ -90,11 +90,17 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.FIX1.1: Mark Epic 1 Success Criteria as Completed](.agents/spec/task-1.fix1.1.md)
     - [x] [Task 1.FIX1.2: Add Error Logging to Silent Catch Blocks in Epic 1 Services](.agents/spec/task-1.fix1.2.md)
     - [x] [Task 1.FIX1.3: Log Skipped Candidates in JSONL Exporter](.agents/spec/task-1.fix1.3.md)
-  * **DoD:** All 4 success criteria marked `[x]`; no empty catch blocks remain in Epic 1 source files; skipped export candidates produce a warning; typecheck + lint + full test suite pass.
+   * **DoD:** All 4 success criteria marked `[x]`; no empty catch blocks remain in Epic 1 source files; skipped export candidates produce a warning; typecheck + lint + full test suite pass.
+* **[ ] Feature 1.8: Reliable Date-Based Git Mining**
+  * **Spec:** Replace `simple-git`'s revision-range-mapped `LogOptions.from` with raw `child_process.execFile('git', ['log', '--since=...', ...])` to restore correct `--since` semantics. Re-enable the `since` date parameter in the CLI.
+  * **Tasks:**
+    - [ ] [Task 1.8.1: Replace simple-git LogOptions with child_process.execFile for raw git log](.agents/spec/task-1.8.1.md)
+    - [ ] [Task 1.8.2: Re-enable since date parameter in CLI mine command](.agents/spec/task-1.8.2.md)
+  * **DoD:** `repobench mine --since 2025-01-01` returns only commits after that date; no shell injection vector from user-provided date strings; all existing filters (keyword, path, significance) continue to work.
 
 ---
 
-## [x] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
+## [ ] Epic 2: Deterministic Sandbox Infrastructure (The Sandbox)
 **Description:** Create a 'Clean Room' environment for agent execution using Docker.
 **Metrics:** Init Latency (<30s for standard projects), Setup Reliability (% of successful builds).
 **Success Criteria:**
@@ -156,7 +162,26 @@ This document serves as the central source of truth for the project's strategic 
      - [x] [Task 2.FIX1.3: Mark Epic 2 Success Criteria as Completed](.agents/spec/task-2.fix1.3.md)
       - [x] [Task 2.FIX1.4: Remediate Silent Catch Blocks in Sandbox Module](.agents/spec/task-2.fix1.4.md)
    * **DoD:** `repobench benchmark --help` works; `evaluate`/`run-all` pass `agentSetupCommands` and `cachePaths` from YAML to sandbox; both success criteria marked `[x]`; zero empty `catch { }` blocks in sandbox module files; typecheck + lint + full test suite pass.
-
+* **[ ] Feature 2.6: Database Path Isolation from Workspace**
+  * **Spec:** Move `repobench.db` outside the Docker bind-mounted workspace to eliminate SQLITE_BUSY lock conflicts during `git reset --hard` inside the container. The database lives in a dedicated directory (default: `~/.repobench/db/`) that the container never touches.
+  * **Tasks:**
+    - [ ] [Task 2.6.1: Define database directory config and move repobench.db outside workspace](.agents/spec/task-2.6.1.md)
+    - [ ] [Task 2.6.2: Update database initialization and all repository consumers](.agents/spec/task-2.6.2.md)
+    - [ ] [Task 2.6.3: Verify sandbox git reset --hard no longer conflicts with host DB lock](.agents/spec/task-2.6.3.md)
+  * **DoD:** `repobench.db` resolves to `~/.repobench/db/repobench.db` by default; host Node process reads/writes it safely while Docker runs `git reset --hard` on the bind-mounted workspace; no SQLITE_BUSY errors during pipeline execution.
+* **[ ] Feature 2.7: Configurable Build Output Volume Caching**
+  * **Spec:** Extend VolumeManager to cache multiple user-configurable directories (e.g., `dist/`, `.next/`, `target/`) via Docker volumes, reducing I/O latency across the Windows/Linux VM boundary.
+  * **Tasks:**
+    - [ ] [Task 2.7.1: Add cacheable_paths config to repobench.yaml schema](.agents/spec/task-2.7.1.md)
+    - [ ] [Task 2.7.2: Wire cacheable_paths into VolumeManager for multi-directory volume caching](.agents/spec/task-2.7.2.md)
+  * **DoD:** Users can specify `sandbox.cacheable_paths` in `repobench.yaml`; VolumeManager creates Docker named volumes for each path; Windows bind-mount performance improves for build-heavy projects.
+* **[ ] Feature 2.8: Pre-Baked Agent-Ready Docker Image**
+  * **Spec:** Create a custom Docker image (`repobench/agent-base:latest`) with `opencode`, `aider`, and `claude-code` pre-installed. Add a `prebuilt_image` config option that bypasses `agent_setup_commands` for instant deterministic startup.
+  * **Tasks:**
+    - [ ] [Task 2.8.1: Create Dockerfile.repobench-agent with pre-installed code agents](.agents/spec/task-2.8.1.md)
+    - [ ] [Task 2.8.2: Implement automated Docker image build and publish workflow](.agents/spec/task-2.8.2.md)
+    - [ ] [Task 2.8.3: Add prebuilt_image config option with fallback to base_image + agent_setup_commands](.agents/spec/task-2.8.3.md)
+  * **DoD:** `npm run docker:build:agent` produces `repobench/agent-base:latest`; setting `sandbox.prebuilt_image` in `repobench.yaml` skips agent dependency installation; sandbox bootstrap time drops to <5s (image pull only).
 ---
 
 ## [x] Epic 3: Interactive Agent Session Orchestration (The Session)
