@@ -73,6 +73,32 @@ describe('JsonlDatasetImporter Integration', () => {
     expect(candidate1?.postFixHash).toBe(post1);
   });
 
+  it('should not include author_name, author_email, or body in imported candidates (parser artifacts)', async () => {
+    const id = generateValidUuid();
+    const pre = generateValidHash();
+    const post = generateValidHash();
+    const mockData = [
+      {
+        repository: { url: 'https://github.com/user/repo1', name: 'repo1' },
+        preFixHash: pre,
+        postFixHash: post,
+        curation: { score: 0.9, reasoning: 'Good', isApproved: true },
+        status: 'validated',
+        metadata: { candidateId: id, createdAt: new Date().toISOString() },
+      },
+    ];
+
+    await fs.writeFile(tempFile, mockData.map(d => JSON.stringify(d)).join('\n'));
+    await importer.import(tempFile);
+
+    const all = repo.getAll();
+    expect(all).toHaveLength(1);
+    const candidate = all[0];
+    expect(candidate).not.toHaveProperty('author_name');
+    expect(candidate).not.toHaveProperty('author_email');
+    expect(candidate).not.toHaveProperty('body');
+  });
+
   it('should not create duplicate entries when a single file contains multiple entries with the same candidateId', async () => {
     const id = generateValidUuid();
     const pre = generateValidHash();

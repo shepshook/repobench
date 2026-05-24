@@ -82,9 +82,6 @@ export class CandidateRepository implements ICandidateRepository {
       created_at: new Date(row.createdAt),
       repositoryUrl: row.repositoryUrl,
       repositoryName: row.repositoryName,
-      author_name: '',
-      author_email: '',
-      body: '',
     };
 
     if (row.preFixHash) candidate.preFixHash = row.preFixHash;
@@ -115,9 +112,6 @@ export class CandidateRepository implements ICandidateRepository {
         created_at: new Date(row.createdAt),
         repositoryUrl: row.repositoryUrl,
         repositoryName: row.repositoryName,
-        author_name: '',
-        author_email: '',
-        body: '',
       };
 
       if (row.preFixHash) candidate.preFixHash = row.preFixHash;

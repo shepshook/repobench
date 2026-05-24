@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer, ISemanticJudge, RunResultSchema, IRunResultRepository, RunResult } from '../../src/core/contracts';
+import crypto from 'node:crypto';
+import { ValidationResultSchema, IBenchmarkValidator, IDoneDetector, CompletionSignature, CompletionSignatureSchema, AgentConfigSchema, ISearchEfficiencyTracker, IScorer, ISemanticJudge, RunResultSchema, IRunResultRepository, RunResult, CandidateSchema } from '../../src/core/contracts';
+import { generateValidUuid, generateValidHash } from '../helpers/dataset';
 
 describe('ISemanticJudge', () => {
   it('should be implementable by a mock class', () => {
@@ -271,6 +273,39 @@ describe('RunResultSchema', () => {
     };
     // @ts-expect-error - testing runtime validation
     expect(() => RunResultSchema.parse(invalidRunResult)).toThrow();
+  });
+});
+
+describe('CandidateSchema', () => {
+  it('should accept a candidate without author_name, author_email, or body (optional fields)', () => {
+    const candidate = {
+      id: generateValidUuid(),
+      hash: generateValidHash(),
+      message: 'feat: add login',
+      files: ['src/login.ts'],
+      status: 'pending' as const,
+      created_at: new Date('2026-05-15T12:00:00Z'),
+      repositoryUrl: 'https://github.com/user/repo',
+      repositoryName: 'repo',
+    };
+    expect(() => CandidateSchema.parse(candidate)).not.toThrow();
+  });
+
+  it('should still accept a candidate with author_name, author_email, and body populated (backward compat)', () => {
+    const candidate = {
+      id: generateValidUuid(),
+      hash: generateValidHash(),
+      message: 'feat: add login',
+      files: ['src/login.ts'],
+      status: 'pending' as const,
+      created_at: new Date('2026-05-15T12:00:00Z'),
+      repositoryUrl: 'https://github.com/user/repo',
+      repositoryName: 'repo',
+      author_name: 'Test Author',
+      author_email: 'test@example.com',
+      body: 'A detailed commit body.',
+    };
+    expect(() => CandidateSchema.parse(candidate)).not.toThrow();
   });
 });
 

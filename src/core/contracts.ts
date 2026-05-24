@@ -53,9 +53,9 @@ export const CandidateSchema = z.object({
   preFixHash: z.string().optional(),
   postFixHash: z.string().optional(),
   curation: CurationResultSchema.nullable().optional(),
-  author_name: z.string(),
-  author_email: z.string(),
-  body: z.string(),
+  author_name: z.string().optional(),
+  author_email: z.string().optional(),
+  body: z.string().optional(),
 });
 
 export type Candidate = z.infer<typeof CandidateSchema>;

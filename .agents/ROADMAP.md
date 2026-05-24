@@ -98,6 +98,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.8.2: Re-enable since date parameter in CLI mine command](.agents/spec/task-1.8.2.md)
     - [x] [Task 1.8.FIX1: Fix miner-logging.test.ts execFile Mock Round 1](.agents/spec/task-1.8.fix1.md)
     - [x] [Task 1.8.FIX2: Fix CLI --since Date Validation Regex Round 1](.agents/spec/task-1.8.fix2.md)
+    - [x] [Task 1.8.FIX3: Fix Candidate Schema Scope Creep — Make author_name/email/body Optional](.agents/spec/task-1.8.fix3.md)
   * **DoD:** `repobench mine --since 2025-01-01` returns only commits after that date; no shell injection vector from user-provided date strings; all existing filters (keyword, path, significance) continue to work.
 
 ---

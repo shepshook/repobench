@@ -48,9 +48,6 @@ export class JsonlDatasetImporter implements IDatasetImporter {
             preFixHash: exportData.preFixHash,
             postFixHash: exportData.postFixHash,
             curation: exportData.curation,
-            author_name: '',
-            author_email: '',
-            body: '',
           };
   
     
