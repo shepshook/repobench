@@ -1,6 +1,7 @@
-import simpleGit, { SimpleGit, LogOptions } from 'simple-git';
+import simpleGit, { SimpleGit } from 'simple-git';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
 import { IMiner, Candidate, ISignificanceFilter, ICandidateRepository, ICurationService, IBenchmarkValidator } from '../contracts.js';
 import { RepoBenchConfig } from '../config.js';
 import { BasicSignificanceFilter } from './filters/significance-filter.js';
@@ -43,19 +44,40 @@ export class GitMiner implements IMiner {
       }
     }
     
-    const logOptions: LogOptions = {};
-    if (config.mining.limit) {
-      logOptions.maxCount = config.mining.limit;
-    }
+    const args: string[] = ['log', '--format=%H|%ai|%s', '--reverse'];
     if (config.mining.since) {
-      logOptions.from = config.mining.since;
+      args.push(`--since=${config.mining.since}`);
+    }
+    if (config.mining.limit) {
+      args.push(`--max-count=${config.mining.limit}`);
     }
 
     let commits: GitLogEntry[];
     try {
-      const logResult = await git.log(logOptions);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      commits = (logResult as any).all || [];
+      const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+        const child = execFile('git', args, { cwd: process.cwd(), encoding: 'utf8' }, (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(`Failed to fetch git log: ${error.message}\n${stderr}`));
+          } else {
+            resolve({ stdout, stderr });
+          }
+        });
+        const timer = setTimeout(() => { child.kill(); reject(new Error('git log timed out')); }, 30_000);
+        child.on('close', () => clearTimeout(timer));
+      });
+      commits = stdout.trim().split('\n')
+        .filter(line => line.length > 0)
+        .map(line => {
+          const parts = line.split('|');
+          return {
+            hash: parts[0],
+            date: parts[1] || '',
+            message: parts.slice(2).join('|'),
+            body: '',
+            author_name: '',
+            author_email: '',
+          };
+        });
     } catch (error: unknown) {
       throw new Error(`Failed to fetch git log: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
@@ -127,6 +149,9 @@ export class GitMiner implements IMiner {
           repositoryName,
           postFixHash: commit.hash,
           preFixHash,
+          author_name: commit.author_name,
+          author_email: commit.author_email,
+          body: commit.body,
         };
 
         // Curation

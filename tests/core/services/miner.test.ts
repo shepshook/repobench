@@ -3,8 +3,19 @@ import { GitMiner } from '../../../src/core/services/miner';
 import { RepoBenchConfig } from '../../../src/core/config';
 import { Candidate, ICurationService, ICandidateRepository, ISignificanceFilter, IBenchmarkValidator } from '../../../src/core/contracts';
 import simpleGit from 'simple-git';
+import { execFile } from 'node:child_process';
 
 vi.mock('simple-git');
+vi.mock('node:child_process');
+
+function mockExecFileCommits(commits: { hash: string; message: string }[]): void {
+  const stdout = commits.map(c => `${c.hash}|2024-01-01 12:00:00 +0000|${c.message}`).join('\n') + '\n';
+  (execFile as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+    (_cmd: string, _args: string[], _opts: unknown, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+      cb(null, stdout, '');
+    }
+  );
+}
 
 describe('GitMiner Pipeline Integration', () => {
   let miner: GitMiner;
@@ -48,15 +59,13 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should include repositoryUrl and repositoryName in candidates', async () => {
-    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
-    
+    mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
-    
+
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
-    
+
     await miner.mineCommits(config);
-    
+
     expect(mockRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
       repositoryUrl: expect.any(String),
       repositoryName: expect.any(String)
@@ -64,9 +73,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should call curate() and only save if approved', async () => {
-    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
-    
+    mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
@@ -78,9 +85,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should call curate() and NOT save if not approved', async () => {
-    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
-    
+    mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: false, score: 0, reasoning: 'bad', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
@@ -92,8 +97,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should save as validated when validator returns isValid: true', async () => {
-    const mockCommits = [{ hash: 'valid123', message: 'feat: valid' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'valid123', message: 'feat: valid' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
     (mockValidator.validate as any).mockResolvedValue({ isValid: true, preFixStatus: 'fail', postFixStatus: 'pass', preFixOutput: '', postFixOutput: '', latency: 100 });
 
@@ -108,8 +112,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should save as rejected when validator returns isValid: false', async () => {
-    const mockCommits = [{ hash: 'invalid123', message: 'feat: invalid' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'invalid123', message: 'feat: invalid' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
     (mockValidator.validate as any).mockResolvedValue({ isValid: false, preFixStatus: 'fail', postFixStatus: 'fail', preFixOutput: '', postFixOutput: '', latency: 100 });
 
@@ -124,8 +127,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should NOT call validator when curation rejects the candidate', async () => {
-    const mockCommits = [{ hash: 'rejected123', message: 'feat: rejected' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'rejected123', message: 'feat: rejected' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: false, score: 0, reasoning: 'bad', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
@@ -135,8 +137,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should save candidate with postFixHash matching commit hash through pipeline', async () => {
-    const mockCommits = [{ hash: 'abc12345', message: 'feat: test' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'abc12345', message: 'feat: test' }]);
     mockGit.raw = vi.fn().mockResolvedValue('parent123\n');
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
@@ -150,8 +151,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should save candidate with preFixHash from git rev-parse through pipeline', async () => {
-    const mockCommits = [{ hash: 'def67890', message: 'fix: bug' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'def67890', message: 'fix: bug' }]);
     mockGit.raw = vi.fn().mockResolvedValue('parent999\n');
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
@@ -166,8 +166,7 @@ describe('GitMiner Pipeline Integration', () => {
   });
 
   it('should save candidate with preFixHash undefined for root commits through pipeline', async () => {
-    const mockCommits = [{ hash: 'root00001', message: 'initial commit' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'root00001', message: 'initial commit' }]);
     mockGit.raw = vi.fn().mockRejectedValue(new Error('fatal: ambiguous argument'));
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
@@ -182,8 +181,7 @@ describe('GitMiner Pipeline Integration', () => {
 
   it('should warn when parent commit hash retrieval fails', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const mockCommits = [{ hash: 'orphan001', message: 'orphan commit' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'orphan001', message: 'orphan commit' }]);
     mockGit.raw = vi.fn().mockRejectedValue(new Error('fatal: bad revision'));
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
@@ -195,12 +193,34 @@ describe('GitMiner Pipeline Integration', () => {
     warnSpy.mockRestore();
   });
 
+  describe('Task 1.8.1: Replace simple-git log with execFile', () => {
+    it('should NOT use simple-git.log() when since is provided', async () => {
+      mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
+      (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+      const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: '2024-01-01', limit: undefined } };
+      await miner.mineCommits(config);
+
+      expect(mockGit.log).not.toHaveBeenCalled();
+    });
+
+    it('should NOT use simple-git.log() when since is not provided', async () => {
+      mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
+      (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
+
+      const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };
+
+      await miner.mineCommits(config);
+
+      expect(mockGit.log).not.toHaveBeenCalled();
+    });
+  });
+
   it('should warn when remote origin URL retrieval fails', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockGit.getConfig = vi.fn().mockRejectedValue(new Error('Not a git repository'));
 
-    const mockCommits = [{ hash: 'abc12345', message: 'feat: add login' }];
-    mockGit.log.mockResolvedValue({ all: mockCommits });
+    mockExecFileCommits([{ hash: 'abc12345', message: 'feat: add login' }]);
     (mockCurationService.curate as any).mockResolvedValue({ isApproved: true, score: 1, reasoning: 'good', rawResponse: '' });
 
     const config: RepoBenchConfig = { mining: { keywords: [], exclude_paths: [], since: undefined, limit: undefined } };

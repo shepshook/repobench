@@ -45,8 +45,8 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
         if ((line.startsWith('+') || line.startsWith('-')) && !line.startsWith('+++') && !line.startsWith('---')) {
           totalLinesChanged++;
         } else if (line.startsWith('@@')) {
-            const match = line.match(/@@ -\d+,(\d+) \+\d+,(\d+) @@/);
-            if (Array.isArray(match) && match.length >= 3 && match[1] !== undefined && match[2] !== undefined) {
+            const match = line.match(/@@ -\d+,(\d+) \+(\d+)(?:,(\d+))? @@/);
+            if (Array.isArray(match) && match[1] !== undefined && match[2] !== undefined) {
               const oldLines = parseInt(match[1]);
               const newLines = parseInt(match[2]);
               if (oldLines > 50 || newLines > 50) return false;
@@ -56,38 +56,42 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
       if (totalLinesChanged > 50) return false;
       
       if (!wDiff) return false;
-      
-      const lines = wDiff.split('\n');
+
+      const wDiffLines = wDiff.split('\n');
       let currentFile = '';
       let significantLineFound = false;
       let hunkOld = '';
       let hunkNew = '';
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
+      let currentFileIsNew = false;
+
+      for (let i = 0; i < wDiffLines.length; i++) {
+        const line = wDiffLines[i];
+
         if (line.startsWith('diff --git')) {
-          if (this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+          if (this.checkSignificance(currentFile, hunkOld, hunkNew, currentFileIsNew)) {
             significantLineFound = true;
             break;
           }
-           const match = line.match(/a\/([^ ]+)/);
-           currentFile = (match && match.length > 1) ? match[1] : '';
+          const match = line.match(/a\/([^ ]+)/);
+          currentFile = (match && match.length > 1) ? match[1] : '';
+          currentFileIsNew = false;
           hunkOld = '';
           hunkNew = '';
           continue;
         }
-        
+
         if (line.startsWith('@@')) {
-          if (this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+          if (this.checkSignificance(currentFile, hunkOld, hunkNew, currentFileIsNew)) {
             significantLineFound = true;
             break;
           }
+          const oldMatch = line.match(/@@ -(\d+),(\d+) \+\d+(?:,\d+)? @@/);
+          currentFileIsNew = !!(oldMatch && parseInt(oldMatch[1]) === 0 && parseInt(oldMatch[2]) === 0);
           hunkOld = '';
           hunkNew = '';
           continue;
         }
-        
+
         if (line.startsWith('+') && !line.startsWith('+++')) {
           hunkNew += collapse(line.slice(1));
         } else if (line.startsWith('-') && !line.startsWith('---')) {
@@ -95,7 +99,7 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
         }
       }
 
-      if (!significantLineFound && this.checkSignificance(currentFile, hunkOld, hunkNew)) {
+      if (!significantLineFound && this.checkSignificance(currentFile, hunkOld, hunkNew, currentFileIsNew)) {
         significantLineFound = true;
       }
 
@@ -105,8 +109,9 @@ export class BasicSignificanceFilter implements ISignificanceFilter {
     }
   }
 
-  private checkSignificance(currentFile: string, hunkOld: string, hunkNew: string): boolean {
+  private checkSignificance(currentFile: string, hunkOld: string, hunkNew: string, isNewFile: boolean = false): boolean {
     if (currentFile && !NON_CODE_EXTENSIONS.some(ext => currentFile.endsWith(ext))) {
+      if (isNewFile) return true;
       return hunkOld !== hunkNew;
     }
     return false;

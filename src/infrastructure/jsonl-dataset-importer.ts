@@ -41,13 +41,16 @@ export class JsonlDatasetImporter implements IDatasetImporter {
             hash: hash,
             message: existing?.message || '',
             files: existing?.files || [],
-             status: exportData.status,
+            status: exportData.status,
             created_at: new Date(exportData.metadata.createdAt),
             repositoryUrl: exportData.repository.url,
             repositoryName: exportData.repository.name,
             preFixHash: exportData.preFixHash,
             postFixHash: exportData.postFixHash,
             curation: exportData.curation,
+            author_name: '',
+            author_email: '',
+            body: '',
           };
   
     
