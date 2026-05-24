@@ -4,7 +4,7 @@ This document serves as the central source of truth for the project's strategic 
 
 ---
 
-## [ ] Epic 1: Git-Based Benchmark Generation (The Miner)
+## [x] Epic 1: Git-Based Benchmark Generation (The Miner)
 **Description:** Automate the discovery of high-signal 'ground truth' benchmarks from a private repository.
 **Metrics:** Precision (>80% actual bug fixes), Candidate Density (High-quality candidates per 1k commits).
 **Success Criteria:**
@@ -91,7 +91,7 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 1.FIX1.2: Add Error Logging to Silent Catch Blocks in Epic 1 Services](.agents/spec/task-1.fix1.2.md)
     - [x] [Task 1.FIX1.3: Log Skipped Candidates in JSONL Exporter](.agents/spec/task-1.fix1.3.md)
    * **DoD:** All 4 success criteria marked `[x]`; no empty catch blocks remain in Epic 1 source files; skipped export candidates produce a warning; typecheck + lint + full test suite pass.
-* **[ ] Feature 1.8: Reliable Date-Based Git Mining**
+* **[x] Feature 1.8: Reliable Date-Based Git Mining**
   * **Spec:** Replace `simple-git`'s revision-range-mapped `LogOptions.from` with raw `child_process.execFile('git', ['log', '--since=...', ...])` to restore correct `--since` semantics. Re-enable the `since` date parameter in the CLI.
   * **Tasks:**
     - [x] [Task 1.8.1: Replace simple-git LogOptions with child_process.execFile for raw git log](.agents/spec/task-1.8.1.md)
