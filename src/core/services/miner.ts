@@ -62,8 +62,8 @@ export class GitMiner implements IMiner {
             resolve({ stdout, stderr });
           }
         });
-        const timer = setTimeout(() => { child.kill(); reject(new Error('git log timed out')); }, 30_000);
-        child.on('close', () => clearTimeout(timer));
+        const timer = setTimeout(() => { child?.kill?.(); reject(new Error('git log timed out')); }, 30_000);
+        child?.on?.('close', () => clearTimeout(timer));
       });
       commits = stdout.trim().split('\n')
         .filter(line => line.length > 0)
