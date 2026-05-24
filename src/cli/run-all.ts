@@ -7,7 +7,7 @@ import {
 } from '../core/contracts';
 import { BatchRunnerService } from '../core/services/batch-runner';
 import { AgentConfigLoader } from '../core/services/agent-config-loader';
-import { initDatabase } from '../infrastructure/database';
+import { Database } from '../infrastructure/persistence/database.js';
 import { db } from '../infrastructure/persistence/database';
 import { CandidateRepository } from '../core/repositories/candidate-repository';
 import { RunResultRepository } from '../core/repositories/run-result-repository';
@@ -18,7 +18,7 @@ import { FailureArtifactExporter } from '../infrastructure/failure-artifact-expo
 import { SessionOrchestrator } from '../core/services/session-orchestrator';
 import { WorkerPool } from '../infrastructure/services/worker-pool';
 import { BatchProgressReporter } from '../core/services/batch-progress-reporter';
-import { loadConfig, RepoBenchConfig } from '../core/config';
+import { loadConfig, RepoBenchConfig, resolveDatabasePath } from '../core/config';
 
 export function registerRunAllCommand(program: Command): void {
   program
@@ -77,14 +77,13 @@ export function registerRunAllCommand(program: Command): void {
           process.exit(0);
         }
 
-        initDatabase();
-
         let loadedConfig: RepoBenchConfig | undefined;
         try {
           loadedConfig = await loadConfig('repobench.yaml');
         } catch {
           console.warn('Warning: Could not load repobench.yaml, using defaults for sandbox config');
         }
+        Database.init({ dbPath: resolveDatabasePath(loadedConfig?.database?.path) });
 
         const candidateRepo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);

@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { initDatabase, db } from '../infrastructure/persistence/database.js';
+import { Database, db } from '../infrastructure/persistence/database.js';
+import { loadConfig, RepoBenchConfig, resolveDatabasePath } from '../core/config.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { LeaderboardReporter } from '../core/services/leaderboard-reporter.js';
 import { TerminalReportRenderer } from '../core/services/report-renderer.js';
@@ -22,7 +23,14 @@ export function registerReportCommand(program: Command): void {
       candidateId?: string;
     }) => {
       try {
-        initDatabase();
+        let loadedConfig: RepoBenchConfig | undefined;
+        try {
+          loadedConfig = await loadConfig();
+        } catch {
+          // config is optional; fall back to default database path
+          console.warn('Warning: Could not load config, using default database path');
+        }
+        Database.init({ dbPath: resolveDatabasePath(loadedConfig?.database?.path) });
         const repository = new RunResultRepository(db);
         const reporter = new LeaderboardReporter(repository);
         const renderer = new TerminalReportRenderer();

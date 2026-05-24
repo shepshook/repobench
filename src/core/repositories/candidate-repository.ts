@@ -20,6 +20,9 @@ interface CandidateRow {
 
 export class CandidateRepository implements ICandidateRepository {
   save(candidate: Candidate): void {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate.id)) {
+      throw new Error(`Invalid candidate ID: ${candidate.id} is not a valid UUID`);
+    }
     db.run(
       `INSERT INTO candidates (id, hash, message, files, status, created_at, repository_url, repository_name, pre_fix_hash, post_fix_hash, curation_score, curation_reasoning, curation_is_approved, curation_raw_response)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

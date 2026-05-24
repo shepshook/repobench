@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { reinitDatabase, db, initDatabase } from '../../src/infrastructure/persistence/database';
+import { reinitDatabase, db } from '../../src/infrastructure/persistence/database';
 import { CandidateRepository } from '../../src/core/repositories/candidate-repository';
 import { RunResultRepository } from '../../src/core/repositories/run-result-repository';
 import { registerReportCommand } from '../../src/cli/report';

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
-import { initDatabase } from '../infrastructure/database.js';
+import { Database } from '../infrastructure/database.js';
 import { db } from '../infrastructure/persistence/database.js';
+import { loadConfig, RepoBenchConfig, resolveDatabasePath } from '../core/config.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter.js';
@@ -13,7 +14,14 @@ export function registerExportFailuresCommand(program: Command): void {
     .option('--run-id <uuid>', 'export artifacts for a single run')
     .action(async (options: { outputDir: string; runId?: string }) => {
       try {
-        initDatabase();
+        let loadedConfig: RepoBenchConfig | undefined;
+        try {
+          loadedConfig = await loadConfig();
+        } catch {
+          // config is optional; fall back to default database path
+          console.warn('Warning: Could not load config, using default database path');
+        }
+        Database.init({ dbPath: resolveDatabasePath(loadedConfig?.database?.path) });
         const candidateRepo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);
         const exporter = new FailureArtifactExporter(runResultRepo, candidateRepo);

@@ -1,18 +1,22 @@
-import Database from 'better-sqlite3';
+import DatabaseConstructor from 'better-sqlite3';
 import path from 'path';
+import type { IDatabase } from '../../core/contracts';
 
-let dbPath = process.env.REPOBENCH_DB_PATH || path.resolve(process.cwd(), 'repobench.db');
-let _rawDb = new Database(dbPath);
+let _rawDb: DatabaseConstructor.Database | null = null;
+let _rawDbOrigin: 'init' | 'reinit' | null = null;
 
-export const getRawDb = () => _rawDb;
+export const getRawDb = () => {
+  if (!_rawDb) throw new Error('Database not initialized');
+  return _rawDb;
+};
 
-export function reinitDatabase(newDbPath?: string): void {
-  _rawDb.close();
-  if (newDbPath) {
-    dbPath = newDbPath;
+export function reinitDatabase(dbPath: string): void {
+  _rawDbOrigin = 'reinit';
+  if (_rawDb) {
+    _rawDb.close();
   }
-  _rawDb = new Database(dbPath);
-  initDatabase();
+  _rawDb = new DatabaseConstructor(dbPath);
+  initDatabaseInternal();
 }
 
 function snakeToCamel(str: string) {
@@ -27,9 +31,16 @@ interface TypedStatement<T> {
   run(...params: unknown[]): { changes: number; lastInsertRowid: number };
 }
 
+function ensureRawDb(): DatabaseConstructor.Database {
+  if (!_rawDb) {
+    throw new Error('Database not initialized. Call Database.init() or reinitDatabase() first.');
+  }
+  return _rawDb;
+}
+
 export const db = {
   prepare: <T = Record<string, unknown>>(sql: string): TypedStatement<T> => {
-      const stmt = _rawDb.prepare(sql);
+      const stmt = ensureRawDb().prepare(sql);
       const wrapResult = (result: unknown): T | T[] | undefined => {
         if (!result) return result as undefined;
         if (Array.isArray(result)) {
@@ -56,20 +67,13 @@ export const db = {
       };
   },
   run: (sql: string, ...params: unknown[]): { changes: number; lastInsertRowid: number } =>
-    _rawDb.prepare(sql).run(...params) as { changes: number; lastInsertRowid: number },
+    ensureRawDb().prepare(sql).run(...params) as { changes: number; lastInsertRowid: number },
 };
 
-/**
- * Initializes the database schema.
- * Creates the candidates table if it does not exist.
- */
-export function initDatabase(newDbPath?: string): void {
-  if (newDbPath) {
-    reinitDatabase(newDbPath);
-    return;
-  }
+function initDatabaseInternal(): void {
+  const raw = ensureRawDb();
   try {
-    _rawDb.prepare(`
+    raw.prepare(`
       CREATE TABLE IF NOT EXISTS candidates (
         id TEXT PRIMARY KEY,
         hash TEXT NOT NULL,
@@ -87,7 +91,7 @@ export function initDatabase(newDbPath?: string): void {
         curation_raw_response TEXT
       )
     `).run();
-    _rawDb.prepare(`
+    raw.prepare(`
       CREATE TABLE IF NOT EXISTS containers (
         container_id TEXT PRIMARY KEY,
         image TEXT,
@@ -96,7 +100,7 @@ export function initDatabase(newDbPath?: string): void {
         labels TEXT
       )
     `).run();
-    _rawDb.prepare(`
+    raw.prepare(`
       CREATE TABLE IF NOT EXISTS runs (
         run_id TEXT PRIMARY KEY NOT NULL,
         agent_id TEXT NOT NULL,
@@ -114,7 +118,22 @@ export function initDatabase(newDbPath?: string): void {
     throw error;
   }
 }
-
-// Initialize database schema on load
-initDatabase();
+export class Database {
+  static init(options: { dbPath: string }): IDatabase {
+    if (!options || !options.dbPath || options.dbPath.trim() === '') {
+      throw new Error('dbPath is required');
+    }
+    const resolvedPath = path.resolve(options.dbPath);
+    if (_rawDb) {
+      if (_rawDbOrigin === 'init' || _rawDb.name !== resolvedPath) {
+        reinitDatabase(resolvedPath);
+        _rawDbOrigin = 'init';
+      }
+      return db;
+    }
+    reinitDatabase(resolvedPath);
+    _rawDbOrigin = 'init';
+    return db;
+  }
+}
 

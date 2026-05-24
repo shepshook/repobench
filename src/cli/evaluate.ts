@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
-import { initDatabase, db } from '../infrastructure/persistence/database.js';
+import { Database, db } from '../infrastructure/persistence/database.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { RunResultRepository } from '../core/repositories/run-result-repository.js';
 import { Sandbox } from '../infrastructure/sandbox.js';
@@ -9,7 +9,7 @@ import { SandboxConfig } from '../core/contracts.js';
 import { Evaluator } from '../core/services/evaluator.js';
 import { JudgeService } from '../core/services/judge-service.js';
 import { FailureArtifactExporter } from '../infrastructure/failure-artifact-exporter.js';
-import { loadConfig, RepoBenchConfig } from '../core/config.js';
+import { loadConfig, RepoBenchConfig, resolveDatabasePath } from '../core/config.js';
 
 export function registerEvaluateCommand(program: Command): void {
   program
@@ -29,13 +29,13 @@ export function registerEvaluateCommand(program: Command): void {
         costFile?: string;
       };
       try {
-        initDatabase();
         let loadedConfig: RepoBenchConfig | undefined;
         try {
           loadedConfig = await loadConfig('repobench.yaml');
         } catch (error: unknown) {
           console.warn(`Warning: Could not load repobench.yaml (${error instanceof Error ? error.message : String(error)}), using defaults for sandbox config`);
         }
+        Database.init({ dbPath: resolveDatabasePath(loadedConfig?.database?.path) });
 
         const repo = new CandidateRepository();
         const runResultRepo = new RunResultRepository(db);

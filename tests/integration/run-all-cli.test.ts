@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { registerRunAllCommand } from '../../src/cli/run-all';
 import { BatchRunnerService } from '../../src/core/services/batch-runner';
 import { AgentConfigLoader } from '../../src/core/services/agent-config-loader';
-import { initDatabase } from '../../src/infrastructure/database';
+import { Database } from '../../src/infrastructure/database';
 
 vi.mock('../../src/core/services/batch-runner');
 vi.mock('../../src/core/services/agent-config-loader');
@@ -120,7 +120,7 @@ describe('CLI: repobench run-all', () => {
 
     await program.parseAsync(['node', 'repobench', 'run-all', '--agents', 'aider']);
 
-    expect(initDatabase).toHaveBeenCalled();
+    expect(Database.init).toHaveBeenCalled();
     expect(BatchRunnerService.prototype.runAll).toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith(0);
   });

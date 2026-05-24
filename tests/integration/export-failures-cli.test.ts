@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Command } from 'commander';
 import { registerExportFailuresCommand } from '../../src/cli/export-failures';
-import { initDatabase } from '../../src/infrastructure/database';
+import { Database } from '../../src/infrastructure/database';
 import { FailureArtifactExporter } from '../../src/infrastructure/failure-artifact-exporter';
 
 vi.mock('../../src/infrastructure/database');
@@ -63,7 +63,7 @@ describe('CLI: repobench export-failures', () => {
       // process.exit mock throws
     }
 
-    expect(initDatabase).toHaveBeenCalled();
+    expect(Database.init).toHaveBeenCalled();
     expect(FailureArtifactExporter.prototype.exportAllFailures).toHaveBeenCalled();
     expect(FailureArtifactExporter.prototype.exportForRun).not.toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('2'));
@@ -81,7 +81,7 @@ describe('CLI: repobench export-failures', () => {
       // process.exit mock throws
     }
 
-    expect(initDatabase).toHaveBeenCalled();
+    expect(Database.init).toHaveBeenCalled();
     expect(FailureArtifactExporter.prototype.exportForRun).toHaveBeenCalledWith(validUuid, expect.any(Object));
     expect(FailureArtifactExporter.prototype.exportAllFailures).not.toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining(validUuid));

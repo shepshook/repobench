@@ -24,7 +24,7 @@ export const RepoBenchConfigSchema = z.object({
     agent_setup_commands: z.array(z.string()).optional(),
   }).optional(),
   database: z.object({
-    path: z.string().optional().default('~/.repobench/db/repobench.db'),
+    path: z.string().optional(),
   }).optional(),
 }).transform((data) => ({
   ...data,
@@ -96,24 +96,23 @@ function findProjectRoot(startDir: string): string {
  * @param projectRoot - Optional explicit project root; detected from process.cwd() when omitted.
  */
 export function resolveDatabasePath(configPath?: string, projectRoot?: string): string {
-  const raw = configPath || '~/.repobench/db/repobench.db';
+  const envPath = process.env.REPOBENCH_DB_PATH;
+  const raw = envPath || configPath || '~/.repobench/db/repobench.db';
+
+  let resolved: string;
 
   if (raw.startsWith('~')) {
     const homedir = os.homedir();
     const suffix = raw.slice(1);
     const normalizedSuffix = homedir.includes('\\') ? suffix.replace(/\//g, '\\') : suffix;
-    const result = homedir + normalizedSuffix;
-    fsSync.mkdirSync(path.dirname(result), { recursive: true });
-    return result;
+    resolved = homedir + normalizedSuffix;
+  } else if (path.isAbsolute(raw) || raw.startsWith('/')) {
+    resolved = raw;
+  } else {
+    const root = findProjectRoot(projectRoot || process.cwd());
+    resolved = path.resolve(root, raw);
   }
 
-  if (path.isAbsolute(raw) || raw.startsWith('/')) {
-    fsSync.mkdirSync(path.dirname(raw), { recursive: true });
-    return raw;
-  }
-
-  const root = findProjectRoot(projectRoot || process.cwd());
-  const result = path.resolve(root, raw);
-  fsSync.mkdirSync(path.dirname(result), { recursive: true });
-  return result;
+  fsSync.mkdirSync(path.dirname(resolved), { recursive: true });
+  return resolved;
 }

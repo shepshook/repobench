@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import { loadConfig } from '../core/config.js';
+import { loadConfig, resolveDatabasePath } from '../core/config.js';
 import { GitMiner } from '../core/services/miner.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
-import { initDatabase } from '../infrastructure/persistence/database.js';
+import { Database } from '../infrastructure/persistence/database.js';
 import process from 'node:process';
 
 export async function main() {
@@ -38,7 +38,7 @@ export async function main() {
           config.mining.since = options.since;
         }
 
-        initDatabase();
+        Database.init({ dbPath: resolveDatabasePath(config.database?.path) });
         const repository = new CandidateRepository();
         const miner = new GitMiner(repository);
         const candidates = await miner.mineCommits(config);
@@ -83,7 +83,7 @@ export function registerMineCommand(program: Command): void {
           config.mining.since = options.since;
         }
 
-        initDatabase();
+        Database.init({ dbPath: resolveDatabasePath(config.database?.path) });
         const repository = new CandidateRepository();
         const miner = new GitMiner(repository);
         const candidates = await miner.mineCommits(config);

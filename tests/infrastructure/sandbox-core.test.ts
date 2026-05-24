@@ -336,7 +336,7 @@ describe('Sandbox Core (Integration)', () => {
       await fs.unlink(tempDbPath2).catch(() => {});
     });
 
-    it('should provide isolation when calling initDatabase with different paths', async () => {
+    it('should provide isolation when calling reinitDatabase with different paths', async () => {
       const dbPath1 = path.join(os.tmpdir(), `isolation-test-1-${Date.now()}.db`);
       const dbPath2 = path.join(os.tmpdir(), `isolation-test-2-${Date.now()}.db`);
 

@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command } from 'commander';
 import { registerReportCommand } from '../../src/cli/report';
 import { RunResultRepository } from '../../src/core/repositories/run-result-repository';
-import { reinitDatabase, db } from '../../src/infrastructure/persistence/database';
-import * as databaseModule from '../../src/infrastructure/persistence/database';
+import { reinitDatabase, db, Database } from '../../src/infrastructure/persistence/database';
 import type { RunResult } from '../../src/core/contracts';
 import { generateValidUuid } from '../helpers/dataset';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
+
+vi.mock('../../src/core/config');
 
 const columnHeaders = ['Rank', 'Agent ID', 'Runs', 'Passed', 'Failed', 'Success Rate', 'Avg E-Score', 'Avg Cost', 'Avg Latency'];
 
@@ -42,6 +43,13 @@ describe('CLI: repobench report', () => {
     reinitDatabase(tempDbPath);
 
     repository = new RunResultRepository(db);
+
+    const configModule = await import('../../src/core/config');
+    vi.mocked(configModule.loadConfig).mockResolvedValue({
+      database: { path: tempDbPath },
+      mining: { keywords: [], exclude_paths: [] },
+    });
+    vi.mocked(configModule.resolveDatabasePath).mockImplementation((p?: string) => p ?? tempDbPath);
 
     program = new Command();
     registerReportCommand(program);
@@ -136,7 +144,7 @@ describe('CLI: repobench report', () => {
   });
 
   it('should exit with code 1 on error', async () => {
-    vi.spyOn(databaseModule, 'initDatabase').mockImplementation(() => {
+    vi.spyOn(Database, 'init').mockImplementation(() => {
       throw new Error('db initialization failed');
     });
 

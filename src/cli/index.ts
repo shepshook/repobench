@@ -1,4 +1,5 @@
-import { initDatabase } from '../infrastructure/persistence/database.js';
+import { Database } from '../infrastructure/persistence/database.js';
+import { loadConfig, RepoBenchConfig, resolveDatabasePath } from '../core/config.js';
 import { CandidateRepository } from '../core/repositories/candidate-repository.js';
 import { JsonlDatasetExporter } from '../infrastructure/jsonl-dataset-exporter.js';
 import { JsonlDatasetImporter } from '../infrastructure/jsonl-dataset-importer.js';
@@ -24,8 +25,14 @@ program
   .action(async (path) => {
     console.log('DEBUG: Action started');
     try {
-      console.log('DEBUG: Initializing database');
-      initDatabase();
+      let config: RepoBenchConfig | undefined;
+      try {
+        config = await loadConfig();
+      } catch {
+        // config is optional; fall back to default database path
+        console.warn('Warning: Could not load config, using default database path');
+      }
+      Database.init({ dbPath: resolveDatabasePath(config?.database?.path) });
       console.log('DEBUG: Creating repo');
       const repo = new CandidateRepository();
       console.log('DEBUG: Creating exporter');
@@ -45,10 +52,17 @@ program
 program
   .command('import')
   .argument('<path>', 'Path to import from')
-  .action(async (path) => {
-    try {
-      initDatabase();
-      const repo = new CandidateRepository();
+    .action(async (path) => {
+      try {
+        let config: RepoBenchConfig | undefined;
+        try {
+          config = await loadConfig();
+        } catch {
+          // config is optional; fall back to default database path
+          console.warn('Warning: Could not load config, using default database path');
+        }
+        Database.init({ dbPath: resolveDatabasePath(config?.database?.path) });
+        const repo = new CandidateRepository();
       const importer = new JsonlDatasetImporter(repo);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const count = await importer.import(path);

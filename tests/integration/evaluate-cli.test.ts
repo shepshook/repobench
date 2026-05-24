@@ -17,8 +17,10 @@ describe('CLI: repobench evaluate', () => {
   let program: Command;
   let consoleLogSpy: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const configModule = await import('../../src/core/config');
+    vi.mocked(configModule.resolveDatabasePath).mockReturnValue('/tmp/evaluate-test/repobench.db');
     program = new Command();
     registerEvaluateCommand(program);
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});

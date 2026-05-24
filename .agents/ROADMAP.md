@@ -169,7 +169,7 @@ This document serves as the central source of truth for the project's strategic 
   * **Spec:** Move `repobench.db` outside the Docker bind-mounted workspace to eliminate SQLITE_BUSY lock conflicts during `git reset --hard` inside the container. The database lives in a dedicated directory (default: `~/.repobench/db/`) that the container never touches.
   * **Tasks:**
     - [x] [Task 2.6.1: Define database directory config and move repobench.db outside workspace](.agents/spec/task-2.6.1.md)
-    - [ ] [Task 2.6.2: Update database initialization and all repository consumers](.agents/spec/task-2.6.2.md)
+    - [x] [Task 2.6.2: Update database initialization and all repository consumers](.agents/spec/task-2.6.2.md)
     - [ ] [Task 2.6.3: Verify sandbox git reset --hard no longer conflicts with host DB lock](.agents/spec/task-2.6.3.md)
   * **DoD:** `repobench.db` resolves to `~/.repobench/db/repobench.db` by default; host Node process reads/writes it safely while Docker runs `git reset --hard` on the bind-mounted workspace; no SQLITE_BUSY errors during pipeline execution.
 * **[ ] Feature 2.7: Configurable Build Output Volume Caching**
