@@ -362,9 +362,9 @@ This document serves as the central source of truth for the project's strategic 
     - [x] [Task 5.FIX2.2: Epic Audit — Remediate Silent Error Swallowing in FailureArtifactExporter Round 2](.agents/spec/task-5.fix2.2.md)
     - [x] [Task 5.FIX2.3: Epic Audit — Fix SessionOrchestrator Concrete Import Boundary Leak Round 2](.agents/spec/task-5.fix2.3.md)
   * **DoD:** `RunResultRepository` receives `IDatabase` via constructor (no module-level global import); all three `catch` blocks in `failure-artifact-exporter.ts` log the original error before writing fallback content; `session-orchestrator.ts` depends only on `ISandbox` and `IPtySession` from `contracts.ts`; typecheck + lint + full test suite pass.
-* **[ ] Feature 5.5: End-to-End Pipeline Validation**
+* **[x] Feature 5.5: End-to-End Pipeline Validation**
   * **Spec:** Execute the full RepoBench pipeline (mine → sandbox → agent session → judge → report) against the RepoBench repository itself, document runtime issues, and implement fixes.
   * **Tasks:**
-    - [ ] [Task 5.5.1: Execute full pipeline against RepoBench repository](.agents/spec/task-5.5.1.md)
-    - [ ] [Task 5.5.2: Document runtime issues and implement fixes](.agents/spec/task-5.5.2.md)
+    - [x] [Task 5.5.1: Execute full pipeline against RepoBench repository](.agents/spec/task-5.5.1.md)
+    - [x] [Task 5.5.2: Document runtime issues and implement fixes](.agents/spec/task-5.5.2.md)
   * **DoD:** `repobench mine`, `run-all`, `report`, and `export-failures` all complete without crashes; runtime issues are documented and fixed or tracked.

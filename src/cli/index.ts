@@ -68,14 +68,9 @@ registerRunAllCommand(program);
 registerReportCommand(program);
 registerExportFailuresCommand(program);
 
-import { AgentAdapterFactory } from '../core/services/agent-adapter-factory';
-import { ClaudeCodeAdapter } from '../infrastructure/agents/claude-code-adapter';
-import { AiderAdapter } from '../infrastructure/agents/aider-adapter';
-import { OpencodeAdapter } from '../infrastructure/agents/opencode-adapter';
+import { registerAllAdapters } from '../infrastructure/agents/register-adapters.js';
 
-AgentAdapterFactory.registerAdapter('claude-code', ClaudeCodeAdapter);
-AgentAdapterFactory.registerAdapter('aider', AiderAdapter);
-AgentAdapterFactory.registerAdapter('opencode', OpencodeAdapter);
+registerAllAdapters();
 
 program.parseAsync(process.argv).catch(() => {
   process.exit(1);

@@ -60,6 +60,7 @@ export function registerMineCommand(program: Command): void {
         }
 
         const config = await loadConfig(options.config ?? 'repobench.yaml');
+        config.mining.since = undefined;
         initDatabase();
         const repository = new CandidateRepository();
         const miner = new GitMiner(repository);

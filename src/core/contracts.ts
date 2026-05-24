@@ -99,11 +99,11 @@ export interface SandboxConfig {
   testCommand?: string;
   envVars?: Record<string, string>;
   baseImage?: string;
-  baseImagePath?: string;
   cacheVolumes?: { hostPath: string; containerPath: string }[];
   cachePaths?: string[];
   project?: string;
   agentSetupCommands?: string[];
+  workspacePath?: string;
 }
 
 export interface IDockerVolume {

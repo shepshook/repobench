@@ -3,8 +3,8 @@ import { z } from 'zod';
 import Docker from 'dockerode';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { mkdtempSync, writeFileSync, rmSync, existsSync, cpSync, mkdirSync } from 'fs';
+import { join, resolve } from 'path';
 import { tmpdir } from 'os';
 import { VolumeManager, VolumeManagerError } from './volume-manager';
 import { PtySession } from './pty-session';
@@ -53,6 +53,29 @@ class GitOperationError extends Error {
     this.stdout = stdout;
     this.stderr = stderr;
     this.exitCode = exitCode;
+  }
+}
+
+type SimulationHandler = (command: string, options?: { timeout?: number; env?: Record<string, string> }) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
+
+export class SimulationFixtures {
+  private static handlers = new Map<string, SimulationHandler>();
+
+  static register(commandPattern: string, handler: SimulationHandler): void {
+    this.handlers.set(commandPattern, handler);
+  }
+
+  static getHandler(command: string): SimulationHandler | undefined {
+    for (const [pattern, handler] of this.handlers) {
+      if (command === pattern || command.startsWith(pattern)) {
+        return handler;
+      }
+    }
+    return undefined;
+  }
+
+  static clear(): void {
+    this.handlers.clear();
   }
 }
 
@@ -111,10 +134,17 @@ export class Sandbox implements ISandbox {
           dockerError.message?.includes('Cannot read properties of undefined') ||
           (error instanceof VolumeManagerError && (error.message.includes('docker_engine') || error.message.includes('ENOENT')));
       
-      if (isDockerError) {
-        console.log(`DEBUG: Falling back to simulation`);
+      if (isDockerError && process.env.FORCE_SIMULATION === 'true') {
+        console.log(`DEBUG: FORCE_SIMULATION is set, falling back to simulation`);
         this.volumeManager.resetStats();
         await this.initSimulation();
+      } else if (isDockerError) {
+        throw new Error(
+          `Docker is required for sandbox execution. ` +
+          `Set FORCE_SIMULATION=true environment variable to use simulation mode for testing. ` +
+          `Original error: ${dockerError.message}`,
+          { cause: error }
+        );
       } else {
         console.log(`DEBUG: Throwing non-docker error`);
         throw error;
@@ -136,7 +166,7 @@ export class Sandbox implements ISandbox {
   }
 
   private async initDocker(): Promise<void> {
-    const image = this.config.baseImagePath || this.config.baseImage || 'node:20-alpine';
+    const image = this.config.baseImage || 'node:20-alpine';
     const envs = Object.entries(this.config.envVars || {}).map(([k, v]) => `${k}=${v}`);
     
     const cacheVolumes = this.config.cacheVolumes || (this.config.cachePaths ? this.config.cachePaths.map(p => ({ hostPath: p, containerPath: p })) : null);
@@ -163,7 +193,17 @@ export class Sandbox implements ISandbox {
       await this.volumeManager.getDocker().pull(image);
     }
 
-    const binds = Object.entries(this.volumeManager.getVolumes()).map(([path, name]) => `${name}:${path}`);
+    const cacheBinds = Object.entries(this.volumeManager.getVolumes()).map(([path, name]) => `${name}:${path}`);
+
+    const binds: string[] = [];
+
+    if (this.config.workspacePath) {
+      const absWorkspace = resolve(this.config.workspacePath);
+      binds.push(`${absWorkspace}:/app`);
+      console.log(`DEBUG: Mounting workspace ${absWorkspace} to /app`);
+    }
+
+    binds.push(...cacheBinds);
 
     const container = await this.volumeManager.getDocker().createContainer({
       Image: image,
@@ -489,213 +529,58 @@ export class Sandbox implements ISandbox {
   }
 
   private async executeSimulation(command: string, options?: { timeout?: number; env?: Record<string, string> }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    if (command === 'printenv') {
-      const mergedEnv = { ...this.config.envVars, ...options?.env };
-      const output = Object.entries(mergedEnv)
-        .map(([k, v]) => `${k}=${v}`)
-        .join('\n') + '\n';
-      return { stdout: output, stderr: '', exitCode: 0 };
+    // Check registered fixture handlers first (for test injection)
+    const fixtureHandler = SimulationFixtures.getHandler(command);
+    if (fixtureHandler) {
+      return fixtureHandler(command, options);
     }
-    
-    if (command === 'uname -a') {
-      return { stdout: 'Linux alpine-sandbox 3.18.0-0-virt #0 Wed Oct 25 12:00:00 UTC 2023 x86_64\n', stderr: '', exitCode: 0 };
-    }
-    
-    if (command.trim() === 'cat /etc/os-release') {
-      const image = this.config.baseImagePath || this.config.baseImage || 'node:20-alpine';
-      if (image.toLowerCase().includes('ubuntu')) {
-        return { stdout: 'NAME="Ubuntu"\nID=ubuntu\nVERSION_ID=22.04\nPRETTY_NAME="Ubuntu 22.04.3 LTS"\n', stderr: '', exitCode: 0 };
-      }
-      if (image.toLowerCase().includes('alpine')) {
-        return { stdout: 'NAME="Alpine Linux"\nID=alpine\nVERSION_ID=3.18.0\nPRETTY_NAME="Alpine Linux v3.18"\n', stderr: '', exitCode: 0 };
-      }
-      return { stdout: `NAME="Custom Image"\nID=custom\nVERSION_ID=1.0\nPRETTY_NAME="${image}"\n`, stderr: '', exitCode: 0 };
-    }
-    
-    if (command === 'echo "Hello Sandbox"') {
-      return { stdout: 'Hello Sandbox\n', stderr: '', exitCode: 0 };
-    }
-    
-    if (this.simulationDir) {
-      const tmpPath = join(this.simulationDir, 'tmp');
-      
-      // Translate cache paths to the shared simulation cache root
-      let translatedCommand = command;
-       if (this.config.cachePaths) {
-          const lockFile = this.detectLockFile(this.simulationDir) || '';
-          const cacheKey = await this.volumeManager.calculateCacheKey(lockFile);
-          const simCacheRoot = join(this.volumeManager.simCacheRoot, this.config.project || 'default', cacheKey);
 
-         
-         for (const path of this.config.cachePaths) {
-           translatedCommand = translatedCommand.split(path).join(`"${simCacheRoot}"`);
-         }
-       }
-      
-      // Translate /tmp/ to simulationDir/tmp
-      translatedCommand = translatedCommand.replace('/tmp/', `"${tmpPath}/"`);
-      
-      // Handle composite commands (&& or ;)
-      const parts = translatedCommand.split(/(&&|;)/);
-      let finalStdout = '';
-      let finalStderr = '';
-      
-      for (const part of parts) {
-        if (part === '&&' || part === ';') continue;
-        
-        const trimmedPart = part.trim();
-        if (!trimmedPart) continue;
-        
-        let result: { stdout: string; stderr: string; exitCode: number };
-        
-         if (trimmedPart.startsWith('mkdir -p ')) {
-           const target = trimmedPart.split(' ').slice(1).join(' ').replace(/"/g, '');
-           try {
-             mkdirSync(target, { recursive: true });
-             result = { stdout: '', stderr: '', exitCode: 0 };
-            } catch (e: unknown) {
-              result = { stdout: '', stderr: e instanceof Error ? e.message : String(e), exitCode: 1 };
-            }
-          } else if (trimmedPart.startsWith('ls ')) {
-           const target = trimmedPart.split(' ').slice(1).join(' ').replace(/"/g, '');
-           try {
-             if (existsSync(target)) {
-                 // simplified
-               result = { stdout: `total 0\n-rw-r--r-- 1 root root 0 ${target}\n`, stderr: '', exitCode: 0 };
-             } else {
-               result = { stdout: '', stderr: `ls: cannot access '${target}': No such file or directory`, exitCode: 2 };
-             }
-            } catch {
-              result = { stdout: '', stderr: 'ls failed', exitCode: 1 };
-            }
-           } else if (trimmedPart.startsWith('cat ')) {
-             const target = trimmedPart.split(' ').slice(1).join(' ').replace(/"/g, '');
-             try {
-               const content = readFileSync(target, 'utf8');
-               result = { stdout: content, stderr: '', exitCode: 0 };
-             } catch {
-               result = { stdout: '', stderr: `cat: ${target}: No such file or directory`, exitCode: 1 };
-             }
-          } else if (trimmedPart.startsWith('grep ')) {
-            const parts = trimmedPart.split(' ');
-            if (parts.length >= 3) {
-              const pattern = parts[1].replace(/"/g, '');
-              const target = parts.slice(2).join(' ').replace(/"/g, '');
-              try {
-                const content = readFileSync(target, 'utf8');
-                const lines = content.split('\n');
-                const matches = lines.filter(line => line.includes(pattern));
-                if (matches.length > 0) {
-                  result = { stdout: matches.join('\n') + '\n', stderr: '', exitCode: 0 };
-                } else {
-                  result = { stdout: '', stderr: '', exitCode: 1 };
-                }
-               } catch {
-                result = { stdout: '', stderr: `grep: ${target}: No such file or directory`, exitCode: 2 };
-              }
-            } else {
-              result = { stdout: '', stderr: 'grep: missing arguments', exitCode: 1 };
-            }
-          } else if (trimmedPart.startsWith('echo ')) {
-            const match = trimmedPart.match(/^echo\s+(.*)\s+(>|>>)\s+(.*)$/);
-            if (match) {
-              const content = match[1].replace(/^"|"$/g, '');
-              const operator = match[2];
-              const target = match[3].replace(/"/g, '');
-              try {
-                writeFileSync(target, content, { flag: operator === '>>' ? 'a' : 'w' });
-                result = { stdout: '', stderr: '', exitCode: 0 };
-               } catch (e: unknown) {
-                 result = { stdout: '', stderr: e instanceof Error ? e.message : String(e), exitCode: 1 };
-               }
-             } else {
-               const content = trimmedPart.split(' ').slice(1).join(' ');
-               result = { stdout: content + '\n', stderr: '', exitCode: 0 };
-            }
-          } else if (trimmedPart.startsWith('exit ')) {
-            const code = parseInt(trimmedPart.split(' ')[1]) || 0;
-            result = { stdout: '', stderr: '', exitCode: code };
-          } else if (trimmedPart === 'exit') {
-            result = { stdout: '', stderr: '', exitCode: 0 };
-          } else {
-             try {
-              const finalCmd = this.expandSimulationCommand(
-                trimmedPart,
-                { ...process.env, ...this.config.envVars, ...options?.env }
-              );
-               const ptyResult = await this.runPtyCommand(
-                 process.platform === 'win32' ? 'cmd.exe' : 'bash',
-                 process.platform === 'win32' ? ['/c', finalCmd] : ['-c', finalCmd],
-                 Object.fromEntries(
-                    Object.entries({ ...process.env, ...this.config.envVars, ...options?.env })
-.filter(([, v]) => v !== undefined)
-                       .map(([k, v]) => [k, v as string])
-                 ),
-                 options?.timeout
-               );
-              result = { stdout: ptyResult.stdout, stderr: ptyResult.stderr, exitCode: ptyResult.exitCode };
-             } catch (error: unknown) {
-              const cmdErr = error as { stderr?: string; message?: string; stdout?: string; code?: number };
-              console.log(`DEBUG: Simulation command failed: ${trimmedPart}`);
-              console.log(`DEBUG: stderr: ${cmdErr.stderr ?? cmdErr.message}`);
-              result = {
-                stdout: cmdErr.stdout ?? '',
-                stderr: cmdErr.stderr ?? '',
-                exitCode: cmdErr.code ?? 1,
-              };
-            }
-        }
-        
-        finalStdout += result.stdout;
-        finalStderr += result.stderr;
-        if (result.exitCode !== 0) {
-          return { stdout: finalStdout, stderr: finalStderr, exitCode: result.exitCode };
-        }
-      }
-      
-      return { stdout: finalStdout, stderr: finalStderr, exitCode: 0 };
-    }
-    
-    if (command.startsWith('mount | grep')) {
-      const volumes = this.volumeManager.getVolumes();
-      const path = command.split('grep ')[1].trim();
-      const mountLine = Object.entries(volumes).find(([p]) => p === path);
-      if (mountLine) {
-        return { stdout: `${mountLine[1]} on ${mountLine[0]} type tmpfs (rw)\n`, stderr: '', exitCode: 0 };
-      }
-      return { stdout: '', stderr: '', exitCode: 1 };
-    }
-    
-    // Fallback to cmd /c for other commands
-    let translatedCommand = command;
+    // Use simulationDir path translation for filesystem commands
     if (this.simulationDir) {
       const tmpPath = join(this.simulationDir, 'tmp');
-      translatedCommand = command.replace('/tmp/', `${tmpPath}/`);
+      let translatedCommand = command.replace('/tmp/', `${tmpPath}/`);
+
+      // Translate cache paths to the shared simulation cache root
+      if (this.config.cachePaths) {
+        const lockFile = this.detectLockFile(this.simulationDir) || '';
+        const cacheKey = await this.volumeManager.calculateCacheKey(lockFile);
+        const simCacheRoot = join(this.volumeManager.simCacheRoot, this.config.project || 'default', cacheKey);
+        for (const cachePath of this.config.cachePaths) {
+          translatedCommand = translatedCommand.split(cachePath).join(simCacheRoot);
+        }
+      }
+
+      // Execute via real subprocess on the simulation dir
+      try {
+        const finalCmd = this.expandSimulationCommand(
+          translatedCommand,
+          { ...process.env, ...this.config.envVars, ...options?.env }
+        );
+        const ptyResult = await this.runPtyCommand(
+          process.platform === 'win32' ? 'cmd.exe' : 'bash',
+          process.platform === 'win32' ? ['/c', finalCmd] : ['-c', finalCmd],
+          Object.fromEntries(
+            Object.entries({ ...process.env, ...this.config.envVars, ...options?.env })
+              .filter(([, v]) => v !== undefined)
+              .map(([k, v]) => [k, v as string])
+          ),
+          options?.timeout
+        );
+        return { stdout: ptyResult.stdout, stderr: ptyResult.stderr, exitCode: ptyResult.exitCode };
+      } catch (error: unknown) {
+        const cmdErr = error as { stderr?: string; message?: string; stdout?: string; code?: number };
+        console.log(`DEBUG: Simulation command failed: ${translatedCommand}`);
+        console.log(`DEBUG: stderr: ${cmdErr.stderr ?? cmdErr.message}`);
+        return {
+          stdout: cmdErr.stdout ?? '',
+          stderr: cmdErr.stderr ?? '',
+          exitCode: cmdErr.code ?? 1,
+        };
+      }
     }
-    
-    try {
-      const finalCommand = this.expandSimulationCommand(
-        translatedCommand,
-        { ...process.env, ...this.config.envVars, ...options?.env }
-      );
-      return await this.runPtyCommand(
-        process.platform === 'win32' ? 'cmd.exe' : 'bash',
-        process.platform === 'win32' ? ['/c', finalCommand] : ['-c', finalCommand],
-        Object.fromEntries(
-          Object.entries({ ...process.env, ...this.config.envVars, ...options?.env })
-.filter(([, v]) => v !== undefined)
-            .map(([k, v]) => [k, v as string])
-        ),
-        options?.timeout
-      );
-    } catch (error: unknown) {
-      const cmdErr = error as { stdout?: string; stderr?: string; code?: number };
-      return {
-        stdout: cmdErr.stdout ?? '',
-        stderr: cmdErr.stderr ?? '',
-        exitCode: cmdErr.code ?? 1,
-      };
-    }
+
+    // No simulation dir and no fixture handler — return empty
+    return { stdout: '', stderr: `Simulation mode: no handler for command '${command}'`, exitCode: 1 };
   }
 
   async ping(): Promise<boolean> {
